@@ -1,0 +1,10 @@
+node_modules/
+artifacts/
+cache/
+typechain-types/
+build/*.ptau
+build/*.r1cs
+build/*.sym
+.env
+notes/
+deployments/localhost.json

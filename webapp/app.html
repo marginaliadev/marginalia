@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shielded App — MARGINALIA</title>
+  <meta name="description" content="Inscribe into the Folio Merkle tree, synthesize Groth16 zero-knowledge proofs, and execute private exits on Robinhood Chain.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Smooth Scrolling & Scrub Parallax Engines (Lenis + GSAP) -->
+  <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
+</head>
+<body>
+  <!-- Ambient Grids & Horizon Sun Glow -->
+  <div class="bg-grid-overlay"></div>
+  <div class="ambient-glow-sun"></div>
+  <canvas id="heroConstellationCanvas" class="constellation-canvas"></canvas>
+  <div class="floating-math-particles" id="mathParticles"></div>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="container header-inner">
+      <a href="/" class="brand-wrapper">
+        <span class="brand-title">
+          <span class="wax-seal-stamp">◈</span> marginalia
+        </span>
+        <span class="brand-tagline">/ "Proven. Not revealed."</span>
+      </a>
+
+      <!-- Global Navigation -->
+      <nav class="main-nav-links">
+        <a href="/" class="nav-link">Overview</a>
+        <a href="/app.html" class="nav-link active">Shielded App</a>
+        <a href="/codex.html" class="nav-link">Codex & Lore</a>
+        <a href="/explorer.html" class="nav-link">Explorer</a>
+        <a href="/compliance.html" class="nav-link">Compliance</a>
+      </nav>
+
+      <div class="header-status-group">
+        <div class="network-pill" id="networkBadge">
+          <span class="status-dot-amber"></span>
+          <span id="networkName">Robinhood (46630)</span>
+        </div>
+        <button id="connectWalletBtn" class="btn-noir-primary">
+          Connect Wallet
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container" style="padding-top: 40px; padding-bottom: 64px;">
+    <!-- App Hero / Account Cockpit Banner -->
+    <div class="tech-box" style="padding: 28px 32px; margin-bottom: 32px; background: #0f0c0a;">
+      <div class="corner-tl"></div><div class="corner-tr"></div>
+      <div class="corner-bl"></div><div class="corner-br"></div>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:20px;">
+        <div>
+          <div class="hero-label">
+            <span class="pulse-beacon"></span> Zero-Knowledge Shielded Pool Interface
+          </div>
+          <h1 style="font-family:var(--font-heading); font-size:32px; font-weight:300; color:var(--color-dust); margin-bottom:6px;">
+            Shielded Privacy Pool
+          </h1>
+          <p style="font-size:14px; color:var(--color-text-secondary); max-width:600px;">
+            Inscribe ETH into the Folio tree, synthesize client-side Groth16 zero-knowledge proofs, and settle anonymously via Mersenne Courier gasless relayers.
+          </p>
+        </div>
+
+        <!-- Real-time Pool Stats -->
+        <div style="display:flex; gap:18px; flex-wrap:wrap;">
+          <div style="background:#090706; border:1px solid var(--color-dusk); padding:12px 18px;">
+            <div style="font-family:var(--font-mono); font-size:9px; color:var(--color-text-muted); letter-spacing:0.06em; text-transform:uppercase;">ANONYMITY SET</div>
+            <div style="font-family:var(--font-heading); font-size:22px; color:var(--color-dust); margin-top:2px;">1,048,576 <span style="font-size:12px; color:var(--color-sun); font-family:var(--font-mono);">2²⁰</span></div>
+          </div>
+          <div style="background:#090706; border:1px solid var(--color-dusk); padding:12px 18px;">
+            <div style="font-family:var(--font-mono); font-size:9px; color:var(--color-text-muted); letter-spacing:0.06em; text-transform:uppercase;">MAGISTRATE ASP</div>
+            <div style="font-family:var(--font-heading); font-size:22px; color:#73d13d; margin-top:2px;">CERTIFIED ✓</div>
+          </div>
+          <div style="background:#090706; border:1px solid var(--color-dusk); padding:12px 18px;">
+            <div style="font-family:var(--font-mono); font-size:9px; color:var(--color-text-muted); letter-spacing:0.06em; text-transform:uppercase;">PROVER LATENCY</div>
+            <div style="font-family:var(--font-heading); font-size:22px; color:var(--color-dust); margin-top:2px;">~3.6s <span style="font-size:11px; color:var(--color-text-muted); font-family:var(--font-mono);">WASM</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interaction Tabs -->
+    <div id="interaction-tabs" class="tabs-navigation-wrapper">
+      <nav class="noir-tabs-bar">
+        <button class="tab-btn active" data-tab="deposit">
+          <span class="tab-icon">◈</span> Shield (Deposit)
+        </button>
+        <button class="tab-btn" data-tab="withdraw">
+          <span class="tab-icon">◈</span> Withdraw (ZK Exit)
+        </button>
+        <button class="tab-btn" data-tab="courier">
+          <span class="tab-icon">◈</span> Mersenne Courier
+        </button>
+        <button class="tab-btn" data-tab="ragequit">
+          <span class="tab-icon">◈</span> Emergency Exit
+        </button>
+        <button class="tab-btn" data-tab="vault">
+          <span class="tab-icon">◈</span> Encrypted Vault
+        </button>
+      </nav>
+    </div>
+
+    <!-- Tab Contents Section -->
+    <div class="tech-box">
+      <div class="corner-tl"></div><div class="corner-tr"></div>
+      <div class="corner-bl"></div><div class="corner-br"></div>
+
+      <!-- DEPOSIT PANEL -->
+      <section id="tab-deposit" class="tab-panel active noir-panel-content">
+        <div class="panel-title-area">
+          <h2 class="panel-title">Inscribe into The Folio Tree</h2>
+          <p class="panel-description">Generate a cryptographic commitment with an ephemeral secret key. Funds enter the shielded anonymity pool on Robinhood Chain.</p>
+        </div>
+
+        <form id="depositForm" class="styled-form">
+          <div class="form-group">
+            <label for="depositAmount">Deposit Amount (ETH)</label>
+            <div class="input-row">
+              <input type="number" id="depositAmount" step="0.01" min="0.01" placeholder="0.1" required>
+              <div class="preset-buttons">
+                <button type="button" class="btn-preset" data-amount="0.1">0.1</button>
+                <button type="button" class="btn-preset" data-amount="0.5">0.5</button>
+                <button type="button" class="btn-preset" data-amount="1.0">1.0</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Cryptographic Note Generation</label>
+            <div class="info-callout">
+              <p>A fresh 256-bit spending key ($sk$) and nullifier randomness ($\rho$) will be generated locally in your browser. <strong>Save your note securely. Anyone with this note can withdraw your funds.</strong></p>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="submitDepositBtn" class="btn-noir-primary">
+              Inscribe Shielded Deposit
+            </button>
+          </div>
+        </form>
+
+        <!-- Deposit Result Modal / Card -->
+        <div id="depositResult" class="result-card hidden">
+          <div class="result-badge">Deposit Inscribed in Folio</div>
+          <h3>Your Secret Marginal Note</h3>
+          <p>Save this note immediately. It is required to withdraw your funds.</p>
+          <div class="code-box">
+            <code id="generatedNoteText"></code>
+            <button class="btn-noir-secondary btn-copy" id="copyNoteBtn">Copy</button>
+          </div>
+          <div class="vault-prompt">
+            <button class="btn-noir-secondary" id="encryptToVaultBtn">🔒 Save to Encrypted Vault</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- WITHDRAW PANEL -->
+      <section id="tab-withdraw" class="tab-panel noir-panel-content">
+        <div class="panel-title-area">
+          <h2 class="panel-title">Private Shielded Withdrawal</h2>
+          <p class="panel-description">Synthesize a Groth16 zero-knowledge proof showing valid membership in The Folio and Magistrate approval without revealing your note.</p>
+        </div>
+
+        <form id="withdrawForm" class="styled-form">
+          <div class="form-group">
+            <label for="withdrawNote">Secret Marginal Note</label>
+            <textarea id="withdrawNote" rows="3" placeholder="marginalia-note-v1-..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="withdrawRecipient">Clean Recipient Address</label>
+            <input type="text" id="withdrawRecipient" placeholder="0x..." required>
+            <span class="input-hint">For complete unlinkability, use a fresh address that has never interacted with the deposit address.</span>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="withdrawAmount">Withdraw Amount (ETH)</label>
+              <input type="number" id="withdrawAmount" step="0.01" min="0.01" placeholder="Leave empty for full balance">
+            </div>
+            <div class="form-group">
+              <label for="withdrawRelayerFee">Relayer Gasless Fee (ETH)</label>
+              <input type="number" id="withdrawRelayerFee" step="0.001" min="0" placeholder="0.00">
+            </div>
+          </div>
+
+          <!-- Prover Cockpit & Execution Terminal -->
+          <div id="proverProgress" class="prover-cockpit-box hidden">
+            <div class="cockpit-header">
+              <div class="cockpit-title-group">
+                <span class="status-dot-amber"></span>
+                <span class="cockpit-title" id="proverStageTitle">GROTH16 PROVER ENGINE</span>
+              </div>
+              <div class="cockpit-badges">
+                <span class="badge-preview">BN254</span>
+                <span class="badge-preview">24,236 CONSTRAINTS</span>
+                <span class="badge-preview" id="proverPercent">0%</span>
+              </div>
+            </div>
+
+            <div class="cockpit-progress-track">
+              <div class="cockpit-progress-fill" id="proverProgressFill"></div>
+            </div>
+
+            <div class="cockpit-terminal" id="proverTerminalLogs">
+              <div class="term-line"><span class="term-time">[0.00s]</span> Initializing client-side zero-knowledge witness generator...</div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="submitWithdrawBtn" class="btn-noir-primary">
+              Generate Proof & Execute Private Exit
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- MERSENNE COURIER PANEL -->
+      <section id="tab-courier" class="tab-panel noir-panel-content">
+        <div class="panel-title-area">
+          <h2 class="panel-title">Mersenne Courier — Gasless Relayer Network</h2>
+          <p class="panel-description">Withdraw funds to a clean address that holds zero ETH. The Mersenne Courier pays on-chain gas and deducts a protocol fee directly from your note.</p>
+        </div>
+
+        <div class="styled-form">
+          <div class="form-group">
+            <label>Relayer Fee Quotation Engine</label>
+            <button type="button" id="fetchCourierQuoteBtn" class="btn-noir-secondary">
+              Calculate Dynamic Gas Quote
+            </button>
+            <div id="courierQuoteDisplay" class="relayer-quote-summary hidden">
+              <div class="relayer-quote-item">
+                <span>ESTIMATED GAS</span>
+                <span id="courierEstGas">1,150,000</span>
+              </div>
+              <div class="relayer-quote-item">
+                <span>GAS PRICE</span>
+                <span id="courierGasPrice">2.0 Gwei</span>
+              </div>
+              <div class="relayer-quote-item">
+                <span>MINIMUM FEE</span>
+                <span id="courierMinFeeEth" style="color:#ffaa5b;">0.00253 ETH</span>
+              </div>
+              <div class="relayer-quote-item">
+                <span>COURIER ADDRESS</span>
+                <span id="courierAddress" style="font-size:10px;">0xMersenne...Daemon</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="info-callout">
+            <p><strong>Virgin Address Guarantee:</strong> Because the Courier broadcasts the withdrawal transaction, your clean destination address never requires initial funding from an exchange or public wallet, closing the most common metadata leak vector (L7 Mitigation).</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- RAGEQUIT PANEL -->
+      <section id="tab-ragequit" class="tab-panel noir-panel-content">
+        <div class="panel-title-area">
+          <h2 class="panel-title">Emergency Exit (Ragequit)</h2>
+          <p class="panel-description">If your deposit was rejected by the Magistrate ASP or you change your mind, reclaim your ETH directly to the original depositor.</p>
+        </div>
+
+        <form id="ragequitForm" class="styled-form">
+          <div class="form-group">
+            <label for="ragequitNote">Your Marginal Note</label>
+            <textarea id="ragequitNote" rows="3" placeholder="marginalia-note-v1-..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="ragequitRecipient">Recipient Address (Original Depositor)</label>
+            <input type="text" id="ragequitRecipient" placeholder="0x..." required>
+            <span class="input-hint">Only the address that originally deposited can execute an emergency exit.</span>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" id="submitRagequitBtn" class="btn-noir-danger">
+              Execute Emergency Exit (Ragequit)
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- VAULT PANEL -->
+      <section id="tab-vault" class="tab-panel noir-panel-content">
+        <div class="panel-title-area">
+          <h2 class="panel-title">Encrypted Note Vault (L6 Note Keeper)</h2>
+          <p class="panel-description">Authenticated client-side storage encrypted with AES-256-GCM via your wallet EIP-712 signature.</p>
+        </div>
+
+        <div class="vault-unlock-area" id="vaultLockedView">
+          <div class="lock-graphic">🔒</div>
+          <h3>Vault is Locked</h3>
+          <p>Sign an EIP-712 message in your wallet to decrypt your note inventory locally on this device.</p>
+          <button id="unlockVaultBtn" class="btn-noir-primary">Unlock Vault with Wallet Signature</button>
+        </div>
+
+        <div class="vault-unlocked-area hidden" id="vaultUnlockedView">
+          <div class="vault-controls">
+            <span class="vault-badge">Decrypted & Authenticated</span>
+            <button id="lockVaultBtn" class="btn-noir-secondary">Lock Vault</button>
+          </div>
+          <div class="notes-list" id="vaultNotesList">
+            <p class="empty-state">No notes stored in vault yet.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="container" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
+      <div class="footer-links">
+        <span>Robinhood Chain Orbit L2 (46630)</span>
+        <span>•</span>
+        <span>Groth16 on BN254</span>
+        <span>•</span>
+        <span>Magistrate ASP</span>
+        <span>•</span>
+        <span>Mersenne Courier</span>
+      </div>
+      <div class="copyright">
+        <em>"Fermat asked the world to trust him. Marginalia asks no one to trust anyone."</em>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

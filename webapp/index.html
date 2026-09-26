@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MARGINALIA — Proven. Not revealed.</title>
+  <meta name="description" content="Compliant zero-knowledge shielded privacy pool powered by Groth16 zk-SNARKs and Association Set Providers (ASP) on Robinhood Chain. Proven. Not revealed.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- Smooth Scrolling & Scrub Parallax Engines (Lenis + GSAP) -->
+  <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.2/ethers.umd.min.js"></script>
+</head>
+<body>
+  <!-- Ambient Grids & Warm Sun Horizon Glow -->
+  <div class="bg-grid-overlay"></div>
+  <div class="ambient-glow-sun"></div>
+  <canvas id="heroConstellationCanvas" class="constellation-canvas"></canvas>
+  <div class="floating-math-particles" id="mathParticles"></div>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="container header-inner">
+      <a href="/" class="brand-wrapper">
+        <span class="brand-title">
+          <span class="wax-seal-stamp">◈</span> marginalia
+        </span>
+        <span class="brand-tagline">/ "Proven. Not revealed."</span>
+      </a>
+
+      <!-- Global Navigation -->
+      <nav class="main-nav-links">
+        <a href="/" class="nav-link active">Overview</a>
+        <a href="/app.html" class="nav-link">Shielded App</a>
+        <a href="/codex.html" class="nav-link">Codex & Lore</a>
+        <a href="/explorer.html" class="nav-link">Explorer</a>
+        <a href="/compliance.html" class="nav-link">Compliance</a>
+      </nav>
+
+      <div class="header-status-group">
+        <div class="network-pill" id="networkBadge">
+          <span class="status-dot-amber"></span>
+          <span id="networkName">Robinhood (46630)</span>
+        </div>
+        <a href="/app.html" class="btn-noir-primary">
+          Launch App ◈
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero & Architecture Schematic -->
+    <section class="hero-section">
+      <div class="hero-grid">
+        <!-- Editorial Headline & Overview -->
+        <div class="tech-box hero-editorial">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+
+          <div>
+            <div class="hero-label">
+              <span class="pulse-beacon"></span> Robinhood Chain Orbit L2 (Chain ID 46630)
+            </div>
+            <h1 class="hero-title">
+              Private money that still passes compliance.
+            </h1>
+            <p class="hero-desc">
+              MARGINALIA is an institutional-grade shielded pool. Balances and transaction trails stay invisible on-chain, while proving legitimacy through Magistrate Association Set Providers (ASP).
+            </p>
+          </div>
+
+          <div class="hero-actions">
+            <a href="#interaction-tabs" class="btn-noir-primary smooth-scroll-link">Launch Shielded App</a>
+            <a href="#features-section" class="btn-noir-secondary smooth-scroll-link">Explore Architecture</a>
+            <a href="/api/status" target="_blank" class="btn-noir-secondary">API Telemetry</a>
+          </div>
+        </div>
+
+        <!-- Technical Schematic Diagram -->
+        <div class="tech-box hero-schematic">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+
+          <div class="schematic-header">
+            <span class="schematic-title">
+              <span class="status-dot-amber"></span> CRYPTOGRAPHIC PIPELINE : SHIELD & SCREEN
+            </span>
+            <span class="badge-preview">EIP-712 HKDF</span>
+          </div>
+
+          <!-- Animated Technical SVG with Interactive Glow & Particle Streams -->
+          <svg viewBox="0 0 460 220" class="svg-diagram interactive-svg" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="neonGlowAmber" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3.5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <linearGradient id="energyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#ff8b3e" stop-opacity="0.1" />
+                <stop offset="50%" stop-color="#ff8b3e" stop-opacity="1" />
+                <stop offset="100%" stop-color="#ff8b3e" stop-opacity="0.1" />
+              </linearGradient>
+            </defs>
+
+            <!-- Node 1: Public Depositor -->
+            <g class="diagram-node" data-stage="depositor" tabindex="0" role="button">
+              <text x="20" y="45" font-family="'JetBrains Mono', monospace" font-size="9" fill="currentColor" opacity="0.6" letter-spacing="0.08em">PUBLIC DEPOSITOR</text>
+              <rect x="20" y="55" width="94" height="48" rx="2" stroke="currentColor" stroke-opacity="0.35" fill="rgba(255,255,255,0.02)"/>
+              <text x="67" y="84" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="currentColor" opacity="0.9">ETH PRECOMMIT</text>
+            </g>
+
+            <!-- Path 1 -> 2 with Animated Energy Stream -->
+            <path d="M114 79 H168" stroke="currentColor" stroke-opacity="0.25" stroke-dasharray="3 3"/>
+            <path d="M114 79 H168" stroke="url(#energyGrad)" stroke-width="2" class="diagram-beam-path"/>
+            <circle cx="141" cy="79" r="3.5" fill="#ff8b3e" filter="url(#neonGlowAmber)">
+              <animate attributeName="cx" values="116;166;116" dur="2.4s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- Node 2: The Magistrate (ASP) -->
+            <g class="diagram-node active-highlight" data-stage="magistrate" tabindex="0" role="button">
+              <text x="175" y="45" font-family="'JetBrains Mono', monospace" font-size="9" fill="#ff8b3e" opacity="0.95" letter-spacing="0.08em">THE MAGISTRATE</text>
+              <rect x="175" y="55" width="105" height="48" rx="2" stroke="#ff8b3e" stroke-opacity="0.6" fill="rgba(255,139,62,0.08)"/>
+              <text x="227" y="84" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#fbf6ec" opacity="0.95">ASP SCREENING</text>
+            </g>
+
+            <!-- Path 2 -> 3 with Energy Stream -->
+            <path d="M280 79 H340" stroke="currentColor" stroke-opacity="0.25" stroke-dasharray="3 3"/>
+            <path d="M280 79 H340" stroke="url(#energyGrad)" stroke-width="2" class="diagram-beam-path"/>
+            <circle cx="310" cy="79" r="3.5" fill="#ff8b3e" filter="url(#neonGlowAmber)">
+              <animate attributeName="cx" values="282;338;282" dur="2.4s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- Node 3: The Folio Tree -->
+            <g class="diagram-node" data-stage="folio" tabindex="0" role="button">
+              <text x="345" y="45" font-family="'JetBrains Mono', monospace" font-size="9" fill="currentColor" opacity="0.6" letter-spacing="0.08em">THE FOLIO TREE</text>
+              <rect x="345" y="55" width="95" height="48" rx="2" stroke="currentColor" stroke-opacity="0.35" fill="rgba(255,255,255,0.02)"/>
+              <text x="392" y="84" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="currentColor" opacity="0.9">DEPTH-20 LEAVES</text>
+            </g>
+
+            <!-- Path 3 -> 4 Down to Wax Seal -->
+            <path d="M392 103 V145 H280" stroke="currentColor" stroke-opacity="0.25" stroke-dasharray="3 3"/>
+            <circle cx="280" cy="145" r="3.5" fill="#ff8b3e" filter="url(#neonGlowAmber)">
+              <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            
+            <!-- Node 4: The Wax Seal (Groth16 Proof) -->
+            <g class="diagram-node" data-stage="waxseal" tabindex="0" role="button">
+              <text x="175" y="140" font-family="'JetBrains Mono', monospace" font-size="9" fill="currentColor" opacity="0.6" letter-spacing="0.08em">THE WAX SEAL</text>
+              <rect x="175" y="148" width="105" height="44" rx="2" stroke="currentColor" stroke-opacity="0.45" fill="rgba(255,255,255,0.02)"/>
+              <text x="227" y="174" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="currentColor" opacity="0.9">GROTH16 PROOF</text>
+            </g>
+
+            <!-- Path 4 -> 5 to Mersenne Courier -->
+            <path d="M175 170 H114" stroke="currentColor" stroke-opacity="0.25" stroke-dasharray="3 3"/>
+            <path d="M175 170 H114" stroke="url(#energyGrad)" stroke-width="2" class="diagram-beam-path"/>
+            <circle cx="144" cy="170" r="3.5" fill="#ff8b3e" filter="url(#neonGlowAmber)">
+              <animate attributeName="cx" values="172;116;172" dur="2.4s" repeatCount="indefinite"/>
+            </circle>
+
+            <!-- Node 5: Mersenne Courier -->
+            <g class="diagram-node" data-stage="courier" tabindex="0" role="button">
+              <text x="20" y="140" font-family="'JetBrains Mono', monospace" font-size="9" fill="currentColor" opacity="0.6" letter-spacing="0.08em">MERSENNE COURIER</text>
+              <rect x="20" y="148" width="94" height="44" rx="2" stroke="currentColor" stroke-opacity="0.35" fill="rgba(255,255,255,0.02)"/>
+              <text x="67" y="174" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="currentColor" opacity="0.9">VIRGIN RECIPIENT</text>
+            </g>
+          </svg>
+
+          <!-- Interactive Stage Telemetry Strip -->
+          <div class="diagram-status-strip" id="diagramStatusStrip">
+            <span class="strip-label"><span class="status-dot-amber"></span> <span id="diagramStageName">STAGE : THE MAGISTRATE</span></span>
+            <span class="strip-desc" id="diagramStageDesc">Off-chain entity screens deposit labels and commits Merkle roots to the MagistrateRegister contract.</span>
+          </div>
+
+          <div class="schematic-footer">
+            <span>POSEIDON HASHER ON BN254</span>
+            <span>"PROVEN. NOT REVEALED."</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Fermat Prologue Banner -->
+    <section class="prologue-banner tech-box">
+      <div class="corner-tl"></div><div class="corner-tr"></div>
+      <div class="corner-bl"></div><div class="corner-br"></div>
+      <div class="prologue-watermark">1637</div>
+
+      <div class="prologue-author">
+        <span class="wax-seal-stamp" style="width:20px; height:20px; font-size:10px;">◈</span>
+        Historical Axiom : Pierre de Fermat & The Margins of Arithmetica
+      </div>
+      <blockquote class="prologue-quote">
+        "Hanc marginis exiguitas non caperet..."
+        <br>
+        <span style="font-size: 0.9em; opacity: 0.85;">"Fermat asked the world to trust him. Marginalia asks no one to trust anyone."</span>
+      </blockquote>
+      <p class="prologue-text">
+        In 1637, Pierre de Fermat scribbled in the margin of Diophantus' <em>Arithmetica</em> that he possessed a truly marvelous proof, but the margin was too small to contain it. For 358 years, humanity was forced to rely on blind trust. 
+        <strong>MARGINALIA</strong> inverts this ancient limitation. We construct a cryptographic margin capable of holding the proof in zero knowledge. You do not trust assertions. You verify mathematical invariants on-chain.
+      </p>
+    </section>
+
+    <!-- Statistical Contrast Section (Noirpay "Saturated on trading, empty on banking" pattern) -->
+    <section class="stats-contrast-section">
+      <div class="stats-contrast-header">
+        <div class="hero-label"><span>●</span> The State of the Ecosystem</div>
+        <h2 class="stats-contrast-title">Saturated on trading, entirely vacant on privacy.</h2>
+        <p class="stats-contrast-subtitle">
+          On Robinhood Chain, payroll-grade stablecoins and tokenized equities sit in the same public address. A standard wallet leaks what you earn, what you own, and what you are worth all at once.
+        </p>
+      </div>
+
+      <div class="stats-contrast-grid">
+        <div class="stats-contrast-card">
+          <div class="stat-huge-number" data-counter="830" data-suffix="M">0<span class="stat-unit">M</span></div>
+          <p class="stat-label-text">USD in stablecoins circulating on Robinhood Chain</p>
+        </div>
+        <div class="stats-contrast-card">
+          <div class="stat-huge-number" data-counter="750" data-suffix="M">0<span class="stat-unit">M</span></div>
+          <p class="stat-label-text">USD of TVL locked across Robinhood Orbit L2</p>
+        </div>
+        <div class="stats-contrast-card">
+          <div class="stat-huge-number" data-counter="41" data-suffix="">0</div>
+          <p class="stat-label-text">DEXs and automated liquidity pools</p>
+        </div>
+        <div class="stats-contrast-card">
+          <div class="stat-huge-number stat-zero-highlight" data-counter="0" data-suffix="">
+            <span class="zero-pulse-dot"></span>0
+          </div>
+          <p class="stat-label-text">Shielded privacy accounts on the chain before Marginalia</p>
+        </div>
+        <div class="stats-contrast-card">
+          <div class="stat-huge-number" data-counter="1048576" data-display="2²⁰">2<span class="stat-unit">²⁰</span></div>
+          <p class="stat-label-text">1,048,576 shielded notes capacity in The Folio tree</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- "One Protocol, Five Jobs" Interactive Feature Selector -->
+    <section id="features-section" class="feature-selector-section">
+      <div class="section-header-lore">
+        <h2>One Protocol, Five Jobs</h2>
+        <span>Interactive Architecture Overview</span>
+      </div>
+
+      <!-- Feature Nav Switcher -->
+      <div class="feature-nav-bar" id="featureNavBar">
+        <button class="feature-nav-btn active" data-feature="shield">Shield</button>
+        <button class="feature-nav-btn" data-feature="screen">Screen</button>
+        <button class="feature-nav-btn" data-feature="prove">Prove</button>
+        <button class="feature-nav-btn" data-feature="relay">Relay</button>
+        <button class="feature-nav-btn" data-feature="disclose">Disclose</button>
+      </div>
+
+      <!-- Feature Dynamic Card -->
+      <div class="tech-box feature-display-card" id="featureDisplayCard">
+        <div class="corner-tl"></div><div class="corner-tr"></div>
+        <div class="corner-bl"></div><div class="corner-br"></div>
+
+        <div>
+          <div class="hero-label" id="featureStepTag">JOB 01 : FOLIO INSCRIPTION</div>
+          <h3 class="feature-detail-title" id="featureTitle">Shield ETH into Encrypted Notes</h3>
+          <p class="feature-detail-desc" id="featureDesc">
+            Funds enter through a precommitment hash $pre = \text{Poseidon}(\text{Poseidon}(sk), \rho)$ generated client-side. The MarginaliaPool contract computes the note commitment directly on-chain and writes it into the depth-20 Poseidon Merkle tree (The Folio).
+          </p>
+          <div class="feature-detail-specs" id="featureSpecs">
+            <span class="feature-spec-badge">On-Chain Value Binding</span>
+            <span class="feature-spec-badge">Precommitment Hashing</span>
+            <span class="feature-spec-badge">Zero Proof at Deposit</span>
+          </div>
+        </div>
+
+        <div class="feature-visual-box" id="featureVisual">
+          <div style="font-family:'Newsreader', serif; font-size:36px; color:#ff8b3e; margin-bottom:8px;">◈ 2²⁰</div>
+          <div style="font-family:'JetBrains Mono', monospace; font-size:11px; color:#fbf6ec; opacity:0.8;">FOLIO LEAF COMMITTED</div>
+          <div style="font-family:'JetBrains Mono', monospace; font-size:10px; color:rgba(251,246,236,0.45); margin-top:6px;">cm = Poseidon₃(v, label, pre)</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Full Architectural Account Blueprint SVG (Inspired by Noirpay Account Card) -->
+    <section class="blueprint-section">
+      <div class="section-header-lore">
+        <h2>The Marginalia Shielded Account</h2>
+        <span>Decrypted In Your Browser · Zero On-Chain Exposure</span>
+      </div>
+
+      <div class="tech-box blueprint-card">
+        <div class="corner-tl"></div><div class="corner-tr"></div>
+        <div class="corner-bl"></div><div class="corner-br"></div>
+
+        <svg viewBox="0 0 1164 480" class="blueprint-svg" role="img" aria-label="Shielded pool account architecture blueprint">
+          <rect x="0.5" y="0.5" width="1163" height="479" rx="4" fill="#0D0B09" stroke="#3F3630"></rect>
+          
+          <!-- Top Bar -->
+          <text x="32" y="38" font-family="'Newsreader', Georgia, serif" fill="#FBF6EC" font-size="22">marginalia account</text>
+          <circle cx="210" cy="31" r="3" fill="#FF8B3E"></circle>
+          <text x="224" y="35" font-family="'JetBrains Mono', monospace" fill="#FBF6EC" font-size="10" letter-spacing="0.08em">OVERVIEW</text>
+          <text x="320" y="35" font-family="'JetBrains Mono', monospace" fill="#FBF6EC" fill-opacity="0.4" font-size="10" letter-spacing="0.08em">FOLIO NOTES</text>
+          <text x="440" y="35" font-family="'JetBrains Mono', monospace" fill="#FBF6EC" fill-opacity="0.4" font-size="10" letter-spacing="0.08em">RELAYER</text>
+          <text x="540" y="35" font-family="'JetBrains Mono', monospace" fill="#FBF6EC" fill-opacity="0.4" font-size="10" letter-spacing="0.08em">DISCLOSURE</text>
+
+          <rect x="1000" y="18" width="64" height="26" rx="2" fill="none" stroke="#FBF6EC" stroke-opacity="0.25"></rect>
+          <text x="1032" y="35" text-anchor="middle" font-family="'JetBrains Mono', monospace" fill="#FBF6EC" font-size="10">@client</text>
+          <rect x="1074" y="18" width="58" height="26" rx="2" fill="none" stroke="#FF8B3E" stroke-opacity="0.3"></rect>
+          <text x="1103" y="35" text-anchor="middle" font-family="'JetBrains Mono', monospace" fill="#FF8B3E" font-size="9">CH-46630</text>
+          <path d="M0 60 H1164" stroke="#3F3630"></path>
+
+          <!-- Left Column: Shielded Balance -->
+          <g>
+            <rect x="32" y="80" width="370" height="360" fill="rgba(255,255,255,0.015)" stroke="#3F3630" stroke-width="0.8"></rect>
+            <text x="48" y="108" font-family="'JetBrains Mono', monospace" fill="currentColor" fill-opacity="0.5" font-size="10" letter-spacing="0.08em">SHIELDED FOLIO BALANCE</text>
+            <text x="48" y="160" font-family="'Newsreader', Georgia, serif" fill="#FBF6EC" font-size="44" letter-spacing="-0.03em">42.500 ETH</text>
+            <text x="48" y="186" font-family="'JetBrains Mono', monospace" fill="currentColor" fill-opacity="0.5" font-size="10" letter-spacing="0.08em">ENCRYPTED NOTES · VISIBLE ONLY TO YOU</text>
+            <text x="48" y="218" font-family="'JetBrains Mono', monospace" fill="#FF8B3E" font-size="10" letter-spacing="0.08em">+0.15 ETH YIELD ACCRUED</text>
+            
+            <path d="M48 290 C 100 286, 150 278, 220 270 S 300 248, 380 230" fill="none" stroke="#FF8B3E" stroke-width="1.5" class="blueprint-curve-path"></path>
+            <path d="M48 300 H380" stroke="#3F3630"></path>
+            <text x="48" y="340" font-family="'JetBrains Mono', monospace" fill="currentColor" fill-opacity="0.4" font-size="10" letter-spacing="0.08em">PUBLIC BALANCE ON EXPLORER: 0.00 ETH</text>
+            <text x="48" y="365" font-family="'JetBrains Mono', monospace" fill="currentColor" fill-opacity="0.4" font-size="10" letter-spacing="0.08em">ANONYMITY SET: 1,048,576 LEAVES</text>
+          </g>
+
+          <!-- Middle Column: Browser Decrypted Activity -->
+          <g>
+            <rect x="424" y="80" width="360" height="360" fill="rgba(255,255,255,0.015)" stroke="#3F3630" stroke-width="0.8"></rect>
+            <text x="440" y="108" font-family="'JetBrains Mono', monospace" fill="currentColor" fill-opacity="0.5" font-size="10" letter-spacing="0.08em">LOCAL DECRYPTED ACTIVITY</text>
+            
+            <!-- Row 1 -->
+            <rect x="440" y="130" width="328" height="52" fill="#120F0D" stroke="#3F3630" stroke-width="0.5" class="blueprint-row"></rect>
+            <text x="456" y="152" font-family="'Inter', sans-serif" font-size="12" fill="#FBF6EC">Shielded Deposit #12</text>
+            <text x="456" y="168" font-family="'JetBrains Mono', monospace" font-size="9" fill="currentColor" fill-opacity="0.5">CM: 0X8B...F4A1 · FOLIO INSCRIBED</text>
+            <text x="750" y="160" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="12" fill="#FF8B3E">+10.00 ETH</text>
+
+            <!-- Row 2 -->
+            <rect x="440" y="194" width="328" height="52" fill="#120F0D" stroke="#3F3630" stroke-width="0.5" class="blueprint-row"></rect>
+            <text x="456" y="216" font-family="'Inter', sans-serif" font-size="12" fill="#FBF6EC">Private Exit to Virgin Address</text>
+            <text x="456" y="232" font-family="'JetBrains Mono', monospace" font-size="9" fill="currentColor" fill-opacity="0.5">GROTH16 PROOF · MERSENNE COURIER</text>
+            <text x="750" y="224" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="12" fill="#FBF6EC">−2.50 ETH</text>
+
+            <!-- Row 3 -->
+            <rect x="440" y="258" width="328" height="52" fill="#120F0D" stroke="#3F3630" stroke-width="0.5" class="blueprint-row"></rect>
+            <text x="456" y="280" font-family="'Inter', sans-serif" font-size="12" fill="#FBF6EC">Letter of Disclosure Issued</text>
+            <text x="456" y="296" font-family="'JetBrains Mono', monospace" font-size="9" fill="currentColor" fill-opacity="0.5">X25519 ECDH · TAX AUDIT MEMO</text>
+            <text x="750" y="288" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="10" fill="#73D13D">CERTIFIED</text>
+          </g>
+
+          <!-- Right Column: What The Chain Sees -->
+          <g>
+            <rect x="806" y="80" width="326" height="360" fill="rgba(255,255,255,0.015)" stroke="#3F3630" stroke-width="0.8"></rect>
+            <text x="822" y="108" font-family="'JetBrains Mono', monospace" fill="currentColor" fill-opacity="0.5" font-size="10" letter-spacing="0.08em">WHAT THE EXPLORER SEES</text>
+
+            <text x="822" y="160" font-family="'Newsreader', Georgia, serif" font-size="34" fill="#FBF6EC">3</text>
+            <text x="822" y="180" font-family="'JetBrains Mono', monospace" fill="currentColor" fill-opacity="0.5" font-size="9">PROOFS VERIFIED</text>
+
+            <text x="940" y="160" font-family="'Newsreader', Georgia, serif" font-size="34" fill="#FBF6EC">0</text>
+            <text x="940" y="180" font-family="'JetBrains Mono', monospace" fill="currentColor" fill-opacity="0.5" font-size="9">AMOUNTS LEAKED</text>
+
+            <text x="1050" y="160" font-family="'Newsreader', Georgia, serif" font-size="34" fill="#FBF6EC">0</text>
+            <text x="1050" y="180" font-family="'JetBrains Mono', monospace" fill="currentColor" fill-opacity="0.5" font-size="9">ADDRESSES LINKED</text>
+
+            <path d="M822 220 H1110" stroke="#3F3630"></path>
+
+            <text x="822" y="250" font-family="'JetBrains Mono', monospace" fill="currentColor" fill-opacity="0.5" font-size="10" letter-spacing="0.08em">VIEWING KEY EXPIRY</text>
+            <circle cx="850" cy="290" r="16" fill="none" stroke="#3F3630"></circle>
+            <circle cx="850" cy="290" r="16" fill="none" stroke="#FF8B3E" stroke-width="1.5" stroke-dasharray="100" stroke-dashoffset="35" class="blueprint-radar-circle"></circle>
+            <text x="850" y="294" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="9" fill="#FBF6EC">14d</text>
+            <text x="880" y="294" font-family="'Inter', sans-serif" font-size="12" fill="#FBF6EC">Auditor Scoped Key</text>
+
+            <text x="822" y="370" font-family="'JetBrains Mono', monospace" fill="currentColor" fill-opacity="0.4" font-size="9" letter-spacing="0.08em">TIME-LOCKED · REVOCABLE AT WILL</text>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <!-- The Three Axioms of Marginalia -->
+    <section class="axioms-section">
+      <div class="section-header-lore">
+        <h2>The Three Axioms of Marginalia</h2>
+        <span>Cryptographic Proof Invariants</span>
+      </div>
+
+      <div class="axioms-grid">
+        <!-- Axiom I -->
+        <div class="tech-box axiom-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div>
+            <div class="axiom-number">Axiom I · Soundness</div>
+            <h3 class="axiom-title">The Wax Seal Cannot Be Broken Twice</h3>
+            <div class="axiom-formula-box" data-tooltip="sk: Secret Spending Key (private) · ρ: Random Entropy Nullifier · N: Immutable On-Chain Nullifier">
+              <span>N = Poseidon₂(sk, ρ) ∈ F_p</span>
+              <span class="formula-info-tag">DECODE</span>
+            </div>
+            <p class="axiom-desc">
+              When a note is spent, its unforgeable nullifier (Wax Seal) is irrevocably stamped onto the blockchain ledger. Double-spending is mathematically prohibited across infinite state transitions: any second attempt produces an identical nullifier hash and reverts instantly.
+            </p>
+          </div>
+        </div>
+
+        <!-- Axiom II -->
+        <div class="tech-box axiom-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div>
+            <div class="axiom-number">Axiom II · Zero Knowledge</div>
+            <h3 class="axiom-title">The Circle & Unlinkable Change</h3>
+            <div class="axiom-formula-box" data-tooltip="v_rem: Unspent Remainder ETH · ρ': Fresh Randomness · cm': Newly Inscribed Change Leaf">
+              <span>cm' = Poseidon₃(v_rem, label, Poseidon₂(P, ρ'))</span>
+              <span class="formula-info-tag">DECODE</span>
+            </div>
+            <p class="axiom-desc">
+              Your identity dissolves into the anonymity set of all notes in the Folio. The Groth16 zero-knowledge property ensures an on-chain observer learns only that a valid note exists. Unspent remainder values are seamlessly re-inserted as fresh change notes with new entropy ($\rho'$).
+            </p>
+          </div>
+        </div>
+
+        <!-- Axiom III -->
+        <div class="tech-box axiom-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div>
+            <div class="axiom-number">Axiom III · Lawful Shade</div>
+            <h3 class="axiom-title">The Magistrate's Register (ASP)</h3>
+            <div class="axiom-formula-box" data-tooltip="label: Deposit Origin · aspPath: 16-Root Buffer Merkle Path · register: Magistrate Contract">
+              <span>MerkleRoot(label, aspPath) == register.latestRoot()</span>
+              <span class="formula-info-tag">DECODE</span>
+            </div>
+            <p class="axiom-desc">
+              Privacy without impunity. To prevent illicit actors from abusing the privacy commons, the Magistrate screens deposit origins and publishes an Association Set Provider (ASP) Merkle root. Legitimate users prove association with lawful capital without revealing which note is theirs.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Telemetry Row: By The Numbers -->
+    <section class="telemetry-row">
+      <div class="telemetry-grid">
+        <div class="tech-box telemetry-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div class="telemetry-meta">
+            <span class="telemetry-tag">PUBLIC LEAKS</span>
+            <span class="badge-preview">EXPLORER</span>
+          </div>
+          <div class="telemetry-value-display">0</div>
+          <div class="telemetry-sub">Balances, transactions, or linkable addresses visible</div>
+        </div>
+
+        <div class="tech-box telemetry-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div class="telemetry-meta">
+            <span class="telemetry-tag">THE FOLIO TREE</span>
+            <span class="badge-preview">2²⁰ CAPACITY</span>
+          </div>
+          <div class="telemetry-value-display" id="folioNotesCount">--</div>
+          <div class="telemetry-sub">Shielded notes in incremental Merkle ledger</div>
+        </div>
+
+        <div class="tech-box telemetry-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div class="telemetry-meta">
+            <span class="telemetry-tag">MAGISTRATE ASP</span>
+            <span class="badge-preview" id="aspStatus">ACTIVE</span>
+          </div>
+          <div class="telemetry-value-display" id="aspApprovedCount">--</div>
+          <div class="telemetry-sub">Approved deposits in sliding 16-root buffer</div>
+        </div>
+
+        <div class="tech-box telemetry-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div class="telemetry-meta">
+            <span class="telemetry-tag">POOL RESERVES</span>
+            <span class="badge-preview">SOLVENT</span>
+          </div>
+          <div class="telemetry-value-display">
+            <span id="poolBalance">--</span> <span style="font-size: 16px; font-family: var(--font-mono); color: var(--color-text-muted);">ETH</span>
+          </div>
+          <div class="telemetry-sub">Backed 1:1 on MarginaliaPool contract</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- The Codex of Marginalia: The 6 Core Cryptographic Artifacts -->
+    <section id="codex-section" class="codex-section">
+      <div class="section-header-lore">
+        <h2>The Codex of Marginalia</h2>
+        <span>Lore → Cryptographic Code Architecture</span>
+      </div>
+
+      <div class="codex-grid">
+        <!-- 1. The Folio -->
+        <div class="tech-box codex-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div class="codex-meta">
+            <span class="codex-tag">Ledger Structure</span>
+            <span class="codex-code-ref">MarginaliaPool._insert</span>
+          </div>
+          <h4 class="codex-name">The Folio</h4>
+          <p class="codex-desc">An incremental Poseidon Merkle tree of depth 20, capable of holding 1,048,576 shielded notes with a ring buffer of 64 on-chain historical roots.</p>
+          <span class="codex-spec-pill">Capacity: 2²⁰ (1,048,576 Notes)</span>
+        </div>
+
+        <!-- 2. The Marginal Note -->
+        <div class="tech-box codex-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div class="codex-meta">
+            <span class="codex-tag">Parchment Secret</span>
+            <span class="codex-code-ref">lib/marginalia.js</span>
+          </div>
+          <h4 class="codex-name">Marginal Note</h4>
+          <p class="codex-desc">The secret cryptographic note containing ephemeral spending key ($sk$), randomness ($\rho$), and value bound to an on-chain commitment $cm = \text{Poseidon}_3(v, \text{label}, \text{pre})$.</p>
+          <span class="codex-spec-pill">Prefix: marginalia-note-v1-</span>
+        </div>
+
+        <!-- 3. The Wax Seal -->
+        <div class="tech-box codex-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div class="codex-meta">
+            <span class="codex-tag">Anti-Double-Spend</span>
+            <span class="codex-code-ref">nullifierSpent[N]</span>
+          </div>
+          <h4 class="codex-name">Wax Seal (Nullifier)</h4>
+          <p class="codex-desc">A cryptographic mark $N = \text{Poseidon}_2(sk, \rho)$ that stamps the note as consumed without revealing which leaf in the Folio was spent.</p>
+          <span class="codex-spec-pill">Invariant: Never Broken Twice</span>
+        </div>
+
+        <!-- 4. The Magistrate's Register -->
+        <div class="tech-box codex-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div class="codex-meta">
+            <span class="codex-tag">Institutional Oracle</span>
+            <span class="codex-code-ref">MagistrateRegister.sol</span>
+          </div>
+          <h4 class="codex-name">Magistrate's Register</h4>
+          <p class="codex-desc">The Association Set Provider (ASP) registry publishing authenticated roots of screened deposit labels, guarded by a 16-root sliding window buffer.</p>
+          <span class="codex-spec-pill">Buffer: 16 Sliding Valid Roots</span>
+        </div>
+
+        <!-- 5. Mersenne Courier -->
+        <div class="tech-box codex-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div class="codex-meta">
+            <span class="codex-tag">Gasless Relayer</span>
+            <span class="codex-code-ref">lib/relayer.js</span>
+          </div>
+          <h4 class="codex-name">Mersenne Courier</h4>
+          <p class="codex-desc">Untraceable gasless relayers that pay on-chain gas fees in exchange for a protocol fee deducted from the withdrawal note, ensuring virgin addresses need zero initial ETH.</p>
+          <span class="codex-spec-pill">EIP-712 / Dynamic Gas Quoting</span>
+        </div>
+
+        <!-- 6. Letter of Disclosure -->
+        <div class="tech-box codex-card">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div class="codex-meta">
+            <span class="codex-tag">Compliance Viewing Key</span>
+            <span class="codex-code-ref">lib/disclosure.js</span>
+          </div>
+          <h4 class="codex-name">Letter of Disclosure</h4>
+          <p class="codex-desc">X25519 ECDH asymmetric compliance package allowing users to provide selective, provable financial memos to auditors or regulators without surrendering custody.</p>
+          <span class="codex-spec-pill">Lawful Privacy & Tax Ready</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Protocol Portals & Dedicated Pages Hub -->
+    <section id="portals-section" class="portals-hub-section" style="margin-bottom: 64px;">
+      <div class="section-header-lore">
+        <h2>Enter The Marginalia Protocol</h2>
+        <span>Explore Dedicated Sub-Systems & Proof Portals</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:22px;">
+        <!-- Portal 1: Shielded App -->
+        <div class="tech-box" style="padding:28px; background:#110e0c; display:flex; flex-direction:column; justify-content:space-between;">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div>
+            <div style="font-family:var(--font-mono); font-size:10px; color:var(--color-sun); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px;">
+              ◈ APPLICATION
+            </div>
+            <h3 style="font-family:var(--font-heading); font-size:24px; color:var(--color-dust); margin-bottom:10px;">
+              Shielded App
+            </h3>
+            <p style="font-size:13px; color:var(--color-text-secondary); line-height:1.6; margin-bottom:24px;">
+              Inscribe deposits into the Folio tree, generate succinct Groth16 zero-knowledge proofs in your browser (~3.6s), and execute gasless exits via Mersenne Courier.
+            </p>
+          </div>
+          <a href="/app.html" class="btn-noir-primary" style="width:100%; text-align:center;">Launch App ◈</a>
+        </div>
+
+        <!-- Portal 2: Codex & Lore -->
+        <div class="tech-box" style="padding:28px; background:#110e0c; display:flex; flex-direction:column; justify-content:space-between;">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div>
+            <div style="font-family:var(--font-mono); font-size:10px; color:#ffaa5b; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px;">
+              📜 MATHEMATICS & LORE
+            </div>
+            <h3 style="font-family:var(--font-heading); font-size:24px; color:var(--color-dust); margin-bottom:10px;">
+              Codex & Axioms
+            </h3>
+            <p style="font-size:13px; color:var(--color-text-secondary); line-height:1.6; margin-bottom:24px;">
+              The historical margin of Pierre de Fermat (1637), the Three Axioms of Marginalia, and the 24,236 R1CS circuit constraints evaluated over the BN254 elliptic curve.
+            </p>
+          </div>
+          <a href="/codex.html" class="btn-noir-secondary" style="width:100%; text-align:center;">Read Codex 📜</a>
+        </div>
+
+        <!-- Portal 3: Explorer & Verifier -->
+        <div class="tech-box" style="padding:28px; background:#110e0c; display:flex; flex-direction:column; justify-content:space-between;">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div>
+            <div style="font-family:var(--font-mono); font-size:10px; color:#73d13d; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px;">
+              🔍 ON-CHAIN LEDGER
+            </div>
+            <h3 style="font-family:var(--font-heading); font-size:24px; color:var(--color-dust); margin-bottom:10px;">
+              Explorer & Verifier
+            </h3>
+            <p style="font-size:13px; color:var(--color-text-secondary); line-height:1.6; margin-bottom:24px;">
+              Live Robinhood Chain telemetry, Folio Merkle tree leaf indexer, and the interactive Wax Seal Verifier tool to inspect nullifier spending states on-chain.
+            </p>
+          </div>
+          <a href="/explorer.html" class="btn-noir-secondary" style="width:100%; text-align:center;">Open Explorer 🔍</a>
+        </div>
+
+        <!-- Portal 4: Compliance & Disclosure -->
+        <div class="tech-box" style="padding:28px; background:#110e0c; display:flex; flex-direction:column; justify-content:space-between;">
+          <div class="corner-tl"></div><div class="corner-tr"></div>
+          <div class="corner-bl"></div><div class="corner-br"></div>
+          <div>
+            <div style="font-family:var(--font-mono); font-size:10px; color:#ffd591; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:10px;">
+              ⚖️ INSTITUTIONAL AUDIT
+            </div>
+            <h3 style="font-family:var(--font-heading); font-size:24px; color:var(--color-dust); margin-bottom:10px;">
+              Compliance Memo
+            </h3>
+            <p style="font-size:13px; color:var(--color-text-secondary); line-height:1.6; margin-bottom:24px;">
+              Generate asymmetric X25519 ECDH encrypted audit packets for tax authorities and regulators with time-scoped viewing keys and zero custody compromise.
+            </p>
+          </div>
+          <a href="/compliance.html" class="btn-noir-secondary" style="width:100%; text-align:center;">Generate Memo ⚖️</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div class="footer-links">
+        <span>Robinhood Chain Orbit L2 (46630)</span>
+        <span>•</span>
+        <span>Groth16 on BN254</span>
+        <span>•</span>
+        <span>Magistrate ASP</span>
+        <span>•</span>
+        <span>Poseidon Hasher</span>
+      </div>
+      <div class="copyright">
+        <em>"Fermat asked the world to trust him. Marginalia asks no one to trust anyone."</em>
+      </div>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
