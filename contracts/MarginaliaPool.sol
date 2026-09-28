@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {IPoseidonT2, IPoseidonT3, IPoseidonT4, IGroth16Verifier} from "./interfaces/IPoseidon.sol";
 import {MagistrateRegister} from "./MagistrateRegister.sol";
 
-/// @title MARGINALIA shielded pool (native ETH), AUDITED & HARDENED
+/// @title MARGINALIA shielded pool (native ETH), PROTOTYPE, NOT AUDITED
 /// @notice Deposit publicly, withdraw privately with a Groth16 proof that:
 ///         (a) you own a note written in the Folio (commitment tree),
 ///         (b) the note's label is approved in the Magistrate's Register,
@@ -101,6 +101,7 @@ contract MarginaliaPool {
     error TransferFailed();
     error NotOriginalDepositor();
     error AlreadyRagequit();
+    error AlreadyApproved();
     error InvalidPrecommitment();
     error DepositsPaused();
     error NotGuardian();
@@ -190,35 +191,26 @@ contract MarginaliaPool {
     // ================================================================== ragequit
     /// @notice Emergency exit for rejected or unapproved deposits.
     ///         Allows the original depositor to reclaim funds directly.
-    ///         Cryptographically verifies that (sk, rho) generates the exact precommitment,
-    ///         computes the genuine nullifier on-chain, and burns it permanently.
+    ///         ZERO SECRETS EXPOSED IN CALLDATA (Front-running immune).
+    ///         Approved deposits MUST use standard shielded withdraw.
+    ///         Once ragequitted, the label is permanently revoked from the ASP registry.
     /// @param label The label assigned to the deposit.
-    /// @param sk The secret key of the note.
-    /// @param rho The random nullifier entropy of the note.
     /// @param recipient The address receiving the refunded ETH.
-    function ragequit(uint256 label, uint256 sk, uint256 rho, address payable recipient) external nonReentrant {
+    function ragequit(uint256 label, address payable recipient) external nonReentrant {
         if (msg.sender != labelDepositor[label]) revert NotOriginalDepositor();
         if (isRagequit[label]) revert AlreadyRagequit();
-        if (sk >= SNARK_SCALAR_FIELD || rho >= SNARK_SCALAR_FIELD) revert NotInField();
-
-        // 1. Verify (sk, rho) reproduces the exact locked precommitment:
-        uint256 P = hasher1.poseidon([sk]);
-        uint256 expectedPre = hasher2.poseidon([P, rho]);
-        if (expectedPre != labelPrecommitment[label]) revert InvalidPrecommitment();
-
-        // 2. Compute authentic Wax Seal (nullifier) and ensure it has not been spent:
-        uint256 nullifierHash = hasher2.poseidon([sk, rho]);
-        if (nullifierSpent[nullifierHash]) revert NullifierAlreadySpent();
+        if (register.isApproved(label)) revert AlreadyApproved();
+        if (recipient == address(0)) revert InvalidValue();
 
         uint256 amount = depositValue[label];
         if (amount == 0) revert InvalidValue();
 
         // effects
         isRagequit[label] = true;
-        nullifierSpent[nullifierHash] = true;
         depositValue[label] = 0;
+        register.markRevoked(label);
 
-        emit Ragequit(msg.sender, label, amount, nullifierHash, recipient);
+        emit Ragequit(msg.sender, label, amount, 0, recipient);
 
         // interactions
         _send(recipient, amount);

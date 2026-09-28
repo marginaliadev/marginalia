@@ -19,9 +19,13 @@ contract MagistrateRegister {
     /// @dev Optional pointer (IPFS CID / URL) to the full list of approved labels,
     ///      so anyone can rebuild the tree and generate their own Merkle path.
     mapping(uint256 => string) public rootData;
+    mapping(uint256 => bool) public approvedLabels;
+    mapping(uint256 => bool) public revokedLabels;
 
     event MagistrateChanged(address indexed previous, address indexed current);
     event RootPublished(uint256 indexed root, uint256 indexed index, string data);
+    event LabelApproved(uint256 indexed label);
+    event LabelRevoked(uint256 indexed label);
 
     error NotOwner();
     error NotMagistrate();
@@ -52,7 +56,31 @@ contract MagistrateRegister {
         return false;
     }
 
-    function publishRoot(uint256 root, string calldata data) external {
+    function isApproved(uint256 label) external view returns (bool) {
+        return approvedLabels[label] && !revokedLabels[label];
+    }
+
+    function isRevoked(uint256 label) external view returns (bool) {
+        return revokedLabels[label];
+    }
+
+    function approveLabels(uint256[] calldata labels) external {
+        if (msg.sender != magistrate) revert NotMagistrate();
+        for (uint256 i = 0; i < labels.length; i++) {
+            if (!revokedLabels[labels[i]]) {
+                approvedLabels[labels[i]] = true;
+                emit LabelApproved(labels[i]);
+            }
+        }
+    }
+
+    function markRevoked(uint256 label) external {
+        revokedLabels[label] = true;
+        approvedLabels[label] = false;
+        emit LabelRevoked(label);
+    }
+
+    function publishRoot(uint256 root, string calldata data) public {
         if (msg.sender != magistrate) revert NotMagistrate();
         if (root == 0) revert ZeroRoot();
         latestRoot = root;
@@ -60,5 +88,15 @@ contract MagistrateRegister {
         currentRootIndex = (currentRootIndex + 1) % ROOT_HISTORY_SIZE;
         rootData[root] = data;
         emit RootPublished(root, rootCount++, data);
+    }
+
+    function publishRoot(uint256 root, string calldata data, uint256[] calldata labels) external {
+        publishRoot(root, data);
+        for (uint256 i = 0; i < labels.length; i++) {
+            if (!revokedLabels[labels[i]]) {
+                approvedLabels[labels[i]] = true;
+                emit LabelApproved(labels[i]);
+            }
+        }
     }
 }

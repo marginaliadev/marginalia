@@ -57,33 +57,32 @@ describe("MARGINALIA Phase 3 — Invariant & Property Fuzzing", function () {
       activeNotes.push({ note, depositor: actor });
     }
 
-    // 2. Magistrate approves the initial batch
-    const aspTree = await M.buildAspTree(activeNotes.map((n) => n.note.label));
+    // 2. Magistrate approves notes 1..3 for shielded withdrawals (note 0 is unapproved / rejected)
+    const approvedNotes = activeNotes.slice(1);
+    const aspTree = await M.buildAspTree(approvedNotes.map((n) => n.note.label));
+    await register.connect(magistrate).approveLabels(approvedNotes.map((n) => n.note.label));
     await register.connect(magistrate).publishRoot(aspTree.root(), "ipfs://invariant-test");
 
     // Check Solvency Invariant
     let poolBalance = await ethers.provider.getBalance(await pool.getAddress());
     expect(poolBalance).to.equal(totalDeposited);
 
-    // 3. Execute a randomized sequence of Ragequits and Withdrawals
-    // Action A: Ragequit note 0
+    // 3. Execute a sequence of Ragequits and Withdrawals
+    // Action A: Ragequit unapproved note 0 (zero secrets in calldata)
     const ragequitTarget = activeNotes[0];
-    const nRagequit = await M.nullifierOf(ragequitTarget.note.sk, ragequitTarget.note.rho);
     await pool.connect(ragequitTarget.depositor).ragequit(
       ragequitTarget.note.label,
-      ragequitTarget.note.sk,
-      ragequitTarget.note.rho,
       ragequitTarget.depositor.address
     );
     totalRagequitted += BigInt(ragequitTarget.note.value);
-    spentNullifiers.add(nRagequit.toString());
 
     // Invariant: Pool balance drops by exact ragequit amount
     poolBalance = await ethers.provider.getBalance(await pool.getAddress());
     expect(poolBalance).to.equal(totalDeposited - totalRagequitted - totalWithdrawn);
 
-    // Invariant: Nullifier is strictly marked spent
-    expect(await pool.nullifierSpent(nRagequit)).to.be.true;
+    // Invariant: Label is strictly marked ragequit and revoked
+    expect(await pool.isRagequit(ragequitTarget.note.label)).to.be.true;
+    expect(await register.isRevoked(ragequitTarget.note.label)).to.be.true;
 
     // Action B: Private Shielded Withdrawal on note 1
     const withdrawTarget = activeNotes[1];

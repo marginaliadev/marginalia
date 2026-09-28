@@ -3,12 +3,12 @@ const { ethers } = require("hardhat");
 const M = require("../lib/marginalia");
 
 describe("MARGINALIA Dedicated Token Pool (ERC-20, Hardened Architecture)", function () {
-  let owner, magistrate, alice, bob, relayer;
+  let owner, magistrate, alice, bob, relayer, mallory;
   let tokenPool, register, h1, h2, h3, verifier, mockToken;
   const ONE_TOKEN = ethers.parseUnits("100", 18);
 
   async function deployAll() {
-    [owner, magistrate, alice, bob, relayer] = await ethers.getSigners();
+    [owner, magistrate, alice, bob, relayer, mallory] = await ethers.getSigners();
     ({ h1, h2, h3 } = await M.deployHashers(owner, ethers));
     verifier = await (await ethers.getContractFactory("Groth16Verifier")).deploy();
     register = await (await ethers.getContractFactory("MagistrateRegister")).deploy(magistrate.address);
@@ -77,23 +77,29 @@ describe("MARGINALIA Dedicated Token Pool (ERC-20, Hardened Architecture)", func
 
   it("allows depositor to ragequit ERC-20 deposit and reclaim tokens directly", async function () {
     const note = await depositTokenFrom(alice, ONE_TOKEN);
-    const nullifier = await M.nullifierOf(note.sk, note.rho);
 
     const balBefore = await mockToken.balanceOf(alice.address);
-    await tokenPool.connect(alice).ragequit(note.label, note.sk, note.rho, alice.address);
+    await tokenPool.connect(alice).ragequit(note.label, alice.address);
     const balAfter = await mockToken.balanceOf(alice.address);
 
     expect(balAfter - balBefore).to.equal(ONE_TOKEN);
     expect(await tokenPool.isRagequit(note.label)).to.be.true;
-    expect(await tokenPool.nullifierSpent(nullifier)).to.be.true;
+    expect(await register.isRevoked(note.label)).to.be.true;
   });
 
-  it("rejects ragequit with forged secret key", async function () {
+  it("prevents ragequit if ERC-20 deposit is already approved", async function () {
     const note = await depositTokenFrom(alice, ONE_TOKEN);
-    const forgedSk = BigInt(1234567);
+    await register.connect(magistrate).approveLabels([note.label]);
 
     await expect(
-      tokenPool.connect(alice).ragequit(note.label, forgedSk, note.rho, alice.address)
-    ).to.be.revertedWithCustomError(tokenPool, "InvalidPrecommitment");
+      tokenPool.connect(alice).ragequit(note.label, alice.address)
+    ).to.be.revertedWithCustomError(tokenPool, "AlreadyApproved");
+  });
+
+  it("prevents non-depositor from ragequitting ERC-20 deposit", async function () {
+    const note = await depositTokenFrom(alice, ONE_TOKEN);
+    await expect(
+      tokenPool.connect(mallory).ragequit(note.label, mallory.address)
+    ).to.be.revertedWithCustomError(tokenPool, "NotOriginalDepositor");
   });
 });

@@ -44,6 +44,7 @@ describe("MARGINALIA Phase 4 — Mainnet Guarded Launch & Emergency Drill", func
 
   async function approve(labels) {
     const aspTree = await M.buildAspTree(labels);
+    await register.connect(magistrate).approveLabels(labels);
     await register.connect(magistrate).publishRoot(aspTree.root(), "ipfs://drill");
     return aspTree;
   }
@@ -74,7 +75,8 @@ describe("MARGINALIA Phase 4 — Mainnet Guarded Launch & Emergency Drill", func
     // 2. Bob deposits 1 ETH before pause
     const noteBob = await depositFrom(bob, ONE);
 
-    const aspTree = await approve([noteAlice.label, noteBob.label]);
+    // Magistrate approves Alice's deposit for shielded withdrawal (Bob's remains unapproved)
+    const aspTree = await approve([noteAlice.label]);
 
     // 3. Emergency Trigger: Guardian pauses the pool
     await pool.connect(guardian).setDepositsPaused(true);
@@ -100,9 +102,9 @@ describe("MARGINALIA Phase 4 — Mainnet Guarded Launch & Emergency Drill", func
 
     await expect(pool.withdraw(w, proof)).to.emit(pool, "Withdrawn");
 
-    // 6. CRITICAL GUARANTEE: Bob can STILL emergency exit (ragequit)!
+    // 6. CRITICAL GUARANTEE: Bob can STILL emergency exit (ragequit) on unapproved deposit!
     await expect(
-      pool.connect(bob).ragequit(noteBob.label, noteBob.sk, noteBob.rho, bob.address)
+      pool.connect(bob).ragequit(noteBob.label, bob.address)
     ).to.emit(pool, "Ragequit");
 
     // 7. Unpause restores normal operations

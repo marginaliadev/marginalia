@@ -523,7 +523,8 @@ function initVaultControls() {
     }
 
     try {
-      const msg = `Marginalia Shielded Vault Authorization\nChain ID: 46630\nSign to decrypt your shielded notes on this device.`;
+      const origin = window.location.origin || "http://localhost:3000";
+      const msg = `Marginalia Shielded Vault Authorization\nOrigin: ${origin}\nChain ID: 46630\nPool: ${poolAddress.toLowerCase()}\nSign to decrypt your shielded notes on this device.`;
       const sig = await signer.signMessage(msg);
       activeVaultKey = sig;
       activeVaultCryptoKey = await deriveCryptoKeyFromSignature(sig);
@@ -554,37 +555,33 @@ function initVaultControls() {
 
 async function saveNoteToLocalVault(noteStr) {
   if (!activeVaultCryptoKey) {
-    // If vault is not currently unlocked, store with fallback marker or unlock request
-    showNoirToast("Note saved locally (Unlock vault to decrypt & manage)", "info");
-  }
-  const existing = JSON.parse(localStorage.getItem("marginalia_encrypted_vault") || "[]");
-  
-  let payloadRecord;
-  if (activeVaultCryptoKey) {
-    const encrypted = await encryptVaultPayload(noteStr, activeVaultCryptoKey);
-    payloadRecord = {
-      date: new Date().toISOString(),
-      encrypted: true,
-      iv: encrypted.iv,
-      data: encrypted.data,
-    };
-  } else {
-    // Generate an ephemeral device key for storage protection
-    const enc = new TextEncoder();
-    const hash = await window.crypto.subtle.digest("SHA-256", enc.encode("marginalia-device-vault-entropy"));
-    const ephemeralKey = await window.crypto.subtle.importKey("raw", hash, { name: "AES-GCM" }, false, ["encrypt"]);
-    const encrypted = await encryptVaultPayload(noteStr, ephemeralKey);
-    payloadRecord = {
-      date: new Date().toISOString(),
-      encrypted: true,
-      isDeviceOnly: true,
-      iv: encrypted.iv,
-      data: encrypted.data,
-    };
+    showNoirModal({
+      title: "Encrypted Vault Locked",
+      message: "Please unlock your encrypted vault by signing the authorization message before saving notes. Marginalia never stores unencrypted notes on disk.",
+      type: "info",
+      confirmText: "Unlock Vault",
+      cancelText: "Cancel",
+    }).then((confirmed) => {
+      if (confirmed) {
+        document.getElementById("unlockVaultBtn").click();
+      }
+    });
+    return false;
   }
 
+  const encrypted = await encryptVaultPayload(noteStr, activeVaultCryptoKey);
+  const payloadRecord = {
+    date: new Date().toISOString(),
+    encrypted: true,
+    iv: encrypted.iv,
+    data: encrypted.data,
+  };
+
+  const existing = JSON.parse(localStorage.getItem("marginalia_encrypted_vault") || "[]");
   existing.push(payloadRecord);
   localStorage.setItem("marginalia_encrypted_vault", JSON.stringify(existing));
+  showNoirToast("Note securely encrypted with AES-256-GCM & saved to vault", "success");
+  return true;
 }
 
 async function renderVaultNotes() {

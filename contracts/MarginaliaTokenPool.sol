@@ -5,7 +5,7 @@ import {IPoseidonT2, IPoseidonT3, IPoseidonT4, IGroth16Verifier} from "./interfa
 import {MagistrateRegister} from "./MagistrateRegister.sol";
 import {IERC20} from "./mocks/MockERC20.sol";
 
-/// @title MARGINALIA Dedicated Token Pool (ERC-20), AUDITED & HARDENED
+/// @title MARGINALIA Dedicated Token Pool (ERC-20), PROTOTYPE, NOT AUDITED
 /// @notice Shielded pool for a specific ERC-20 token with SafeERC20 balance-delta checks,
 ///         eliminating cross-token pool drainage attacks.
 contract MarginaliaTokenPool {
@@ -97,6 +97,7 @@ contract MarginaliaTokenPool {
     error TransferFailed();
     error NotOriginalDepositor();
     error AlreadyRagequit();
+    error AlreadyApproved();
     error InvalidPrecommitment();
     error ZeroAddress();
 
@@ -156,28 +157,20 @@ contract MarginaliaTokenPool {
     }
 
     // ================================================================== ragequit
-    function ragequit(uint256 label, uint256 sk, uint256 rho, address recipient) external nonReentrant {
+    function ragequit(uint256 label, address recipient) external nonReentrant {
         if (msg.sender != labelDepositor[label]) revert NotOriginalDepositor();
         if (isRagequit[label]) revert AlreadyRagequit();
-        if (sk >= SNARK_SCALAR_FIELD || rho >= SNARK_SCALAR_FIELD) revert NotInField();
-
-        // 1. Verify (sk, rho) matches precommitment
-        uint256 P = hasher1.poseidon([sk]);
-        uint256 expectedPre = hasher2.poseidon([P, rho]);
-        if (expectedPre != labelPrecommitment[label]) revert InvalidPrecommitment();
-
-        // 2. Derive genuine nullifier and enforce uniqueness
-        uint256 nullifierHash = hasher2.poseidon([sk, rho]);
-        if (nullifierSpent[nullifierHash]) revert NullifierAlreadySpent();
+        if (register.isApproved(label)) revert AlreadyApproved();
+        if (recipient == address(0)) revert ZeroAddress();
 
         uint256 amount = depositValue[label];
         if (amount == 0) revert InvalidValue();
 
         isRagequit[label] = true;
-        nullifierSpent[nullifierHash] = true;
         depositValue[label] = 0;
+        register.markRevoked(label);
 
-        emit Ragequit(msg.sender, token, label, amount, nullifierHash, recipient);
+        emit Ragequit(msg.sender, token, label, amount, 0, recipient);
 
         _safeTransfer(token, recipient, amount);
     }
