@@ -223,6 +223,7 @@ contract MarginaliaTokenPool {
         uint256 newCommitment = p.pubSignals[5];
 
         if (withdrawnValue == 0) revert InvalidValue();
+        if (w.recipient == address(0)) revert InvalidValue();
         if (w.fee > withdrawnValue) revert FeeTooHigh();
         if (w.fee > 0 && w.relayer == address(0)) revert FeeTooHigh();
         if (context != computeContext(w)) revert InvalidContext();

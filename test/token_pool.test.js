@@ -77,6 +77,14 @@ describe("MARGINALIA Dedicated Token Pool (ERC-20, Hardened Architecture)", func
     expect(await mockToken.balanceOf(relayer.address)).to.equal(fee);
   });
 
+  it("rejects token withdrawal to zero address (burn prevention)", async function () {
+    const note = await depositTokenFrom(alice, ONE_TOKEN);
+    const aspTree = await approve([note.label]);
+    const w = { recipient: ethers.ZeroAddress, relayer: ethers.ZeroAddress, fee: 0n };
+    const { proof } = await proveToken(note, aspTree, ONE_TOKEN, w);
+    await expect(tokenPool.withdraw(w, proof)).to.be.revertedWithCustomError(tokenPool, "InvalidValue");
+  });
+
   it("allows depositor to ragequit ERC-20 deposit and reclaim tokens directly", async function () {
     const note = await depositTokenFrom(alice, ONE_TOKEN);
 

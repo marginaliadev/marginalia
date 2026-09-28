@@ -116,6 +116,14 @@ describe("MARGINALIA Supabase Persistence & REST API Layer", function () {
       expect(json.totalLeaves).to.be.a("number");
     });
 
+    it("GET /api/leaves returns all leaves for privacy-preserving client-side Merkle proof", async function () {
+      const res = await fetch(`${baseUrl}/api/leaves`);
+      expect(res.status).to.equal(200);
+      const json = await res.json();
+      expect(json.count).to.be.a("number");
+      expect(Array.isArray(json.leaves)).to.be.true;
+    });
+
     it("POST /api/relay/quote provides dynamic gas and fee quote", async function () {
       const res = await fetch(`${baseUrl}/api/relay/quote`, {
         method: "POST",

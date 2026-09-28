@@ -13,8 +13,62 @@ const { MersenneRelayer } = require("./lib/relayer");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// CORS policy: allow configured origins, local development, or same-origin
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((s) => s.trim())
+  : null;
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (
+        !allowedOrigins ||
+        allowedOrigins.includes(origin) ||
+        origin.startsWith("http://localhost:") ||
+        origin.startsWith("http://127.0.0.1:")
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error("CORS policy violation: origin not allowed"), false);
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 app.use(express.json());
+
+// In-memory rate limiting middleware for /api/ routes
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 120;     // 120 req/min per IP
+
+function apiRateLimiter(req, res, next) {
+  const ip = req.ip || req.connection?.remoteAddress || "127.0.0.1";
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW_MS };
+
+  if (now > entry.resetAt) {
+    entry.count = 1;
+    entry.resetAt = now + RATE_LIMIT_WINDOW_MS;
+  } else {
+    entry.count++;
+  }
+
+  rateLimitMap.set(ip, entry);
+
+  if (entry.count > MAX_REQUESTS_PER_WINDOW) {
+    return res.status(429).json({
+      error: "Too many requests. Please try again later.",
+      retryAfterSeconds: Math.ceil((entry.resetAt - now) / 1000),
+    });
+  }
+
+  next();
+}
+
+app.use("/api/", apiRateLimiter);
 
 // Serve static frontend webapp
 app.use(express.static(path.join(__dirname, "webapp")));
@@ -67,6 +121,25 @@ app.get("/api/status", async (req, res) => {
       totalLeaves: leaves.length,
       totalDeposits: deposits.length,
       supabaseEnabled: supabaseService.isConfigured(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * GET /api/leaves - Privacy-preserving bulk leaf download.
+ * Allows client to construct Merkle witness locally in-browser without revealing target note index to the server.
+ */
+app.get("/api/leaves", async (req, res) => {
+  try {
+    const leaves = await supabaseService.getAllLeaves();
+    res.json({
+      count: leaves.length,
+      leaves: leaves.map((l) => ({
+        index: l.leaf_index,
+        commitment: l.leaf_commitment,
+      })),
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

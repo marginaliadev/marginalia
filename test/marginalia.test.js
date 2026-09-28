@@ -171,6 +171,14 @@ describe("MARGINALIA shielded pool", function () {
     await expect(pool.withdraw(w, tampered)).to.be.revertedWithCustomError(pool, "InvalidProof");
   });
 
+  it("rejects withdrawal to zero address (burn prevention)", async function () {
+    const note = await depositFrom(alice, ONE);
+    const aspTree = await approve([note.label]);
+    const w = { recipient: ethers.ZeroAddress, relayer: ethers.ZeroAddress, fee: 0n };
+    const { proof } = await prove(note, aspTree, ONE, w);
+    await expect(pool.withdraw(w, proof)).to.be.revertedWithCustomError(pool, "InvalidValue");
+  });
+
   it("only the Magistrate can publish Register roots", async function () {
     await expect(register.connect(mallory).publishRoot(123n, "")).to.be.revertedWithCustomError(
       register,
