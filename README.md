@@ -115,7 +115,7 @@ Marginalia implements the Privacy Pools paradigm to satisfy global AML/CFT stand
    $$\text{DisclosureKey} = \text{Poseidon}_2(\text{sk}, \text{SALT})$$
    This proves the origin of funds to an auditor without giving them custody or the ability to spend.
 3. **Ragequit (Emergency Capital Reclamation)**:  
-   If the Magistrate delays or rejects label inclusion, depositors retain the unalienable right to execute `ragequit(commitment)` directly from the original depositing address, safely reclaiming their locked ETH.
+The original depositing address can reclaim its deposit with `ragequit(label, recipient, proof)`, where `proof` is a small Groth16 proof (`circuits/ragequit.circom`) showing knowledge of `(sk, ρ)` behind the deposit's precommitment and revealing the note's **genuine** nullifier, which the pool burns. `sk` and `ρ` never appear in calldata. Because withdraw and ragequit burn the same nullifier, each note can be exited at most once by either path. ASP approval status is bookkeeping only, not a safety mechanism.
 
 ---
 

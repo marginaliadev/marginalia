@@ -21,11 +21,13 @@ describe("MARGINALIA Phase 4 — Mainnet Guarded Launch & Emergency Drill", func
       await ethers.getContractFactory("MarginaliaPool")
     ).deploy(
       await verifier.getAddress(),
+      await (await (await ethers.getContractFactory("RagequitVerifier")).deploy()).getAddress(),
       await h1.getAddress(),
       await h2.getAddress(),
       await h3.getAddress(),
       await register.getAddress()
     );
+    await register.setPool(await pool.getAddress(), true);
 
     // Transfer guardian to dedicated guardian signer via 2-step process
     await pool.connect(owner).transferGuardian(guardian.address);
@@ -104,7 +106,7 @@ describe("MARGINALIA Phase 4 — Mainnet Guarded Launch & Emergency Drill", func
 
     // 6. CRITICAL GUARANTEE: Bob can STILL emergency exit (ragequit) on unapproved deposit!
     await expect(
-      pool.connect(bob).ragequit(noteBob.label, bob.address)
+      pool.connect(bob).ragequit(noteBob.label, bob.address, (await M.proveRagequit({ note: noteBob })).proof)
     ).to.emit(pool, "Ragequit");
 
     // 7. Unpause restores normal operations

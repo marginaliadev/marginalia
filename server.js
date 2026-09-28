@@ -214,7 +214,13 @@ app.post("/api/relay/withdraw", async (req, res) => {
         return res.status(502).json({ error: `On-chain relay broadcast failed: ${broadcastErr.message}` });
       }
     } else {
-      // In dev harness / unit testing without on-chain hot-wallet
+      // Never fake a confirmation outside local dev: a fake CONFIRMED would burn the
+      // user's nullifier in the DB and lock them out of a real retry.
+      if (process.env.NODE_ENV === "production" || process.env.ALLOW_DEV_HARNESS !== "1") {
+        await supabaseService.updateRelayerJob(job.id, { status: "REJECTED", error_message: "relayer not configured" });
+        return res.status(503).json({ error: "Relayer not configured (RELAYER_PRIVATE_KEY / MARGINALIA_POOL_ADDRESS missing)" });
+      }
+      // In dev harness / unit testing without on-chain hot-wallet (explicit opt-in: ALLOW_DEV_HARNESS=1)
       txHash = "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join("");
       mode = "DEV_HARNESS";
     }

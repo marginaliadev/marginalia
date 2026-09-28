@@ -44,3 +44,14 @@ echo "==> [5/5] Exporting Solidity verifier"
 $SNARKJS zkey export solidityverifier "$BUILD/withdraw_final.zkey" "$ROOT/contracts/Groth16Verifier.sol"
 
 echo "Done. Artifacts in build/, verifier in contracts/Groth16Verifier.sol"
+
+echo "==> [ragequit] Compiling + setup for circuits/ragequit.circom"
+circom circuits/ragequit.circom --r1cs --wasm -o "$BUILD"
+$SNARKJS groth16 setup "$BUILD/ragequit.r1cs" "$BUILD/pot_final.ptau" "$BUILD/ragequit_0.zkey"
+$SNARKJS zkey contribute "$BUILD/ragequit_0.zkey" "$BUILD/ragequit_final.zkey" \
+  --name="dev-phase2-ragequit" -e="$(head -c 64 /dev/urandom | base64)"
+rm -f "$BUILD/ragequit_0.zkey" "$BUILD/ragequit.r1cs"
+$SNARKJS zkey export verificationkey "$BUILD/ragequit_final.zkey" "$BUILD/ragequit_verification_key.json"
+$SNARKJS zkey export solidityverifier "$BUILD/ragequit_final.zkey" "$ROOT/contracts/RagequitVerifier.sol"
+sed -i 's/contract Groth16Verifier/contract RagequitVerifier/' "$ROOT/contracts/RagequitVerifier.sol"
+echo "Done. Ragequit verifier in contracts/RagequitVerifier.sol"

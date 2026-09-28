@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IPoseidonT2, IPoseidonT3, IPoseidonT4, IGroth16Verifier} from "./interfaces/IPoseidon.sol";
+import {IPoseidonT2, IPoseidonT3, IPoseidonT4, IGroth16Verifier, IRagequitVerifier} from "./interfaces/IPoseidon.sol";
 import {MagistrateRegister} from "./MagistrateRegister.sol";
 
 /// @title MARGINALIA shielded pool (native ETH), PROTOTYPE, NOT AUDITED
@@ -20,6 +20,7 @@ contract MarginaliaPool {
 
     // ------------------------------------------------------------------ immutables
     IGroth16Verifier public immutable verifier;
+    IRagequitVerifier public immutable ragequitVerifier;
     IPoseidonT2 public immutable hasher1;
     IPoseidonT3 public immutable hasher2;
     IPoseidonT4 public immutable hasher3;
@@ -52,6 +53,14 @@ contract MarginaliaPool {
         address payable recipient;
         address payable relayer;  // Mersenne Courier; address(0) if self-relayed
         uint256 fee;              // paid to relayer out of withdrawnValue
+    }
+
+    /// @dev Groth16 proof for circuits/ragequit.circom. pubSignals = [precommitment, nullifierHash].
+    struct RagequitProof {
+        uint256[2] pA;
+        uint256[2][2] pB;
+        uint256[2] pC;
+        uint256[2] pubSignals;
     }
 
     struct Proof {
@@ -101,7 +110,6 @@ contract MarginaliaPool {
     error TransferFailed();
     error NotOriginalDepositor();
     error AlreadyRagequit();
-    error AlreadyApproved();
     error InvalidPrecommitment();
     error DepositsPaused();
     error NotGuardian();
@@ -116,12 +124,14 @@ contract MarginaliaPool {
 
     constructor(
         IGroth16Verifier _verifier,
+        IRagequitVerifier _ragequitVerifier,
         IPoseidonT2 _hasher1,
         IPoseidonT3 _hasher2,
         IPoseidonT4 _hasher3,
         MagistrateRegister _register
     ) {
         verifier = _verifier;
+        ragequitVerifier = _ragequitVerifier;
         hasher1 = _hasher1;
         hasher2 = _hasher2;
         hasher3 = _hasher3;
@@ -189,28 +199,40 @@ contract MarginaliaPool {
     }
 
     // ================================================================== ragequit
-    /// @notice Emergency exit for rejected or unapproved deposits.
-    ///         Allows the original depositor to reclaim funds directly.
-    ///         ZERO SECRETS EXPOSED IN CALLDATA (Front-running immune).
-    ///         Approved deposits MUST use standard shielded withdraw.
-    ///         Once ragequitted, the label is permanently revoked from the ASP registry.
-    /// @param label The label assigned to the deposit.
-    /// @param recipient The address receiving the refunded ETH.
-    function ragequit(uint256 label, address payable recipient) external nonReentrant {
+    /// @notice Emergency exit: the original depositor reclaims the ORIGINAL deposit publicly.
+    /// @dev    Safety rests on ONE invariant: ragequit burns the note's GENUINE nullifier,
+    ///         proven in zero knowledge (circuits/ragequit.circom). Because Withdraw reveals the
+    ///         same nullifier for this note, a note can be exited at most once, by either path:
+    ///           withdraw -> ragequit  reverts (NullifierAlreadySpent)
+    ///           ragequit -> withdraw  reverts (NullifierAlreadySpent)
+    ///         No secret (sk, rho) ever touches calldata, and a copied proof is useless to a
+    ///         front-runner because only labelDepositor[label] may submit it.
+    ///         ASP approval status is deliberately NOT consulted: it is not a safety property.
+    /// @param label     The label assigned to the deposit.
+    /// @param recipient Address receiving the refund.
+    /// @param p         Ragequit proof; pubSignals = [precommitment, nullifierHash].
+    function ragequit(uint256 label, address payable recipient, RagequitProof calldata p) external nonReentrant {
         if (msg.sender != labelDepositor[label]) revert NotOriginalDepositor();
         if (isRagequit[label]) revert AlreadyRagequit();
-        if (register.isApproved(label)) revert AlreadyApproved();
         if (recipient == address(0)) revert InvalidValue();
+
+        uint256 precommitment = p.pubSignals[0];
+        uint256 nullifierHash = p.pubSignals[1];
+        if (precommitment >= SNARK_SCALAR_FIELD || nullifierHash >= SNARK_SCALAR_FIELD) revert NotInField();
+        if (precommitment != labelPrecommitment[label]) revert InvalidPrecommitment();
+        if (nullifierSpent[nullifierHash]) revert NullifierAlreadySpent();
+        if (!ragequitVerifier.verifyProof(p.pA, p.pB, p.pC, p.pubSignals)) revert InvalidProof();
 
         uint256 amount = depositValue[label];
         if (amount == 0) revert InvalidValue();
 
         // effects
         isRagequit[label] = true;
+        nullifierSpent[nullifierHash] = true; // the genuine Wax Seal is now broken
         depositValue[label] = 0;
-        register.markRevoked(label);
+        register.markRevoked(label);          // bookkeeping only (pool is an authorised caller)
 
-        emit Ragequit(msg.sender, label, amount, 0, recipient);
+        emit Ragequit(msg.sender, label, amount, nullifierHash, recipient);
 
         // interactions
         _send(recipient, amount);

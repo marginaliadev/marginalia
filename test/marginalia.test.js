@@ -16,11 +16,13 @@ describe("MARGINALIA shielded pool", function () {
       await ethers.getContractFactory("MarginaliaPool")
     ).deploy(
       await verifier.getAddress(),
+      await (await (await ethers.getContractFactory("RagequitVerifier")).deploy()).getAddress(),
       await h1.getAddress(),
       await h2.getAddress(),
       await h3.getAddress(),
       await register.getAddress()
     );
+    await register.setPool(await pool.getAddress(), true);
   }
 
   async function depositFrom(signer, value) {
@@ -183,70 +185,116 @@ describe("MARGINALIA shielded pool", function () {
     expect(back.sk).to.equal(note.sk);
   });
 
-  describe("Ragequit (Emergency Exit - Front-running Protected)", function () {
-    it("allows original depositor to ragequit an unapproved deposit and recover funds", async function () {
+  describe("Ragequit (ZK-proven, burns the genuine nullifier)", function () {
+    const rq = (note) => M.proveRagequit({ note }).then((r) => r.proof);
+
+    async function zkWithdraw(note, aspTree, value = ONE) {
+      const w = { recipient: bob.address, relayer: ethers.ZeroAddress, fee: 0n };
+      const { proof } = await prove(note, aspTree, value, w);
+      return pool.connect(alice).withdraw(w, proof);
+    }
+    const poolBal = async () => ethers.provider.getBalance(await pool.getAddress());
+
+    it("allows original depositor to ragequit and recover funds", async function () {
       const note = await depositFrom(alice, ONE);
-
-      const aliceBalBefore = await ethers.provider.getBalance(alice.address);
-      const tx = await pool.connect(alice).ragequit(note.label, alice.address);
-      const receipt = await tx.wait();
-      const gasCost = receipt.gasUsed * receipt.gasPrice;
-
-      const aliceBalAfter = await ethers.provider.getBalance(alice.address);
-      expect(aliceBalAfter + gasCost - aliceBalBefore).to.equal(ONE);
+      const before = await ethers.provider.getBalance(alice.address);
+      const receipt = await (await pool.connect(alice).ragequit(note.label, alice.address, await rq(note))).wait();
+      const gas = receipt.gasUsed * receipt.gasPrice;
+      expect((await ethers.provider.getBalance(alice.address)) + gas - before).to.equal(ONE);
       expect(await pool.isRagequit(note.label)).to.be.true;
+      expect(await pool.nullifierSpent(await M.nullifierOf(note.sk, note.rho))).to.be.true;
       expect(await register.isRevoked(note.label)).to.be.true;
     });
 
-    it("prevents non-depositor from ragequitting someone else's deposit", async function () {
+    it("prevents non-depositor from ragequitting (even with a valid copied proof)", async function () {
       const note = await depositFrom(alice, ONE);
-
-      await expect(
-        pool.connect(mallory).ragequit(note.label, mallory.address)
-      ).to.be.revertedWithCustomError(pool, "NotOriginalDepositor");
+      await expect(pool.connect(mallory).ragequit(note.label, mallory.address, await rq(note)))
+        .to.be.revertedWithCustomError(pool, "NotOriginalDepositor");
     });
 
     it("prevents double ragequit", async function () {
       const note = await depositFrom(alice, ONE);
-
-      await pool.connect(alice).ragequit(note.label, alice.address);
-      await expect(
-        pool.connect(alice).ragequit(note.label, alice.address)
-      ).to.be.revertedWithCustomError(pool, "AlreadyRagequit");
+      const proof = await rq(note);
+      await pool.connect(alice).ragequit(note.label, alice.address, proof);
+      await expect(pool.connect(alice).ragequit(note.label, alice.address, proof))
+        .to.be.revertedWithCustomError(pool, "AlreadyRagequit");
     });
 
-    it("prevents ragequitting a deposit that has already been approved by Magistrate", async function () {
-      const note = await depositFrom(alice, ONE);
-      await approve([note.label]);
+    it("rejects a proof for a different note's precommitment", async function () {
+      const a = await depositFrom(alice, ONE);
+      const other = await depositFrom(alice, ONE);
+      await expect(pool.connect(alice).ragequit(a.label, alice.address, await rq(other)))
+        .to.be.revertedWithCustomError(pool, "InvalidPrecommitment");
+    });
 
-      await expect(
-        pool.connect(alice).ragequit(note.label, alice.address)
-      ).to.be.revertedWithCustomError(pool, "AlreadyApproved");
+    it("rejects a forged nullifier (tampered public signal)", async function () {
+      const note = await depositFrom(alice, ONE);
+      const proof = await rq(note);
+      proof.pubSignals = [proof.pubSignals[0], "12345"];
+      await expect(pool.connect(alice).ragequit(note.label, alice.address, proof))
+        .to.be.revertedWithCustomError(pool, "InvalidProof");
+    });
+
+    it("zero secrets in calldata", async function () {
+      const note = await depositFrom(alice, ONE);
+      const tx = await pool.connect(alice).ragequit(note.label, alice.address, await rq(note));
+      const data = tx.data.toLowerCase();
+      expect(data.includes(note.sk.toString(16).toLowerCase())).to.be.false;
+      expect(data.includes(note.rho.toString(16).toLowerCase())).to.be.false;
     });
 
     it("prevents approval of a label that was already ragequitted", async function () {
       const note = await depositFrom(alice, ONE);
-      await pool.connect(alice).ragequit(note.label, alice.address);
-
-      // Magistrate attempts to approve the ragequitted note
+      await pool.connect(alice).ragequit(note.label, alice.address, await rq(note));
       await register.connect(magistrate).approveLabels([note.label]);
-      // The register refuses to approve revoked labels
       expect(await register.isApproved(note.label)).to.be.false;
-      expect(await register.isRevoked(note.label)).to.be.true;
     });
 
-    it("guarantees front-running immunity: zero secrets in calldata", async function () {
+    // ---------------- regressions for the audit PoCs (all must REVERT) ----------------
+    it("REGRESSION A: withdraw -> ragequit reverts (2-arg publishRoot flow used by scripts)", async function () {
+      await depositFrom(mallory, ONE); // victim funds
       const note = await depositFrom(alice, ONE);
-      const tx = await pool.connect(alice).ragequit(note.label, alice.address);
-      await tx.wait();
+      const aspTree = await M.buildAspTree([note.label]);
+      await register.connect(magistrate)["publishRoot(uint256,string)"](aspTree.root(), "x");
+      await zkWithdraw(note, aspTree);
+      await expect(pool.connect(alice).ragequit(note.label, alice.address, await rq(note)))
+        .to.be.revertedWithCustomError(pool, "NullifierAlreadySpent");
+      expect(await poolBal()).to.equal(ONE);
+    });
 
-      const rawData = tx.data.toLowerCase();
-      const skHex = note.sk.toString(16).toLowerCase();
-      const rhoHex = note.rho.toString(16).toLowerCase();
+    it("REGRESSION B: nobody can call register.markRevoked directly", async function () {
+      const note = await depositFrom(alice, ONE);
+      await expect(register.connect(mallory).markRevoked(note.label))
+        .to.be.revertedWithCustomError(register, "NotAuthorised");
+    });
 
-      // Secrets sk and rho must NEVER be transmitted on chain
-      expect(rawData.includes(skHex)).to.be.false;
-      expect(rawData.includes(rhoHex)).to.be.false;
+    it("REGRESSION C: ragequit -> withdraw with a still-valid ASP root reverts", async function () {
+      await depositFrom(mallory, ONE);
+      const note = await depositFrom(alice, ONE);
+      const aspTree = await approve([note.label]);
+      await pool.connect(alice).ragequit(note.label, alice.address, await rq(note));
+      await expect(zkWithdraw(note, aspTree)).to.be.revertedWithCustomError(pool, "NullifierAlreadySpent");
+      expect(await poolBal()).to.equal(ONE);
+    });
+
+    it("REGRESSION: partial withdraw -> ragequit of the original deposit reverts", async function () {
+      await depositFrom(mallory, ONE);
+      const note = await depositFrom(alice, ethers.parseEther("2"));
+      const aspTree = await approve([note.label]);
+      await zkWithdraw(note, aspTree, ethers.parseEther("0.5"));
+      await expect(pool.connect(alice).ragequit(note.label, alice.address, await rq(note)))
+        .to.be.revertedWithCustomError(pool, "NullifierAlreadySpent");
+    });
+
+    it("REGRESSION: front-runner copying a pending ragequit gains nothing", async function () {
+      const note = await depositFrom(alice, ONE);
+      await approve([note.label]);
+      const proof = await rq(note);
+      // mallory replays alice's exact calldata args
+      await expect(pool.connect(mallory).ragequit(note.label, mallory.address, proof))
+        .to.be.revertedWithCustomError(pool, "NotOriginalDepositor");
+      // and the proof reveals no sk/rho, so mallory cannot build a withdraw proof either
+      await expect(pool.connect(alice).ragequit(note.label, alice.address, proof)).to.emit(pool, "Ragequit");
     });
   });
 

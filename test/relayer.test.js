@@ -17,11 +17,13 @@ describe("MARGINALIA Mersenne Courier Relayer (Mitigation for L7)", function () 
       await ethers.getContractFactory("MarginaliaPool")
     ).deploy(
       await verifier.getAddress(),
+      await (await (await ethers.getContractFactory("RagequitVerifier")).deploy()).getAddress(),
       await h1.getAddress(),
       await h2.getAddress(),
       await h3.getAddress(),
       await register.getAddress()
     );
+    await register.setPool(await pool.getAddress(), true);
 
     relayerDaemon = new MersenneRelayer(relayerSigner, pool, { marginBps: 1000 });
   }

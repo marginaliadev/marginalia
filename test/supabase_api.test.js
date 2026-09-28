@@ -129,7 +129,25 @@ describe("MARGINALIA Supabase Persistence & REST API Layer", function () {
       expect(json.minFeeEth).to.be.a("string");
     });
 
-    it("POST /api/relay/withdraw relays withdrawal and rejects double-spend", async function () {
+    it("POST /api/relay/withdraw refuses to fake a confirmation when the relayer is not configured", async function () {
+      const prev = process.env.ALLOW_DEV_HARNESS;
+      delete process.env.ALLOW_DEV_HARNESS;
+      const nullifier = "0xVictimNullifier" + Date.now();
+      const body = JSON.stringify({
+        withdrawal: { recipient: "0xBob", relayer: "0xRelayer", fee: "0" },
+        proof: { pubSignals: ["1", "0", "0", "0", nullifier, "0"] },
+      });
+      const opts = { method: "POST", headers: { "Content-Type": "application/json" }, body };
+      const r1 = await fetch(`${baseUrl}/api/relay/withdraw`, opts);
+      expect(r1.status).to.equal(503);
+      // the victim's nullifier must NOT be burnt: a retry is not a 409
+      const r2 = await fetch(`${baseUrl}/api/relay/withdraw`, opts);
+      expect(r2.status).to.equal(503);
+      if (prev !== undefined) process.env.ALLOW_DEV_HARNESS = prev;
+    });
+
+    it("POST /api/relay/withdraw relays withdrawal and rejects double-spend (ALLOW_DEV_HARNESS=1)", async function () {
+      process.env.ALLOW_DEV_HARNESS = "1";
       const nullifier = "0xUniqueNullifier" + Date.now();
       const payload = {
         withdrawal: {
@@ -164,6 +182,7 @@ describe("MARGINALIA Supabase Persistence & REST API Layer", function () {
       expect(res2.status).to.equal(409);
       const json2 = await res2.json();
       expect(json2.error).to.include("already spent");
+      delete process.env.ALLOW_DEV_HARNESS;
     });
   });
 });

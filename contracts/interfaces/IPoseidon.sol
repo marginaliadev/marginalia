@@ -24,3 +24,13 @@ interface IGroth16Verifier {
         uint256[6] calldata pubSignals
     ) external view returns (bool);
 }
+
+/// @notice Verifier for circuits/ragequit.circom. pubSignals = [precommitment, nullifierHash].
+interface IRagequitVerifier {
+    function verifyProof(
+        uint256[2] calldata pA,
+        uint256[2][2] calldata pB,
+        uint256[2] calldata pC,
+        uint256[2] calldata pubSignals
+    ) external view returns (bool);
+}

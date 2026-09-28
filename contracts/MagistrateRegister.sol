@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 /// @title The Magistrate's Register (Association Set Provider root registry)
 /// @notice Holds the Merkle root of approved deposit labels. The off-chain Magistrate
 ///         service screens each deposit, rebuilds the label tree and publishes its root here.
-///         Withdrawals must prove their label is in the tree with the LATEST root.
+///         Withdrawals must prove their label is in one of the last 16 published roots.
 contract MagistrateRegister {
     address public owner;
     address public magistrate;
@@ -21,16 +21,20 @@ contract MagistrateRegister {
     mapping(uint256 => string) public rootData;
     mapping(uint256 => bool) public approvedLabels;
     mapping(uint256 => bool) public revokedLabels;
+    /// @dev Pools allowed to revoke labels (on ragequit). Set by the owner.
+    mapping(address => bool) public isPool;
 
     event MagistrateChanged(address indexed previous, address indexed current);
     event RootPublished(uint256 indexed root, uint256 indexed index, string data);
     event LabelApproved(uint256 indexed label);
     event LabelRevoked(uint256 indexed label);
+    event PoolAuthorised(address indexed pool, bool allowed);
 
     error NotOwner();
     error NotMagistrate();
     error ZeroRoot();
     error ZeroAddress();
+    error NotAuthorised();
 
     constructor(address _magistrate) {
         if (_magistrate == address(0)) revert ZeroAddress();
@@ -74,7 +78,19 @@ contract MagistrateRegister {
         }
     }
 
+    function setPool(address pool, bool allowed) external {
+        if (msg.sender != owner) revert NotOwner();
+        if (pool == address(0)) revert ZeroAddress();
+        isPool[pool] = allowed;
+        emit PoolAuthorised(pool, allowed);
+    }
+
+    /// @notice Bookkeeping: marks a label as revoked so the Magistrate never approves it again.
+    /// @dev    NOT a safety mechanism for funds (the contract cannot inspect ASP root contents,
+    ///         and withdraw never sees the label). Double-spend safety comes solely from the
+    ///         nullifier burnt by the ZK ragequit. Restricted to authorised pools / magistrate.
     function markRevoked(uint256 label) external {
+        if (msg.sender != magistrate && !isPool[msg.sender]) revert NotAuthorised();
         revokedLabels[label] = true;
         approvedLabels[label] = false;
         emit LabelRevoked(label);

@@ -24,11 +24,13 @@ describe("MARGINALIA Phase 3 — Invariant & Property Fuzzing", function () {
       await ethers.getContractFactory("MarginaliaPool")
     ).deploy(
       await verifier.getAddress(),
+      await (await (await ethers.getContractFactory("RagequitVerifier")).deploy()).getAddress(),
       await h1.getAddress(),
       await h2.getAddress(),
       await h3.getAddress(),
       await register.getAddress()
     );
+    await register.setPool(await pool.getAddress(), true);
   }
 
   beforeEach(deployAll);
@@ -72,7 +74,8 @@ describe("MARGINALIA Phase 3 — Invariant & Property Fuzzing", function () {
     const ragequitTarget = activeNotes[0];
     await pool.connect(ragequitTarget.depositor).ragequit(
       ragequitTarget.note.label,
-      ragequitTarget.depositor.address
+      ragequitTarget.depositor.address,
+      (await M.proveRagequit({ note: ragequitTarget.note })).proof
     );
     totalRagequitted += BigInt(ragequitTarget.note.value);
 
