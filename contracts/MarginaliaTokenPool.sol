@@ -38,6 +38,10 @@ contract MarginaliaTokenPool {
     mapping(uint256 => uint256) public depositValue;
     mapping(uint256 => uint256) public labelPrecommitment;
     mapping(uint256 => bool) public isRagequit;
+    /// @dev Each precommitment may back exactly one deposit. Without this, anyone could deposit dust
+    ///      under a victim's (public) precommitment and replay the victim's ragequit proof on their
+    ///      own label, burning the victim's nullifier and freezing the victim's note forever.
+    mapping(uint256 => bool) public precommitmentUsed;
 
     bool private _locked;
 
@@ -107,6 +111,7 @@ contract MarginaliaTokenPool {
     error NotOriginalDepositor();
     error AlreadyRagequit();
     error InvalidPrecommitment();
+    error PrecommitmentReused();
     error ZeroAddress();
 
     modifier nonReentrant() {
@@ -147,6 +152,8 @@ contract MarginaliaTokenPool {
     function deposit(uint256 amount, uint256 precommitment) external nonReentrant returns (uint256 commitment) {
         if (amount == 0 || amount > MAX_VALUE) revert InvalidValue();
         if (precommitment >= SNARK_SCALAR_FIELD) revert NotInField();
+        if (precommitmentUsed[precommitment]) revert PrecommitmentReused();
+        precommitmentUsed[precommitment] = true;
 
         // Safe transfer & balance delta check (protects against fee-on-transfer / rebasing tokens)
         uint256 balBefore = IERC20(token).balanceOf(address(this));

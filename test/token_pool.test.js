@@ -102,6 +102,13 @@ describe("MARGINALIA Dedicated Token Pool (ERC-20, Hardened Architecture)", func
     ).to.be.revertedWithCustomError(tokenPool, "NullifierAlreadySpent");
   });
 
+  it("REGRESSION: rejects a second deposit reusing a precommitment", async function () {
+    const secret = await M.newSecret();
+    await tokenPool.connect(alice).deposit(ONE_TOKEN, secret.precommitment);
+    await expect(tokenPool.connect(alice).deposit(ONE_TOKEN, secret.precommitment))
+      .to.be.revertedWithCustomError(tokenPool, "PrecommitmentReused");
+  });
+
   it("prevents non-depositor from ragequitting ERC-20 deposit", async function () {
     const note = await depositTokenFrom(alice, ONE_TOKEN);
     await expect(

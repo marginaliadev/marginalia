@@ -39,6 +39,10 @@ contract MarginaliaPool {
     mapping(uint256 => uint256) public depositValue;   // label -> deposited value (for ragequit)
     mapping(uint256 => uint256) public labelPrecommitment; // label -> precommitment (for ragequit cryptographic verification)
     mapping(uint256 => bool) public isRagequit;       // label -> ragequit status
+    /// @dev Each precommitment may back exactly one deposit. Without this, anyone could deposit dust
+    ///      under a victim's (public) precommitment and replay the victim's ragequit proof on their
+    ///      own label, burning the victim's nullifier and freezing the victim's note forever.
+    mapping(uint256 => bool) public precommitmentUsed;
 
     // ------------------------------------------------------------------ guarded launch (Phase 4)
     address public guardian;
@@ -111,6 +115,7 @@ contract MarginaliaPool {
     error NotOriginalDepositor();
     error AlreadyRagequit();
     error InvalidPrecommitment();
+    error PrecommitmentReused();
     error DepositsPaused();
     error NotGuardian();
     error ExceedsMaxDeposit();
@@ -184,6 +189,8 @@ contract MarginaliaPool {
         if (maxDepositAmount > 0 && msg.value > maxDepositAmount) revert ExceedsMaxDeposit();
         if (msg.value == 0 || msg.value > MAX_VALUE) revert InvalidValue();
         if (precommitment >= SNARK_SCALAR_FIELD) revert NotInField();
+        if (precommitmentUsed[precommitment]) revert PrecommitmentReused();
+        precommitmentUsed[precommitment] = true;
 
         uint256 label =
             uint256(keccak256(abi.encodePacked(block.chainid, address(this), depositNonce++))) % SNARK_SCALAR_FIELD;

@@ -25,8 +25,8 @@ describe("MARGINALIA shielded pool", function () {
     await register.setPool(await pool.getAddress(), true);
   }
 
-  async function depositFrom(signer, value) {
-    const secret = await M.newSecret();
+  async function depositFrom(signer, value, secret) {
+    secret = secret || (await M.newSecret());
     const tx = await pool.connect(signer).deposit(secret.precommitment, { value });
     const receipt = await tx.wait();
     return M.noteFromDepositReceipt(pool, receipt, secret);
@@ -284,6 +284,16 @@ describe("MARGINALIA shielded pool", function () {
       await zkWithdraw(note, aspTree, ethers.parseEther("0.5"));
       await expect(pool.connect(alice).ragequit(note.label, alice.address, await rq(note)))
         .to.be.revertedWithCustomError(pool, "NullifierAlreadySpent");
+    });
+
+    it("REGRESSION: precommitment-copy griefing is blocked (victim's note cannot be frozen)", async function () {
+      const secret = await M.newSecret();
+      const note = await depositFrom(alice, ONE, secret);
+      // mallory tries to open a dust deposit under alice's public precommitment
+      await expect(pool.connect(mallory).deposit(secret.precommitment, { value: 1n }))
+        .to.be.revertedWithCustomError(pool, "PrecommitmentReused");
+      // alice's exit path is untouched
+      await expect(pool.connect(alice).ragequit(note.label, alice.address, await rq(note))).to.emit(pool, "Ragequit");
     });
 
     it("REGRESSION: front-runner copying a pending ragequit gains nothing", async function () {
