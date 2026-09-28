@@ -32,4 +32,4 @@ jobs:
       - name: Execute Marginalia cryptographic & invariant tests
         env:
           USE_SOLCJS: "1"
-        run: npx hardhat test test/marginalia.test.js
+        run: npx hardhat test
