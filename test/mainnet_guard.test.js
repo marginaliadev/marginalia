@@ -13,16 +13,23 @@ describe("MARGINALIA Phase 4 — Mainnet Guarded Launch & Emergency Drill", func
 
   async function deployAll() {
     [owner, magistrate, guardian, alice, bob, relayer] = await ethers.getSigners();
-    ({ h2, h3 } = await M.deployHashers(owner, ethers));
+    ({ h1, h2, h3 } = await M.deployHashers(owner, ethers));
     verifier = await (await ethers.getContractFactory("Groth16Verifier")).deploy();
     register = await (await ethers.getContractFactory("MagistrateRegister")).deploy(magistrate.address);
 
     pool = await (
       await ethers.getContractFactory("MarginaliaPool")
-    ).deploy(await verifier.getAddress(), await h2.getAddress(), await h3.getAddress(), await register.getAddress());
+    ).deploy(
+      await verifier.getAddress(),
+      await h1.getAddress(),
+      await h2.getAddress(),
+      await h3.getAddress(),
+      await register.getAddress()
+    );
 
-    // Transfer guardian to dedicated guardian signer
+    // Transfer guardian to dedicated guardian signer via 2-step process
     await pool.connect(owner).transferGuardian(guardian.address);
+    await pool.connect(guardian).acceptGuardian();
 
     sentinel = new SolvencySentinel(pool, { largeTxThreshold: ethers.parseEther("5") });
   }
@@ -94,8 +101,9 @@ describe("MARGINALIA Phase 4 — Mainnet Guarded Launch & Emergency Drill", func
     await expect(pool.withdraw(w, proof)).to.emit(pool, "Withdrawn");
 
     // 6. CRITICAL GUARANTEE: Bob can STILL emergency exit (ragequit)!
-    const bobNullifier = await M.nullifierOf(noteBob.sk, noteBob.rho);
-    await expect(pool.connect(bob).ragequit(noteBob.label, bobNullifier, bob.address)).to.emit(pool, "Ragequit");
+    await expect(
+      pool.connect(bob).ragequit(noteBob.label, noteBob.sk, noteBob.rho, bob.address)
+    ).to.emit(pool, "Ragequit");
 
     // 7. Unpause restores normal operations
     await pool.connect(guardian).setDepositsPaused(false);

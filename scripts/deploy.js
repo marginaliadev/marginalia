@@ -12,7 +12,8 @@ async function main() {
   console.log(`Deployer  : ${deployer.address}`);
   console.log(`Magistrate: ${magistrate}`);
 
-  const { h2, h3 } = await M.deployHashers(deployer, ethers);
+  const { h1, h2, h3 } = await M.deployHashers(deployer, ethers);
+  console.log(`PoseidonT2 (1 input) : ${await h1.getAddress()}`);
   console.log(`PoseidonT3 (2 inputs): ${await h2.getAddress()}`);
   console.log(`PoseidonT4 (3 inputs): ${await h3.getAddress()}`);
 
@@ -26,7 +27,13 @@ async function main() {
 
   const pool = await (
     await ethers.getContractFactory("MarginaliaPool")
-  ).deploy(await verifier.getAddress(), await h2.getAddress(), await h3.getAddress(), await register.getAddress());
+  ).deploy(
+    await verifier.getAddress(),
+    await h1.getAddress(),
+    await h2.getAddress(),
+    await h3.getAddress(),
+    await register.getAddress()
+  );
   await pool.waitForDeployment();
   const receipt = await pool.deploymentTransaction().wait();
   console.log(`MarginaliaPool       : ${await pool.getAddress()}`);

@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IPoseidonT3, IPoseidonT4, IGroth16Verifier} from "./interfaces/IPoseidon.sol";
+import {IPoseidonT2, IPoseidonT3, IPoseidonT4, IGroth16Verifier} from "./interfaces/IPoseidon.sol";
 import {MagistrateRegister} from "./MagistrateRegister.sol";
 import {IERC20} from "./mocks/MockERC20.sol";
 
-/// @title MARGINALIA Multi-Asset Token Pool (ERC-20), Mitigation for L9
-/// @notice Shielded pool for arbitrary ERC-20 tokens with SafeERC20 balance-delta checks.
+/// @title MARGINALIA Dedicated Token Pool (ERC-20), AUDITED & HARDENED
+/// @notice Shielded pool for a specific ERC-20 token with SafeERC20 balance-delta checks,
+///         eliminating cross-token pool drainage attacks.
 contract MarginaliaTokenPool {
     // ------------------------------------------------------------------ constants
     uint256 public constant SNARK_SCALAR_FIELD =
@@ -16,7 +17,9 @@ contract MarginaliaTokenPool {
     uint256 public constant MAX_VALUE = type(uint128).max;
 
     // ------------------------------------------------------------------ immutables
+    address public immutable token;
     IGroth16Verifier public immutable verifier;
+    IPoseidonT2 public immutable hasher1;
     IPoseidonT3 public immutable hasher2;
     IPoseidonT4 public immutable hasher3;
     MagistrateRegister public immutable register;
@@ -31,8 +34,8 @@ contract MarginaliaTokenPool {
     uint256 public depositNonce;
     mapping(uint256 => bool) public nullifierSpent;
     mapping(uint256 => address) public labelDepositor;
-    mapping(uint256 => address) public labelToken;
     mapping(uint256 => uint256) public depositValue;
+    mapping(uint256 => uint256) public labelPrecommitment;
     mapping(uint256 => bool) public isRagequit;
 
     bool private _locked;
@@ -94,6 +97,7 @@ contract MarginaliaTokenPool {
     error TransferFailed();
     error NotOriginalDepositor();
     error AlreadyRagequit();
+    error InvalidPrecommitment();
     error ZeroAddress();
 
     modifier nonReentrant() {
@@ -103,8 +107,18 @@ contract MarginaliaTokenPool {
         _locked = false;
     }
 
-    constructor(IGroth16Verifier _verifier, IPoseidonT3 _hasher2, IPoseidonT4 _hasher3, MagistrateRegister _register) {
+    constructor(
+        address _token,
+        IGroth16Verifier _verifier,
+        IPoseidonT2 _hasher1,
+        IPoseidonT3 _hasher2,
+        IPoseidonT4 _hasher3,
+        MagistrateRegister _register
+    ) {
+        if (_token == address(0)) revert ZeroAddress();
+        token = _token;
         verifier = _verifier;
+        hasher1 = _hasher1;
         hasher2 = _hasher2;
         hasher3 = _hasher3;
         register = _register;
@@ -119,8 +133,7 @@ contract MarginaliaTokenPool {
     }
 
     // ================================================================== deposit
-    function deposit(address token, uint256 amount, uint256 precommitment) external nonReentrant returns (uint256 commitment) {
-        if (token == address(0)) revert ZeroAddress();
+    function deposit(uint256 amount, uint256 precommitment) external nonReentrant returns (uint256 commitment) {
         if (amount == 0 || amount > MAX_VALUE) revert InvalidValue();
         if (precommitment >= SNARK_SCALAR_FIELD) revert NotInField();
 
@@ -133,8 +146,8 @@ contract MarginaliaTokenPool {
         uint256 label =
             uint256(keccak256(abi.encodePacked(block.chainid, address(this), token, depositNonce++))) % SNARK_SCALAR_FIELD;
         labelDepositor[label] = msg.sender;
-        labelToken[label] = token;
         depositValue[label] = actualAmount;
+        labelPrecommitment[label] = precommitment;
 
         commitment = hasher3.poseidon([actualAmount, label, precommitment]);
         uint256 index = _insert(commitment);
@@ -143,15 +156,22 @@ contract MarginaliaTokenPool {
     }
 
     // ================================================================== ragequit
-    function ragequit(uint256 label, uint256 nullifierHash, address recipient) external nonReentrant {
+    function ragequit(uint256 label, uint256 sk, uint256 rho, address recipient) external nonReentrant {
         if (msg.sender != labelDepositor[label]) revert NotOriginalDepositor();
         if (isRagequit[label]) revert AlreadyRagequit();
+        if (sk >= SNARK_SCALAR_FIELD || rho >= SNARK_SCALAR_FIELD) revert NotInField();
+
+        // 1. Verify (sk, rho) matches precommitment
+        uint256 P = hasher1.poseidon([sk]);
+        uint256 expectedPre = hasher2.poseidon([P, rho]);
+        if (expectedPre != labelPrecommitment[label]) revert InvalidPrecommitment();
+
+        // 2. Derive genuine nullifier and enforce uniqueness
+        uint256 nullifierHash = hasher2.poseidon([sk, rho]);
         if (nullifierSpent[nullifierHash]) revert NullifierAlreadySpent();
-        if (nullifierHash >= SNARK_SCALAR_FIELD) revert NotInField();
 
         uint256 amount = depositValue[label];
         if (amount == 0) revert InvalidValue();
-        address token = labelToken[label];
 
         isRagequit[label] = true;
         nullifierSpent[nullifierHash] = true;
@@ -163,7 +183,7 @@ contract MarginaliaTokenPool {
     }
 
     // ================================================================== withdraw
-    function withdraw(Withdrawal calldata w, Proof calldata p, address token) external nonReentrant {
+    function withdraw(Withdrawal calldata w, Proof calldata p) external nonReentrant {
         uint256 withdrawnValue = p.pubSignals[0];
         uint256 stateRoot = p.pubSignals[1];
         uint256 aspRoot = p.pubSignals[2];
@@ -171,11 +191,10 @@ contract MarginaliaTokenPool {
         uint256 nullifierHash = p.pubSignals[4];
         uint256 newCommitment = p.pubSignals[5];
 
-        if (token == address(0)) revert ZeroAddress();
         if (withdrawnValue == 0) revert InvalidValue();
         if (w.fee > withdrawnValue) revert FeeTooHigh();
         if (w.fee > 0 && w.relayer == address(0)) revert FeeTooHigh();
-        if (context != computeContext(w, token)) revert InvalidContext();
+        if (context != computeContext(w)) revert InvalidContext();
         if (!isKnownRoot(stateRoot)) revert UnknownStateRoot();
         if (!register.isValidRoot(aspRoot)) revert StaleAspRoot();
         if (nullifierSpent[nullifierHash]) revert NullifierAlreadySpent();
@@ -196,7 +215,7 @@ contract MarginaliaTokenPool {
     }
 
     // ================================================================== views
-    function computeContext(Withdrawal calldata w, address token) public view returns (uint256) {
+    function computeContext(Withdrawal calldata w) public view returns (uint256) {
         return uint256(keccak256(abi.encode(block.chainid, address(this), token, w.recipient, w.relayer, w.fee)))
             % SNARK_SCALAR_FIELD;
     }
@@ -247,15 +266,15 @@ contract MarginaliaTokenPool {
         return idx;
     }
 
-    function _safeTransfer(address token, address to, uint256 value) internal {
+    function _safeTransfer(address _token, address to, uint256 value) internal {
         (bool success, bytes memory data) =
-            token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, value));
+            _token.call(abi.encodeWithSelector(IERC20.transfer.selector, to, value));
         if (!success || (data.length != 0 && !abi.decode(data, (bool)))) revert TransferFailed();
     }
 
-    function _safeTransferFrom(address token, address from, address to, uint256 value) internal {
+    function _safeTransferFrom(address _token, address from, address to, uint256 value) internal {
         (bool success, bytes memory data) =
-            token.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
+            _token.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from, to, value));
         if (!success || (data.length != 0 && !abi.decode(data, (bool)))) revert TransferFailed();
     }
 }

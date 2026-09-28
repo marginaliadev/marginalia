@@ -10,12 +10,18 @@ describe("MARGINALIA Folio Event Indexer (Mitigation for L11)", function () {
 
   async function deployAll() {
     [owner, magistrate, alice, bob] = await ethers.getSigners();
-    ({ h2, h3 } = await M.deployHashers(owner, ethers));
+    ({ h1, h2, h3 } = await M.deployHashers(owner, ethers));
     verifier = await (await ethers.getContractFactory("Groth16Verifier")).deploy();
     register = await (await ethers.getContractFactory("MagistrateRegister")).deploy(magistrate.address);
     pool = await (
       await ethers.getContractFactory("MarginaliaPool")
-    ).deploy(await verifier.getAddress(), await h2.getAddress(), await h3.getAddress(), await register.getAddress());
+    ).deploy(
+      await verifier.getAddress(),
+      await h1.getAddress(),
+      await h2.getAddress(),
+      await h3.getAddress(),
+      await register.getAddress()
+    );
   }
 
   beforeEach(deployAll);

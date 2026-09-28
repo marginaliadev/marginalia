@@ -17,12 +17,18 @@ describe("MARGINALIA Phase 3 — Invariant & Property Fuzzing", function () {
     relayer = signers[2];
     actors = signers.slice(3, 8);
 
-    ({ h2, h3 } = await M.deployHashers(owner, ethers));
+    ({ h1, h2, h3 } = await M.deployHashers(owner, ethers));
     verifier = await (await ethers.getContractFactory("Groth16Verifier")).deploy();
     register = await (await ethers.getContractFactory("MagistrateRegister")).deploy(magistrate.address);
     pool = await (
       await ethers.getContractFactory("MarginaliaPool")
-    ).deploy(await verifier.getAddress(), await h2.getAddress(), await h3.getAddress(), await register.getAddress());
+    ).deploy(
+      await verifier.getAddress(),
+      await h1.getAddress(),
+      await h2.getAddress(),
+      await h3.getAddress(),
+      await register.getAddress()
+    );
   }
 
   beforeEach(deployAll);
@@ -65,7 +71,8 @@ describe("MARGINALIA Phase 3 — Invariant & Property Fuzzing", function () {
     const nRagequit = await M.nullifierOf(ragequitTarget.note.sk, ragequitTarget.note.rho);
     await pool.connect(ragequitTarget.depositor).ragequit(
       ragequitTarget.note.label,
-      nRagequit,
+      ragequitTarget.note.sk,
+      ragequitTarget.note.rho,
       ragequitTarget.depositor.address
     );
     totalRagequitted += BigInt(ragequitTarget.note.value);

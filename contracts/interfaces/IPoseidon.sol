@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+/// @notice Poseidon hasher deployed from circomlibjs bytecode (1 input).
+interface IPoseidonT2 {
+    function poseidon(uint256[1] calldata input) external pure returns (uint256);
+}
+
 /// @notice Poseidon hasher deployed from circomlibjs bytecode (2 inputs).
 interface IPoseidonT3 {
     function poseidon(uint256[2] calldata input) external pure returns (uint256);

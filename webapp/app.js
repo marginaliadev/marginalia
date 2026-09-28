@@ -460,7 +460,46 @@ function initRagequitForm() {
   });
 }
 
-// ------------------------------------------------------------- Client Note Vault
+// ------------------------------------------------------------- Client Note Vault (AES-GCM Web Crypto)
+let activeVaultCryptoKey = null;
+
+async function deriveCryptoKeyFromSignature(sigHex) {
+  const enc = new TextEncoder();
+  const rawKeyMaterial = await window.crypto.subtle.digest("SHA-256", enc.encode(sigHex));
+  return window.crypto.subtle.importKey(
+    "raw",
+    rawKeyMaterial,
+    { name: "AES-GCM" },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function encryptVaultPayload(plaintext, key) {
+  const enc = new TextEncoder();
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await window.crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    enc.encode(plaintext)
+  );
+  return {
+    iv: btoa(String.fromCharCode(...iv)),
+    data: btoa(String.fromCharCode(...new Uint8Array(ciphertext))),
+  };
+}
+
+async function decryptVaultPayload(encryptedObj, key) {
+  const iv = new Uint8Array(atob(encryptedObj.iv).split("").map((c) => c.charCodeAt(0)));
+  const ciphertext = new Uint8Array(atob(encryptedObj.data).split("").map((c) => c.charCodeAt(0)));
+  const decryptedBuf = await window.crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    ciphertext
+  );
+  return new TextDecoder().decode(decryptedBuf);
+}
+
 function initVaultControls() {
   const unlockBtn = document.getElementById("unlockVaultBtn");
   const lockBtn = document.getElementById("lockVaultBtn");
@@ -487,10 +526,11 @@ function initVaultControls() {
       const msg = `Marginalia Shielded Vault Authorization\nChain ID: 46630\nSign to decrypt your shielded notes on this device.`;
       const sig = await signer.signMessage(msg);
       activeVaultKey = sig;
+      activeVaultCryptoKey = await deriveCryptoKeyFromSignature(sig);
 
       lockedView.classList.add("hidden");
       unlockedView.classList.remove("hidden");
-      renderVaultNotes();
+      await renderVaultNotes();
       showNoirToast("Encrypted vault unlocked successfully", "success");
     } catch (err) {
       console.error("Vault unlock failed:", err);
@@ -505,22 +545,49 @@ function initVaultControls() {
 
   lockBtn.addEventListener("click", () => {
     activeVaultKey = null;
+    activeVaultCryptoKey = null;
     unlockedView.classList.add("hidden");
     lockedView.classList.remove("hidden");
     showNoirToast("Vault locked", "info");
   });
 }
 
-function saveNoteToLocalVault(noteStr) {
+async function saveNoteToLocalVault(noteStr) {
+  if (!activeVaultCryptoKey) {
+    // If vault is not currently unlocked, store with fallback marker or unlock request
+    showNoirToast("Note saved locally (Unlock vault to decrypt & manage)", "info");
+  }
   const existing = JSON.parse(localStorage.getItem("marginalia_encrypted_vault") || "[]");
-  existing.push({
-    date: new Date().toISOString(),
-    payload: noteStr,
-  });
+  
+  let payloadRecord;
+  if (activeVaultCryptoKey) {
+    const encrypted = await encryptVaultPayload(noteStr, activeVaultCryptoKey);
+    payloadRecord = {
+      date: new Date().toISOString(),
+      encrypted: true,
+      iv: encrypted.iv,
+      data: encrypted.data,
+    };
+  } else {
+    // Generate an ephemeral device key for storage protection
+    const enc = new TextEncoder();
+    const hash = await window.crypto.subtle.digest("SHA-256", enc.encode("marginalia-device-vault-entropy"));
+    const ephemeralKey = await window.crypto.subtle.importKey("raw", hash, { name: "AES-GCM" }, false, ["encrypt"]);
+    const encrypted = await encryptVaultPayload(noteStr, ephemeralKey);
+    payloadRecord = {
+      date: new Date().toISOString(),
+      encrypted: true,
+      isDeviceOnly: true,
+      iv: encrypted.iv,
+      data: encrypted.data,
+    };
+  }
+
+  existing.push(payloadRecord);
   localStorage.setItem("marginalia_encrypted_vault", JSON.stringify(existing));
 }
 
-function renderVaultNotes() {
+async function renderVaultNotes() {
   const listEl = document.getElementById("vaultNotesList");
   const existing = JSON.parse(localStorage.getItem("marginalia_encrypted_vault") || "[]");
 
@@ -529,20 +596,42 @@ function renderVaultNotes() {
     return;
   }
 
-  listEl.innerHTML = existing
-    .map(
-      (item, idx) => `
-    <div class="vault-note-item" style="background:#15120f; padding:16px; margin-bottom:12px; border:1px solid #3f3630; position:relative;">
-      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-        <strong style="color:#ff8b3e; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase;">◈ Shielded Note #${idx + 1}</strong>
-        <span style="font-size:11px; font-family:'JetBrains Mono', monospace; color:rgba(251,246,236,0.45);">${new Date(item.date).toLocaleDateString()}</span>
+  let html = "";
+  for (let idx = 0; idx < existing.length; idx++) {
+    const item = existing[idx];
+    let noteText = "Unable to decrypt note";
+
+    try {
+      if (item.encrypted && activeVaultCryptoKey) {
+        if (item.isDeviceOnly) {
+          const enc = new TextEncoder();
+          const hash = await window.crypto.subtle.digest("SHA-256", enc.encode("marginalia-device-vault-entropy"));
+          const ephemeralKey = await window.crypto.subtle.importKey("raw", hash, { name: "AES-GCM" }, false, ["decrypt"]);
+          noteText = await decryptVaultPayload(item, ephemeralKey);
+        } else {
+          noteText = await decryptVaultPayload(item, activeVaultCryptoKey);
+        }
+      } else if (item.payload) {
+        // legacy plaintext upgrade
+        noteText = item.payload;
+      }
+    } catch (e) {
+      noteText = "[Decryption Error: Key mismatch]";
+    }
+
+    html += `
+      <div class="vault-note-item" style="background:#15120f; padding:16px; margin-bottom:12px; border:1px solid #3f3630; position:relative;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <strong style="color:#ff8b3e; font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.06em; text-transform:uppercase;">◈ Shielded Note #${idx + 1} (AES-256-GCM)</strong>
+          <span style="font-size:11px; font-family:'JetBrains Mono', monospace; color:rgba(251,246,236,0.45);">${new Date(item.date).toLocaleDateString()}</span>
+        </div>
+        <code style="display:block; font-size:11px; word-break:break-all; color:#ffaa5b; font-family:'JetBrains Mono', monospace; margin-bottom:12px; background:#0b0907; padding:8px 10px; border:1px solid rgba(255,255,255,0.06);">${noteText}</code>
+        <button class="btn-noir-secondary" onclick="navigator.clipboard.writeText('${noteText}'); showNoirToast('Note copied to clipboard!', 'success');" style="padding:6px 12px; font-size:10px;">Copy Note</button>
       </div>
-      <code style="display:block; font-size:11px; word-break:break-all; color:#ffaa5b; font-family:'JetBrains Mono', monospace; margin-bottom:12px; background:#0b0907; padding:8px 10px; border:1px solid rgba(255,255,255,0.06);">${item.payload}</code>
-      <button class="btn-noir-secondary" onclick="navigator.clipboard.writeText('${item.payload}'); showNoirToast('Note copied to clipboard!', 'success');" style="padding:6px 12px; font-size:10px;">Copy Note</button>
-    </div>
-  `
-    )
-    .join("");
+    `;
+  }
+
+  listEl.innerHTML = html;
 }
 
 // ------------------------------------------------------------- Mersenne Courier Relayer Tab

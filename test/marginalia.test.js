@@ -9,12 +9,18 @@ describe("MARGINALIA shielded pool", function () {
 
   async function deployAll() {
     [owner, magistrate, alice, bob, relayer, mallory] = await ethers.getSigners();
-    ({ h2, h3 } = await M.deployHashers(owner, ethers));
+    ({ h1, h2, h3 } = await M.deployHashers(owner, ethers));
     verifier = await (await ethers.getContractFactory("Groth16Verifier")).deploy();
     register = await (await ethers.getContractFactory("MagistrateRegister")).deploy(magistrate.address);
     pool = await (
       await ethers.getContractFactory("MarginaliaPool")
-    ).deploy(await verifier.getAddress(), await h2.getAddress(), await h3.getAddress(), await register.getAddress());
+    ).deploy(
+      await verifier.getAddress(),
+      await h1.getAddress(),
+      await h2.getAddress(),
+      await h3.getAddress(),
+      await register.getAddress()
+    );
   }
 
   async function depositFrom(signer, value) {
@@ -176,13 +182,13 @@ describe("MARGINALIA shielded pool", function () {
     expect(back.sk).to.equal(note.sk);
   });
 
-  describe("Ragequit (Emergency Exit)", function () {
+  describe("Ragequit (Emergency Exit - Hardened Cryptographic Verification)", function () {
     it("allows original depositor to ragequit an unapproved deposit and recover funds", async function () {
       const note = await depositFrom(alice, ONE);
       const nullifier = await M.nullifierOf(note.sk, note.rho);
 
       const aliceBalBefore = await ethers.provider.getBalance(alice.address);
-      const tx = await pool.connect(alice).ragequit(note.label, nullifier, alice.address);
+      const tx = await pool.connect(alice).ragequit(note.label, note.sk, note.rho, alice.address);
       const receipt = await tx.wait();
       const gasCost = receipt.gasUsed * receipt.gasPrice;
 
@@ -192,32 +198,38 @@ describe("MARGINALIA shielded pool", function () {
       expect(await pool.nullifierSpent(nullifier)).to.be.true;
     });
 
-    it("prevents non-depositor from ragequitting someone else's deposit", async function () {
+    it("rejects ragequit with forged sk/rho (cannot fake precommitment)", async function () {
       const note = await depositFrom(alice, ONE);
-      const nullifier = await M.nullifierOf(note.sk, note.rho);
+      const fakeSk = BigInt(999999);
 
       await expect(
-        pool.connect(mallory).ragequit(note.label, nullifier, mallory.address)
+        pool.connect(alice).ragequit(note.label, fakeSk, note.rho, alice.address)
+      ).to.be.revertedWithCustomError(pool, "InvalidPrecommitment");
+    });
+
+    it("prevents non-depositor from ragequitting someone else's deposit", async function () {
+      const note = await depositFrom(alice, ONE);
+
+      await expect(
+        pool.connect(mallory).ragequit(note.label, note.sk, note.rho, mallory.address)
       ).to.be.revertedWithCustomError(pool, "NotOriginalDepositor");
     });
 
     it("prevents double ragequit", async function () {
       const note = await depositFrom(alice, ONE);
-      const nullifier = await M.nullifierOf(note.sk, note.rho);
 
-      await pool.connect(alice).ragequit(note.label, nullifier, alice.address);
+      await pool.connect(alice).ragequit(note.label, note.sk, note.rho, alice.address);
       await expect(
-        pool.connect(alice).ragequit(note.label, nullifier, alice.address)
+        pool.connect(alice).ragequit(note.label, note.sk, note.rho, alice.address)
       ).to.be.revertedWithCustomError(pool, "AlreadyRagequit");
     });
 
     it("prevents shielded ZK withdrawal on a note that was ragequitted", async function () {
       const note = await depositFrom(alice, ONE);
-      const nullifier = await M.nullifierOf(note.sk, note.rho);
       const aspTree = await approve([note.label]);
 
       // Alice ragequits before ZK withdrawal
-      await pool.connect(alice).ragequit(note.label, nullifier, alice.address);
+      await pool.connect(alice).ragequit(note.label, note.sk, note.rho, alice.address);
 
       // Now an attempt to ZK-withdraw with that note must fail because nullifier is already spent
       const w = { recipient: bob.address, relayer: ethers.ZeroAddress, fee: 0n };
@@ -227,7 +239,6 @@ describe("MARGINALIA shielded pool", function () {
 
     it("prevents ragequitting a note that has already been withdrawn via ZK proof", async function () {
       const note = await depositFrom(alice, ONE);
-      const nullifier = await M.nullifierOf(note.sk, note.rho);
       const aspTree = await approve([note.label]);
 
       const w = { recipient: bob.address, relayer: ethers.ZeroAddress, fee: 0n };
@@ -236,7 +247,7 @@ describe("MARGINALIA shielded pool", function () {
 
       // Alice tries to ragequit the withdrawn note to double-dip
       await expect(
-        pool.connect(alice).ragequit(note.label, nullifier, alice.address)
+        pool.connect(alice).ragequit(note.label, note.sk, note.rho, alice.address)
       ).to.be.revertedWithCustomError(pool, "NullifierAlreadySpent");
     });
   });

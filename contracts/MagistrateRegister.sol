@@ -26,8 +26,10 @@ contract MagistrateRegister {
     error NotOwner();
     error NotMagistrate();
     error ZeroRoot();
+    error ZeroAddress();
 
     constructor(address _magistrate) {
+        if (_magistrate == address(0)) revert ZeroAddress();
         owner = msg.sender;
         magistrate = _magistrate;
         emit MagistrateChanged(address(0), _magistrate);
@@ -35,6 +37,7 @@ contract MagistrateRegister {
 
     function setMagistrate(address _magistrate) external {
         if (msg.sender != owner) revert NotOwner();
+        if (_magistrate == address(0)) revert ZeroAddress();
         emit MagistrateChanged(magistrate, _magistrate);
         magistrate = _magistrate;
     }

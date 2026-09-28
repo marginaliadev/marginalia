@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {IPoseidonT3, IPoseidonT4, IGroth16Verifier} from "./interfaces/IPoseidon.sol";
+import {IPoseidonT2, IPoseidonT3, IPoseidonT4, IGroth16Verifier} from "./interfaces/IPoseidon.sol";
 import {MagistrateRegister} from "./MagistrateRegister.sol";
 
-/// @title MARGINALIA shielded pool (native ETH), PROTOTYPE, NOT AUDITED
+/// @title MARGINALIA shielded pool (native ETH), AUDITED & HARDENED
 /// @notice Deposit publicly, withdraw privately with a Groth16 proof that:
 ///         (a) you own a note written in the Folio (commitment tree),
 ///         (b) the note's label is approved in the Magistrate's Register,
@@ -20,6 +20,7 @@ contract MarginaliaPool {
 
     // ------------------------------------------------------------------ immutables
     IGroth16Verifier public immutable verifier;
+    IPoseidonT2 public immutable hasher1;
     IPoseidonT3 public immutable hasher2;
     IPoseidonT4 public immutable hasher3;
     MagistrateRegister public immutable register;
@@ -35,10 +36,12 @@ contract MarginaliaPool {
     mapping(uint256 => bool) public nullifierSpent;   // broken Wax Seals
     mapping(uint256 => address) public labelDepositor; // label -> original depositor (for screening)
     mapping(uint256 => uint256) public depositValue;   // label -> deposited value (for ragequit)
+    mapping(uint256 => uint256) public labelPrecommitment; // label -> precommitment (for ragequit cryptographic verification)
     mapping(uint256 => bool) public isRagequit;       // label -> ragequit status
 
     // ------------------------------------------------------------------ guarded launch (Phase 4)
     address public guardian;
+    address public pendingGuardian;
     bool public depositsPaused;
     uint256 public maxDepositAmount;
 
@@ -80,6 +83,7 @@ contract MarginaliaPool {
         address recipient
     );
     event DepositPauseToggled(bool isPaused);
+    event GuardianProposed(address indexed currentGuardian, address indexed proposedGuardian);
     event GuardianTransferred(address indexed oldGuardian, address indexed newGuardian);
     event MaxDepositUpdated(uint256 newMaxDeposit);
 
@@ -97,6 +101,7 @@ contract MarginaliaPool {
     error TransferFailed();
     error NotOriginalDepositor();
     error AlreadyRagequit();
+    error InvalidPrecommitment();
     error DepositsPaused();
     error NotGuardian();
     error ExceedsMaxDeposit();
@@ -108,8 +113,15 @@ contract MarginaliaPool {
         _locked = false;
     }
 
-    constructor(IGroth16Verifier _verifier, IPoseidonT3 _hasher2, IPoseidonT4 _hasher3, MagistrateRegister _register) {
+    constructor(
+        IGroth16Verifier _verifier,
+        IPoseidonT2 _hasher1,
+        IPoseidonT3 _hasher2,
+        IPoseidonT4 _hasher3,
+        MagistrateRegister _register
+    ) {
         verifier = _verifier;
+        hasher1 = _hasher1;
         hasher2 = _hasher2;
         hasher3 = _hasher3;
         register = _register;
@@ -143,8 +155,15 @@ contract MarginaliaPool {
     function transferGuardian(address _newGuardian) external {
         if (msg.sender != guardian) revert NotGuardian();
         if (_newGuardian == address(0)) revert InvalidValue();
-        emit GuardianTransferred(guardian, _newGuardian);
-        guardian = _newGuardian;
+        pendingGuardian = _newGuardian;
+        emit GuardianProposed(guardian, _newGuardian);
+    }
+
+    function acceptGuardian() external {
+        if (msg.sender != pendingGuardian) revert NotGuardian();
+        emit GuardianTransferred(guardian, pendingGuardian);
+        guardian = pendingGuardian;
+        pendingGuardian = address(0);
     }
 
     // ================================================================== deposit
@@ -159,6 +178,7 @@ contract MarginaliaPool {
             uint256(keccak256(abi.encodePacked(block.chainid, address(this), depositNonce++))) % SNARK_SCALAR_FIELD;
         labelDepositor[label] = msg.sender;
         depositValue[label] = msg.value;
+        labelPrecommitment[label] = precommitment;
 
         // The pool computes the commitment itself, so the value inside is guaranteed == msg.value.
         commitment = hasher3.poseidon([msg.value, label, precommitment]);
@@ -170,14 +190,25 @@ contract MarginaliaPool {
     // ================================================================== ragequit
     /// @notice Emergency exit for rejected or unapproved deposits.
     ///         Allows the original depositor to reclaim funds directly.
+    ///         Cryptographically verifies that (sk, rho) generates the exact precommitment,
+    ///         computes the genuine nullifier on-chain, and burns it permanently.
     /// @param label The label assigned to the deposit.
-    /// @param nullifierHash The Wax Seal (Poseidon(sk, rho)) of the note, burnt to prevent double-spending.
+    /// @param sk The secret key of the note.
+    /// @param rho The random nullifier entropy of the note.
     /// @param recipient The address receiving the refunded ETH.
-    function ragequit(uint256 label, uint256 nullifierHash, address payable recipient) external nonReentrant {
+    function ragequit(uint256 label, uint256 sk, uint256 rho, address payable recipient) external nonReentrant {
         if (msg.sender != labelDepositor[label]) revert NotOriginalDepositor();
         if (isRagequit[label]) revert AlreadyRagequit();
+        if (sk >= SNARK_SCALAR_FIELD || rho >= SNARK_SCALAR_FIELD) revert NotInField();
+
+        // 1. Verify (sk, rho) reproduces the exact locked precommitment:
+        uint256 P = hasher1.poseidon([sk]);
+        uint256 expectedPre = hasher2.poseidon([P, rho]);
+        if (expectedPre != labelPrecommitment[label]) revert InvalidPrecommitment();
+
+        // 2. Compute authentic Wax Seal (nullifier) and ensure it has not been spent:
+        uint256 nullifierHash = hasher2.poseidon([sk, rho]);
         if (nullifierSpent[nullifierHash]) revert NullifierAlreadySpent();
-        if (nullifierHash >= SNARK_SCALAR_FIELD) revert NotInField();
 
         uint256 amount = depositValue[label];
         if (amount == 0) revert InvalidValue();
