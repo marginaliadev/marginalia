@@ -233,6 +233,42 @@ function initWalletConnector() {
 
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
+
+      // Request accounts
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+
+      // Enforce Robinhood Chain Testnet (Chain ID 46630 / 0xb626)
+      const network = await provider.getNetwork();
+      const targetChainId = 46630n;
+      if (network.chainId !== targetChainId) {
+        try {
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0xb626" }],
+          });
+        } catch (switchError) {
+          // If the testnet is not added to wallet yet, prompt to add it
+          if (switchError.code === 4902 || switchError.message?.includes("unrecognized") || switchError.message?.includes("not added")) {
+            await window.ethereum.request({
+              method: "wallet_addEthereumChain",
+              params: [
+                {
+                  chainId: "0xb626",
+                  chainName: "Robinhood Chain Testnet",
+                  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+                  rpcUrls: ["https://rpc.testnet.chain.robinhood.com"],
+                  blockExplorerUrls: ["https://explorer.testnet.chain.robinhood.com"],
+                },
+              ],
+            });
+          } else {
+            throw switchError;
+          }
+        }
+        // Refresh provider after network switch
+        provider = new ethers.BrowserProvider(window.ethereum);
+      }
+
       signer = await provider.getSigner();
       userAddress = await signer.getAddress();
 
@@ -240,7 +276,24 @@ function initWalletConnector() {
       connectBtn.classList.add("btn-connect");
       connectBtn.innerHTML = `◈ ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
 
-      showNoirToast(`Wallet connected: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`, "success");
+      showNoirToast(`Connected to Robinhood Testnet: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`, "success");
+
+      // Listen for network or account changes
+      if (window.ethereum.on && !window._marginaliaListenersAttached) {
+        window._marginaliaListenersAttached = true;
+        window.ethereum.on("accountsChanged", (accounts) => {
+          if (!accounts || accounts.length === 0) {
+            window.location.reload();
+          } else {
+            userAddress = accounts[0];
+            connectBtn.innerHTML = `◈ ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
+            showNoirToast(`Switched account: ${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`, "info");
+          }
+        });
+        window.ethereum.on("chainChanged", () => {
+          window.location.reload();
+        });
+      }
 
       // Update metrics
       updateMetrics();
