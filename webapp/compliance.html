@@ -86,8 +86,8 @@
           <input type="text" id="disclosureNote" placeholder="marginalia-note-v1-..." required>
         </div>
         <div class="form-group">
-          <label for="auditorPublicKey">Auditor / Authority Public Key (Hex / X25519)</label>
-          <input type="text" id="auditorPublicKey" placeholder="0x... (Leave blank for generic verifiable proof)" value="0x04e6c38221ad85f7a0be9d5c45e8f49ef2c398460">
+          <label for="auditorPublicKey">Auditor / Authority Public Key (Hex / X25519 PEM)</label>
+          <input type="text" id="auditorPublicKey" placeholder="Leave blank to auto-generate X25519 keypair, or paste auditor public key">
         </div>
         <div class="form-actions">
           <button type="submit" id="generateDisclosureBtn" class="btn-noir-primary">

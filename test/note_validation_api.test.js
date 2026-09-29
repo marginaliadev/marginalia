@@ -143,4 +143,42 @@ describe("MARGINALIA Secret Note Validation & Anti-Tamper Verification", functio
     const d2 = await check2.json();
     expect(d2.spent).to.be.false;
   });
+
+  it("POST /api/disclosure/generate creates genuine X25519 ECDH encrypted audit packet", async function () {
+    const secret = await M.newSecret();
+    const val = 1000000000000000000n;
+    const label = 88n;
+    const commitment = await M.commitmentOf(val, label, secret.precommitment);
+    const note = M.serializeNote({
+      sk: secret.sk,
+      rho: secret.rho,
+      value: val,
+      label,
+      commitment,
+    });
+
+    const res = await fetch(`${baseUrl}/api/disclosure/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note }),
+    });
+
+    expect(res.status).to.equal(200);
+    const data = await res.json();
+    expect(data.standard).to.equal("LETTER_OF_DISCLOSURE_V1");
+    expect(data.viewingKeyProof).to.be.an("object");
+    expect(data.viewingKeyProof.ciphertext).to.be.a("string");
+    expect(data.viewingKeyProof.iv).to.be.a("string");
+    expect(data.viewingKeyProof.tag).to.be.a("string");
+    expect(data.viewingKeyProof.ephemeralPublicKey).to.include("BEGIN PUBLIC KEY");
+  });
+
+  it("GET /api/status returns live pool balance and telemetry", async function () {
+    const res = await fetch(`${baseUrl}/api/status`);
+    expect(res.status).to.equal(200);
+    const data = await res.json();
+    expect(data.chainId).to.equal(46630);
+    expect(data.poolBalanceEth).to.be.a("string");
+    expect(data.totalLeaves).to.be.a("number");
+  });
 });

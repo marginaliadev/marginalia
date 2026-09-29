@@ -331,9 +331,9 @@ async function updateMetrics() {
     const res = await fetch("/api/status");
     if (res.ok) {
       const data = await res.json();
-      if (folioCountEl) folioCountEl.textContent = data.totalLeaves || "0";
-      if (poolBalanceEl) poolBalanceEl.textContent = "42.50";
-      if (aspApprovedEl) aspApprovedEl.textContent = `${data.totalDeposits || 0} / ${data.totalDeposits || 0}`;
+      if (folioCountEl) folioCountEl.textContent = data.totalLeaves !== undefined ? data.totalLeaves : "0";
+      if (poolBalanceEl) poolBalanceEl.textContent = data.poolBalanceEth || "0.000";
+      if (aspApprovedEl) aspApprovedEl.textContent = `${data.approvedDeposits || 0} / ${data.totalDeposits || 0}`;
       return;
     }
   } catch (e) {
@@ -341,9 +341,9 @@ async function updateMetrics() {
   }
 
   // Fallback defaults
-  if (folioCountEl) folioCountEl.textContent = "128";
-  if (poolBalanceEl) poolBalanceEl.textContent = "42.50";
-  if (aspApprovedEl) aspApprovedEl.textContent = "128 / 128";
+  if (folioCountEl) folioCountEl.textContent = "0";
+  if (poolBalanceEl) poolBalanceEl.textContent = "0.000";
+  if (aspApprovedEl) aspApprovedEl.textContent = "0 / 0";
 }
 
 // ------------------------------------------------------------- Shielded Deposit
@@ -1087,7 +1087,8 @@ function initCourierTab() {
         estGasEl.textContent = Number(data.estimatedGas).toLocaleString();
         gasPriceEl.textContent = `${data.gasPriceGwei} Gwei`;
         minFeeEthEl.textContent = `${Number(data.minFeeEth).toFixed(5)} ETH`;
-        courierAddrEl.textContent = "0x7099...79C8 (Active)";
+        const addr = data.relayerAddress || poolAddress;
+        courierAddrEl.textContent = `${addr.slice(0, 6)}...${addr.slice(-4)} (Active)`;
         quoteDisplay.classList.remove("hidden");
         showNoirToast("Mersenne Courier dynamic gas quote refreshed", "success");
       } else {
@@ -1098,7 +1099,7 @@ function initCourierTab() {
       estGasEl.textContent = "1,150,000";
       gasPriceEl.textContent = "2.0 Gwei";
       minFeeEthEl.textContent = "0.00253 ETH";
-      courierAddrEl.textContent = "0x7099...79C8 (Active)";
+      courierAddrEl.textContent = `${poolAddress.slice(0, 6)}...${poolAddress.slice(-4)} (Active)`;
       quoteDisplay.classList.remove("hidden");
       showNoirToast("Quoted with default Robinhood L2 parameters", "info");
     } finally {
@@ -1117,7 +1118,7 @@ function initDisclosureTab() {
 
   if (!form) return;
 
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     const noteStr = document.getElementById("disclosureNote").value.trim();
     const auditorKey = document.getElementById("auditorPublicKey").value.trim();
@@ -1132,25 +1133,25 @@ function initDisclosureTab() {
     }
 
     try {
-      // Construct a verifiable compliance disclosure package
-      const disclosurePkg = {
-        protocol: "MARGINALIA_ZK_SHIELDED_POOL",
-        standard: "LETTER_OF_DISCLOSURE_V1",
-        chain: "Robinhood Chain L2 (46630)",
-        timestamp: new Date().toISOString(),
-        auditorRecipient: auditorKey || "PUBLIC_VERIFIER",
-        complianceMemo: {
-          noteReference: noteStr.slice(0, 24) + "...",
-          taxBasisConfirmed: true,
-          associationSetStatus: "MAGISTRATE_SANCTION_SCREENED",
-          antiMoneyLaunderingCheck: "PASSED_UNLINKABLE_WHITELIST",
-        },
-        viewingKeyProof: {
-          ephemeralPublicKey: "0x03" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
-          encryptedPayload: "0x" + Array.from({ length: 96 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
-          sha256Digest: "0x" + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join(""),
-        },
-      };
+      // 1. Validate note syntax locally
+      parseMarginalNote(noteStr);
+
+      // 2. Request genuine cryptographic X25519 ECDH encrypted memo from backend
+      const res = await fetch("/api/disclosure/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          note: noteStr,
+          auditorPublicKeyPem: auditorKey,
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to generate disclosure package");
+      }
+
+      const disclosurePkg = await res.json();
 
       jsonText.textContent = JSON.stringify(disclosurePkg, null, 2);
       resultBox.classList.remove("hidden");
@@ -1163,7 +1164,7 @@ function initDisclosureTab() {
         setTimeout(() => (copyBtn.textContent = "Copy Package"), 2000);
       };
 
-      showNoirToast("Letter of Disclosure generated successfully", "success");
+      showNoirToast("Cryptographic Letter of Disclosure generated", "success");
     } catch (err) {
       showNoirModal({
         title: "Disclosure Generation Failed",
