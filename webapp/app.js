@@ -2,7 +2,7 @@
 // Interacts with MarginaliaPool, MagistrateRegister, and local encrypted vault.
 
 let provider, signer, userAddress;
-let poolAddress = "0x0000000000000000000000000000000000000000";
+let poolAddress = "0x17Fbd586f4Cbf373A7f15a3330D1b50E52b088B4";
 let activeVaultKey = null;
 
 // Initialize on DOM load

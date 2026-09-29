@@ -1,0 +1,13 @@
+{
+  "network": "robinhoodTestnet",
+  "chainId": 46630,
+  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "magistrate": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "poseidonT3": "0xfD7467C18e0037123D0feeA2EB1Eb04f94E5d416",
+  "poseidonT4": "0x7CF05e0AFbB45a1e062dA06ebdb64dD75d4d2EEc",
+  "verifier": "0x33801353c0810C09Dd15EeA23CcBE56856B021D2",
+  "ragequitVerifier": "0x543d6E250DDBE97Bc965332Fe5A489855929624A",
+  "register": "0xD8E2c5aDa9154FF9621520765414c5f4B2694522",
+  "pool": "0x17Fbd586f4Cbf373A7f15a3330D1b50E52b088B4",
+  "deployBlock": 125989459
+}
