@@ -70,6 +70,43 @@ function apiRateLimiter(req, res, next) {
 
 app.use("/api/", apiRateLimiter);
 
+// Global Security Middleware: Intercept all outgoing responses and redact any sensitive secrets/keys
+function redactSecrets(obj) {
+  if (!obj) return obj;
+  const secrets = [
+    process.env.DEPLOYER_PRIVATE_KEY,
+    process.env.RELAYER_PRIVATE_KEY,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+  ].filter((s) => typeof s === "string" && s.trim().length > 6);
+
+  if (typeof obj === "string") {
+    let clean = obj;
+    for (const secret of secrets) {
+      clean = clean.split(secret).join("[REDACTED_SECRET]");
+    }
+    return clean;
+  }
+
+  if (typeof obj === "object") {
+    if (Buffer.isBuffer(obj)) return obj;
+    const sanitized = Array.isArray(obj) ? [] : {};
+    for (const key of Object.keys(obj)) {
+      sanitized[key] = redactSecrets(obj[key]);
+    }
+    return sanitized;
+  }
+
+  return obj;
+}
+
+app.use((req, res, next) => {
+  const originalJson = res.json.bind(res);
+  res.json = (body) => {
+    return originalJson(redactSecrets(body));
+  };
+  next();
+});
+
 // Serve static frontend webapp
 app.use(express.static(path.join(__dirname, "webapp")));
 
