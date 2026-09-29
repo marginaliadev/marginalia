@@ -239,6 +239,215 @@ app.get("/api/asp-tree", async (req, res) => {
 });
 
 /**
+ * POST /api/note/prepare-deposit - Generates cryptographic keypair & precommitment for client deposit.
+ */
+app.post("/api/note/prepare-deposit", async (req, res) => {
+  try {
+    const H = await M.hasher();
+    const sk = M.randomField();
+    const rho = M.randomField();
+    const P = H([sk]);
+    const precommitment = H([P, rho]);
+
+    res.json({
+      sk: sk.toString(),
+      rho: rho.toString(),
+      precommitment: precommitment.toString(),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/deposit/record - Indexes on-chain mined deposit into Supabase & Folio state.
+ */
+app.post("/api/deposit/record", async (req, res) => {
+  const { label, depositor, commitment, value, precommitment, index, txHash, blockNumber } = req.body;
+  if (!label || !commitment || !value) {
+    return res.status(400).json({ error: "Missing deposit parameters" });
+  }
+
+  try {
+    const depRecord = await supabaseService.saveDeposit({
+      label: label.toString(),
+      depositor: (depositor || ethers.ZeroAddress).toLowerCase(),
+      commitment: commitment.toString(),
+      value: value.toString(),
+      precommitment: precommitment ? precommitment.toString() : "0",
+      index: index !== undefined ? Number(index) : 0,
+      status: "APPROVED",
+      txHash: txHash || "",
+      blockNumber: blockNumber ? Number(blockNumber) : 0,
+    });
+
+    const leafRecord = await supabaseService.saveLeaf({
+      index: index !== undefined ? Number(index) : 0,
+      leaf: commitment.toString(),
+      poolAddress: process.env.MARGINALIA_POOL_ADDRESS || "",
+      txHash: txHash || "",
+      blockNumber: blockNumber ? Number(blockNumber) : 0,
+    });
+
+    res.json({ success: true, deposit: depRecord, leaf: leafRecord });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * POST /api/note/validate - Comprehensive cryptographic and on-chain verification of a secret note.
+ */
+app.post("/api/note/validate", async (req, res) => {
+  const { note } = req.body;
+  if (!note || typeof note !== "string") {
+    return res.status(400).json({ valid: false, error: "Missing or invalid note parameter." });
+  }
+
+  try {
+    let parsed;
+    try {
+      parsed = M.parseNote(note.trim());
+    } catch (parseErr) {
+      return res.status(400).json({
+        valid: false,
+        error: `Invalid Note Format: ${parseErr.message || "Decoding failed"}. Genuine Marginal Notes must start with 'marginalia-note-v1-' and contain valid base64url data.`,
+      });
+    }
+
+    const { sk, rho, value, label, commitment } = parsed;
+    if (!sk || !rho || value === undefined) {
+      return res.status(400).json({
+        valid: false,
+        error: "Malformed Note: Note is missing required cryptographic parameters (sk, rho, or value).",
+      });
+    }
+
+    const H = await M.hasher();
+    let skBig, rhoBig, valBig;
+    try {
+      skBig = BigInt(sk);
+      rhoBig = BigInt(rho);
+      valBig = BigInt(value);
+    } catch (_) {
+      return res.status(400).json({
+        valid: false,
+        error: "Corrupted Note: Numerical parameters are not valid integer fields.",
+      });
+    }
+
+    if (skBig >= M.FIELD || rhoBig >= M.FIELD || valBig >= M.FIELD) {
+      return res.status(400).json({
+        valid: false,
+        error: "Invalid Scalar Field: Parameters exceed BN254 SNARK scalar field limits.",
+      });
+    }
+
+    const P = H([skBig]);
+    const precommitment = H([P, rhoBig]);
+    const nullifierHash = H([skBig, rhoBig]);
+
+    // Check commitment consistency if commitment is provided in the note
+    if (label !== undefined && commitment !== undefined) {
+      const labelBig = BigInt(label);
+      const commitBig = BigInt(commitment);
+      const expectedCommitment = H([valBig, labelBig, precommitment]);
+
+      if (expectedCommitment !== commitBig) {
+        return res.status(400).json({
+          valid: false,
+          error: "Cryptographic Tampering Detected: Note commitment does not match internal parameters (sk, rho, value, label). The note has been tampered with or corrupted.",
+        });
+      }
+    }
+
+    // Check if nullifier is already spent (Wax Seal broken)
+    const isSpentDb = await supabaseService.isNullifierSpent(nullifierHash.toString());
+    let isSpentChain = false;
+
+    if (process.env.MARGINALIA_POOL_ADDRESS) {
+      try {
+        const rpcUrl = process.env.RH_TESTNET_RPC_URL || "https://rpc.testnet.chain.robinhood.com";
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const abi = ["function nullifierSpent(uint256) view returns (bool)"];
+        const pool = new ethers.Contract(process.env.MARGINALIA_POOL_ADDRESS, abi, provider);
+        isSpentChain = await pool.nullifierSpent(nullifierHash.toString());
+      } catch (chainErr) {
+        console.warn("On-chain nullifier check warning:", chainErr.message);
+      }
+    }
+
+    if (isSpentDb || isSpentChain) {
+      return res.status(409).json({
+        valid: false,
+        error: "Wax Seal Broken (Already Spent): This note's nullifier has already been spent or ragequitted. Reusing spent notes violates Axiom I (Soundness).",
+      });
+    }
+
+    // Check if commitment exists in Folio tree
+    const leaves = await supabaseService.getAllLeaves();
+    let leafFound = false;
+    let leafIndex = -1;
+    if (commitment !== undefined) {
+      const commitStr = commitment.toString();
+      const idx = leaves.findIndex((l) => l.leaf_commitment === commitStr);
+      if (idx >= 0) {
+        leafFound = true;
+        leafIndex = idx;
+      }
+    }
+
+    if (leaves.length > 0 && !leafFound && commitment !== undefined) {
+      return res.status(404).json({
+        valid: false,
+        error: "Commitment Not Found: Note commitment is not inscribed in the Folio tree on Robinhood Chain.",
+      });
+    }
+
+    return res.json({
+      valid: true,
+      nullifierHash: nullifierHash.toString(),
+      precommitment: precommitment.toString(),
+      commitment: commitment ? commitment.toString() : null,
+      value: valBig.toString(),
+      label: label ? label.toString() : null,
+      leafIndex,
+      isSpent: false,
+    });
+  } catch (err) {
+    return res.status(500).json({ valid: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/nullifier/check - Checks status of a Wax Seal (nullifier) against DB and on-chain state.
+ */
+app.post("/api/nullifier/check", async (req, res) => {
+  const { nullifier } = req.body;
+  if (!nullifier) return res.status(400).json({ error: "Missing nullifier parameter" });
+
+  try {
+    const isSpentDb = await supabaseService.isNullifierSpent(nullifier);
+    let isSpentChain = false;
+    if (process.env.MARGINALIA_POOL_ADDRESS) {
+      try {
+        const rpcUrl = process.env.RH_TESTNET_RPC_URL || "https://rpc.testnet.chain.robinhood.com";
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const abi = ["function nullifierSpent(uint256) view returns (bool)"];
+        const pool = new ethers.Contract(process.env.MARGINALIA_POOL_ADDRESS, abi, provider);
+        isSpentChain = await pool.nullifierSpent(nullifier);
+      } catch (e) {
+        console.warn("Chain nullifier error:", e.message);
+      }
+    }
+    const spent = Boolean(isSpentDb || isSpentChain);
+    res.json({ nullifier, spent });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
  * POST /api/relay/quote - Returns dynamic fee quote for gasless withdrawal.
  */
 app.post("/api/relay/quote", async (req, res) => {
