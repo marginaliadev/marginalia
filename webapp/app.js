@@ -117,6 +117,72 @@ function showNoirModal({
   });
 }
 
+// ------------------------------------------------------------- Error Sanitizer (User-Friendly & Secure)
+function sanitizeErrorMessage(err, context = "Action") {
+  if (!err) return "An unexpected error occurred. Please try again.";
+
+  // Check if user rejected or cancelled in wallet (MetaMask / EIP-1193 code 4001 / ACTION_REJECTED)
+  const isRejected =
+    err.code === "ACTION_REJECTED" ||
+    err.code === 4001 ||
+    err.info?.error?.code === 4001 ||
+    (typeof err.message === "string" && (
+      err.message.toLowerCase().includes("user rejected") ||
+      err.message.toLowerCase().includes("user denied") ||
+      err.message.toLowerCase().includes("action_rejected")
+    ));
+
+  if (isRejected) {
+    return "Request was cancelled in your wallet. No action was taken.";
+  }
+
+  // Check insufficient funds
+  if (
+    err.code === "INSUFFICIENT_FUNDS" ||
+    (typeof err.message === "string" && err.message.toLowerCase().includes("insufficient funds"))
+  ) {
+    return "Insufficient balance in your wallet to cover the transaction value and network gas fee.";
+  }
+
+  const msg = typeof err.message === "string" ? err.message : "";
+
+  // Custom contract errors
+  if (msg.includes("PrecommitmentAlreadyUsed")) {
+    return "This precommitment has already been registered on-chain. Please generate a fresh deposit secret.";
+  }
+  if (msg.includes("NullifierAlreadySpent")) {
+    return "The Wax Seal (nullifier) for this note has already been spent or ragequitted.";
+  }
+  if (msg.includes("NotOriginalDepositor")) {
+    return "Only the original depositing wallet address can execute an emergency ragequit for this note.";
+  }
+  if (msg.includes("AlreadyRagequit")) {
+    return "This deposit has already been exited via emergency ragequit.";
+  }
+  if (msg.includes("InvalidProof")) {
+    return "Zero-knowledge proof verification failed. Please check your note secret and parameters.";
+  }
+  if (msg.includes("InvalidValue")) {
+    return "Invalid transaction value or recipient address. Recipient cannot be the zero address.";
+  }
+  if (msg.includes("FeeTooHigh")) {
+    return "Relayer fee cannot exceed the total withdrawn note value.";
+  }
+
+  // Clean short reason if available
+  const reasonMatch = msg.match(/reason="([^"]+)"/);
+  if (reasonMatch && reasonMatch[1] && !reasonMatch[1].includes("{") && reasonMatch[1].length < 100) {
+    return reasonMatch[1];
+  }
+
+  // If message contains raw JSON, long hex strings (like params: ["0x..."]), or RPC internals, strip them out
+  if (msg.includes("{") || msg.includes("jsonrpc") || msg.includes("0x4d617") || msg.length > 120) {
+    return `${context} could not be completed. Please check your wallet connection and try again.`;
+  }
+
+  return msg || "An error occurred while processing the request.";
+}
+
 // ------------------------------------------------------------- Tabs Navigation
 function initTabs() {
   const tabs = document.querySelectorAll(".tab-btn");
@@ -180,12 +246,25 @@ function initWalletConnector() {
       updateMetrics();
     } catch (err) {
       console.error("Wallet connection failed:", err);
-      showNoirModal({
-        title: "Wallet Connection Failed",
-        message: err.message,
-        type: "danger",
-        confirmText: "Close",
-      });
+      const isRejected =
+        err.code === "ACTION_REJECTED" ||
+        err.code === 4001 ||
+        err.info?.error?.code === 4001 ||
+        (typeof err.message === "string" && (
+          err.message.toLowerCase().includes("user rejected") ||
+          err.message.toLowerCase().includes("user denied")
+        ));
+
+      if (isRejected) {
+        showNoirToast("Connection request was cancelled.", "info");
+      } else {
+        showNoirModal({
+          title: "Wallet Connection Notice",
+          message: sanitizeErrorMessage(err, "Wallet connection"),
+          type: "danger",
+          confirmText: "Close",
+        });
+      }
     }
   });
 }
@@ -282,12 +361,25 @@ function initDepositForm() {
 
     } catch (err) {
       console.error("Deposit error:", err);
-      showNoirModal({
-        title: "Shielded Deposit Failed",
-        message: err.message,
-        type: "danger",
-        confirmText: "Close",
-      });
+      const isRejected =
+        err.code === "ACTION_REJECTED" ||
+        err.code === 4001 ||
+        err.info?.error?.code === 4001 ||
+        (typeof err.message === "string" && (
+          err.message.toLowerCase().includes("user rejected") ||
+          err.message.toLowerCase().includes("user denied")
+        ));
+
+      if (isRejected) {
+        showNoirToast("Transaction request was cancelled in your wallet.", "info");
+      } else {
+        showNoirModal({
+          title: "Shielded Deposit Notice",
+          message: sanitizeErrorMessage(err, "Shielded deposit"),
+          type: "danger",
+          confirmText: "Close",
+        });
+      }
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "Execute Shielded Deposit";
@@ -387,12 +479,25 @@ function initWithdrawForm() {
       form.reset();
     } catch (err) {
       console.error("Withdraw error:", err);
-      showNoirModal({
-        title: "Withdrawal Failed",
-        message: err.message,
-        type: "danger",
-        confirmText: "Dismiss",
-      });
+      const isRejected =
+        err.code === "ACTION_REJECTED" ||
+        err.code === 4001 ||
+        err.info?.error?.code === 4001 ||
+        (typeof err.message === "string" && (
+          err.message.toLowerCase().includes("user rejected") ||
+          err.message.toLowerCase().includes("user denied")
+        ));
+
+      if (isRejected) {
+        showNoirToast("Withdrawal transaction was cancelled in your wallet.", "info");
+      } else {
+        showNoirModal({
+          title: "Withdrawal Notice",
+          message: sanitizeErrorMessage(err, "Withdrawal"),
+          type: "danger",
+          confirmText: "Dismiss",
+        });
+      }
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "Generate Proof & Execute Private Exit";
@@ -447,12 +552,25 @@ function initRagequitForm() {
       form.reset();
     } catch (err) {
       console.error("Ragequit error:", err);
-      showNoirModal({
-        title: "Emergency Exit Failed",
-        message: err.message,
-        type: "danger",
-        confirmText: "Dismiss",
-      });
+      const isRejected =
+        err.code === "ACTION_REJECTED" ||
+        err.code === 4001 ||
+        err.info?.error?.code === 4001 ||
+        (typeof err.message === "string" && (
+          err.message.toLowerCase().includes("user rejected") ||
+          err.message.toLowerCase().includes("user denied")
+        ));
+
+      if (isRejected) {
+        showNoirToast("Ragequit transaction was cancelled in your wallet.", "info");
+      } else {
+        showNoirModal({
+          title: "Emergency Exit Notice",
+          message: sanitizeErrorMessage(err, "Emergency exit"),
+          type: "danger",
+          confirmText: "Dismiss",
+        });
+      }
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "Execute Emergency Exit (Ragequit)";
@@ -535,12 +653,26 @@ function initVaultControls() {
       showNoirToast("Encrypted vault unlocked successfully", "success");
     } catch (err) {
       console.error("Vault unlock failed:", err);
-      showNoirModal({
-        title: "Vault Unlock Failed",
-        message: err.message,
-        type: "danger",
-        confirmText: "Dismiss",
-      });
+      const isRejected =
+        err.code === "ACTION_REJECTED" ||
+        err.code === 4001 ||
+        err.info?.error?.code === 4001 ||
+        (typeof err.message === "string" && (
+          err.message.toLowerCase().includes("user rejected") ||
+          err.message.toLowerCase().includes("user denied") ||
+          err.message.toLowerCase().includes("action_rejected")
+        ));
+
+      if (isRejected) {
+        showNoirToast("Signature request cancelled. Vault remains locked.", "info");
+      } else {
+        showNoirModal({
+          title: "Vault Authorization",
+          message: sanitizeErrorMessage(err, "Vault authorization"),
+          type: "danger",
+          confirmText: "Dismiss",
+        });
+      }
     }
   });
 
