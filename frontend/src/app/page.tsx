@@ -31,6 +31,7 @@ import LiveProtocolTicker from "@/components/LiveProtocolTicker";
 import RevealMotion from "@/components/RevealMotion";
 import NoirpayCircuitCard from "@/components/NoirpayCircuitCard";
 import NoirpayAccountPreview from "@/components/NoirpayAccountPreview";
+import MarginaliaLogo from "@/components/MarginaliaLogo";
 import { motion } from "framer-motion";
 
 export default function HomePage() {
@@ -397,10 +398,10 @@ export default function HomePage() {
       <section className="relative overflow-clip bg-linear-to-b from-white to-dust pb-24 text-black pt-20 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
           <div className="flex max-w-[46rem] flex-col items-center gap-y-4 mb-14">
-            <img
-              src="/marginalia.png"
-              alt="Marginalia Logo"
-              className="size-10 rounded-xs object-contain mb-2"
+            <MarginaliaLogo
+              className="size-11 mb-2 drop-shadow-sm"
+              bracketColor="#0b0907"
+              mColor="#0b0907"
             />
             <h2 className="text-heading-48 text-pretty text-black">
               Marginalia is an account, not a mixer

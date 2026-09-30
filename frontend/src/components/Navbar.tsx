@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Wallet, CheckCircle, ArrowRight } from "lucide-react";
 
+import MarginaliaLogo from "@/components/MarginaliaLogo";
+
 const RH_TESTNET_CHAIN_ID = "0xb626"; // 46630 in hex
 const RH_TESTNET_CHAIN_ID_DEC = 46630;
 
@@ -98,14 +100,14 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-x-6">
         <div className="flex min-w-0 flex-1 items-center gap-x-8 xl:gap-x-14">
           {/* Logo */}
-          <Link aria-label="Home" className="shrink-0 flex items-center gap-3 group" href="/">
-            <img
-              src="/marginalia-bg-blck.png"
-              alt="Marginalia Logo"
-              className="size-8 rounded-xs object-contain border border-dusk/60 group-hover:border-sun/60 transition-colors"
+          <Link aria-label="Home" className="shrink-0 flex items-center gap-3.5 group" href="/">
+            <MarginaliaLogo
+              className="size-7.5 drop-shadow-[0_0_12px_rgba(255,139,62,0.22)] group-hover:scale-105 transition-all duration-300"
+              bracketColor="#ff8b3e"
+              mColor="#fbf6ec"
             />
-            <span className="font-heading text-2xl tracking-[-0.03em] font-normal text-dust group-hover:text-sun transition-colors">
-              marginalia
+            <span className="font-cinzel text-xl sm:text-[22px] tracking-[0.14em] font-semibold text-dust group-hover:text-sun transition-colors uppercase">
+              Marginalia
             </span>
           </Link>
 

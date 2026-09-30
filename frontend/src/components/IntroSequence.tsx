@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import MarginaliaLogo from "@/components/MarginaliaLogo";
 
 export default function IntroSequence() {
   const pathname = usePathname();
@@ -126,10 +127,10 @@ export default function IntroSequence() {
               <div className="absolute size-3 border-sun bottom-0 right-0 border-b border-r"></div>
 
               {/* Core Emblem */}
-              <img
-                src="/marginalia-bg-blck.png"
-                alt="Marginalia Emblem"
-                className="size-14 rounded-xs object-contain shadow-lg shadow-sun/20 border border-sun/30"
+              <MarginaliaLogo
+                className="size-13 drop-shadow-[0_0_20px_rgba(255,139,62,0.4)]"
+                bracketColor="#ff8b3e"
+                mColor="#fbf6ec"
               />
             </div>
 

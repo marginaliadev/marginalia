@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 300" fill="none">
+  <!-- Gold Accent Corner Margin Brackets -->
+  <g fill="#FF8B3E">
+    <path d="M17 36H54V42H23V69H17V36Z"/>
+    <path d="M303 36H266V42H297V69H303V36Z"/>
+    <path d="M17 264H54V258H23V231H17V264Z"/>
+    <path d="M303 264H266V258H297V231H303V264Z"/>
+  </g>
+  <!-- Ivory Geometric M Monogram -->
+  <g fill="#FBF6EC">
+    <path d="M105 80L114 80L162 126L56 215L56 125L105 80Z"/>
+    <path d="M246 75L263 75L260 197L226 233L192 233L192 206L250 148L249 146L142 231L109 232L109 193L114 192L133 177L193 125L246 75Z"/>
+  </g>
+</svg>

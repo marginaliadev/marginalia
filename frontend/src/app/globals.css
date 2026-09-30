@@ -44,6 +44,10 @@
 }
 
 /* Exact Noirpay Typography Scale */
+.font-cinzel {
+  font-family: var(--font-cinzel), serif;
+}
+
 .font-heading {
   font-family: var(--font-newsreader), Georgia, serif;
 }

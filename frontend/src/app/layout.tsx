@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
-import { Newsreader, Inter, JetBrains_Mono } from "next/font/google";
+import { Cinzel, Newsreader, Inter, JetBrains_Mono } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import IntroSequence from "@/components/IntroSequence";
 import "./globals.css";
+
+const cinzel = Cinzel({
+  variable: "--font-cinzel",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
 
 const newsreader = Newsreader({
   variable: "--font-newsreader",
@@ -25,8 +31,11 @@ export const metadata: Metadata = {
   title: "MARGINALIA — Compliant Shielded Pool on Robinhood Chain",
   description: "Mathematical privacy on Robinhood Orbit L2. Zero-Knowledge Groth16 proofs, association set providers, and cryptographic disclosure.",
   icons: {
-    icon: "/marginalia-bg-blck.png",
-    apple: "/marginalia-bg-blck.png",
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/logo.svg", type: "image/svg+xml" },
+    ],
+    apple: "/favicon.svg",
   },
 };
 
@@ -38,7 +47,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${newsreader.variable} ${inter.variable} ${jetbrainsMono.variable} dark`}
+      className={`${cinzel.variable} ${newsreader.variable} ${inter.variable} ${jetbrainsMono.variable} dark`}
     >
       <body className="min-h-screen flex flex-col bg-[#080706] text-[#eae5d9] antialiased selection:bg-[#3b2812] selection:text-[#f5eedc]">
         {/* Cinematic Preloader & Intro Sequence */}
