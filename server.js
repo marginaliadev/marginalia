@@ -108,21 +108,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static frontend webapp
-app.use(express.static(path.join(__dirname, "webapp")));
-
-// Clean Page Routes
-app.get("/app", (req, res) => {
-  res.sendFile(path.join(__dirname, "webapp", "app.html"));
-});
-app.get("/codex", (req, res) => {
-  res.sendFile(path.join(__dirname, "webapp", "codex.html"));
-});
-app.get("/explorer", (req, res) => {
-  res.sendFile(path.join(__dirname, "webapp", "explorer.html"));
-});
-app.get("/compliance", (req, res) => {
-  res.sendFile(path.join(__dirname, "webapp", "compliance.html"));
+// API Root notice (Frontend is now powered by Next.js in frontend/)
+app.get("/", (req, res) => {
+  res.json({
+    service: "MARGINALIA Relayer & ZK Verification Engine",
+    status: "online",
+    frontend: "Next.js App Router (frontend/)",
+    statusEndpoint: "/api/status",
+  });
 });
 
 // Serve static circuit build artifacts (wasm, zkey, vkey) for browser prover
