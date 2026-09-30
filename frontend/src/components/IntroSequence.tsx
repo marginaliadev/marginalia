@@ -126,9 +126,11 @@ export default function IntroSequence() {
               <div className="absolute size-3 border-sun bottom-0 right-0 border-b border-r"></div>
 
               {/* Core Emblem */}
-              <div className="size-12 rounded-xs bg-dust text-night flex items-center justify-center font-heading text-xl font-bold shadow-lg shadow-sun/20">
-                M
-              </div>
+              <img
+                src="/marginalia-bg-blck.png"
+                alt="Marginalia Emblem"
+                className="size-14 rounded-xs object-contain shadow-lg shadow-sun/20 border border-sun/30"
+              />
             </div>
 
             {/* Main Typographic Reveal */}

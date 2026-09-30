@@ -24,6 +24,10 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "MARGINALIA — Compliant Shielded Pool on Robinhood Chain",
   description: "Mathematical privacy on Robinhood Orbit L2. Zero-Knowledge Groth16 proofs, association set providers, and cryptographic disclosure.",
+  icons: {
+    icon: "/marginalia-bg-blck.png",
+    apple: "/marginalia-bg-blck.png",
+  },
 };
 
 export default function RootLayout({

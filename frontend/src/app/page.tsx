@@ -397,9 +397,11 @@ export default function HomePage() {
       <section className="relative overflow-clip bg-linear-to-b from-white to-dust pb-24 text-black pt-20 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
           <div className="flex max-w-[46rem] flex-col items-center gap-y-4 mb-14">
-            <div className="size-8 rounded-xs bg-black text-white flex items-center justify-center font-heading text-lg font-bold mb-2">
-              M
-            </div>
+            <img
+              src="/marginalia.png"
+              alt="Marginalia Logo"
+              className="size-10 rounded-xs object-contain mb-2"
+            />
             <h2 className="text-heading-48 text-pretty text-black">
               Marginalia is an account, not a mixer
             </h2>

@@ -98,10 +98,12 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-x-6">
         <div className="flex min-w-0 flex-1 items-center gap-x-8 xl:gap-x-14">
           {/* Logo */}
-          <Link aria-label="Home" className="block shrink-0 flex items-center gap-3 group" href="/">
-            <div className="size-7 rounded-xs bg-dust text-night flex items-center justify-center font-heading text-sm font-bold">
-              M
-            </div>
+          <Link aria-label="Home" className="shrink-0 flex items-center gap-3 group" href="/">
+            <img
+              src="/marginalia-bg-blck.png"
+              alt="Marginalia Logo"
+              className="size-8 rounded-xs object-contain border border-dusk/60 group-hover:border-sun/60 transition-colors"
+            />
             <span className="font-heading text-2xl tracking-[-0.03em] font-normal text-dust group-hover:text-sun transition-colors">
               marginalia
             </span>
