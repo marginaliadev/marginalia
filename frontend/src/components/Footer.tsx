@@ -66,7 +66,7 @@ export default function Footer() {
         <div className="p-4 rounded-xs bg-night border border-dusk flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-mono text-xs">
           <div className="flex items-center gap-2.5 text-dust">
             <span className="size-2 rounded-full bg-sun animate-pulse"></span>
-            <span className="text-sun font-semibold uppercase">PROTOCOL STATUS (DEVBRIEF-2):</span>
+            <span className="text-sun font-semibold uppercase">PROTOCOL STATUS :</span>
             <span className="text-dust/70">
               Working prototype · Robinhood Chain Testnet (Chain ID 46630) · Zero-Knowledge Groth16
             </span>
@@ -370,7 +370,7 @@ export default function Footer() {
         {/* BOTTOM COPYRIGHT WITH NOIRPAY BRACKET-X DIVIDER */}
         <div className="relative flex flex-col justify-between pt-8">
           <div className="bracket-x h-3 md:h-4 text-stroke-3 border-t"></div>
-          
+
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 px-2">
             <div className="flex items-center gap-3">
               <div className="size-6 rounded-xs bg-dust text-night flex items-center justify-center font-heading text-xs font-bold">

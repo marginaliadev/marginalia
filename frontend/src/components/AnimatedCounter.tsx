@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useInView } from "framer-motion";
 
 interface AnimatedCounterProps {
   end: number;
@@ -16,13 +17,21 @@ export default function AnimatedCounter({
   decimals = 0,
   prefix = "",
   suffix = "",
-  duration = 1600,
+  duration = 1800,
   className = "",
 }: AnimatedCounterProps) {
   const [count, setCount] = useState<number>(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: false, margin: "0px 0px -40px 0px" });
 
   useEffect(() => {
+    if (!isInView) {
+      setCount(0);
+      return;
+    }
+
     let startTimestamp: number | null = null;
+    let animationFrameId: number;
 
     const step = (timestamp: number) => {
       if (!startTimestamp) startTimestamp = timestamp;
@@ -32,17 +41,20 @@ export default function AnimatedCounter({
       setCount(easeOut * end);
 
       if (progress < 1) {
-        window.requestAnimationFrame(step);
+        animationFrameId = window.requestAnimationFrame(step);
+      } else {
+        setCount(end);
       }
     };
 
-    window.requestAnimationFrame(step);
-  }, [end, duration]);
+    animationFrameId = window.requestAnimationFrame(step);
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [isInView, end, duration]);
 
   const formatted = decimals > 0 ? count.toFixed(decimals) : Math.floor(count).toString();
 
   return (
-    <span className={className}>
+    <span ref={ref} className={className}>
       {prefix}
       {formatted}
       {suffix}

@@ -1,10 +1,98 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useInView } from "framer-motion";
 
 export default function NoirpayAccountPreview() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isInView = useInView(containerRef, { once: false, margin: "-50px" });
+
+  const [visibleStep, setVisibleStep] = useState<number>(0);
+  const [balance, setBalance] = useState<number>(0);
+  const [cursorBlink, setCursorBlink] = useState<boolean>(true);
+  const [terminalLines, setTerminalLines] = useState<string[]>([]);
+
+  // Blinking terminal cursor
+  useEffect(() => {
+    const blinkInterval = setInterval(() => {
+      setCursorBlink((prev) => !prev);
+    }, 450);
+    return () => clearInterval(blinkInterval);
+  }, []);
+
+  // Sequenced terminal log animation & balance counter
+  useEffect(() => {
+    if (!isInView) {
+      setVisibleStep(0);
+      setBalance(0);
+      setTerminalLines([]);
+      return;
+    }
+
+    // 1. Balance Counter: 0.000 -> 12.400 ETH
+    let startTimestamp: number | null = null;
+    let animId: number;
+    const countDuration = 2200;
+
+    const countStep = (ts: number) => {
+      if (!startTimestamp) startTimestamp = ts;
+      const progress = Math.min((ts - startTimestamp) / countDuration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setBalance(ease * 12.4);
+      if (progress < 1) {
+        animId = requestAnimationFrame(countStep);
+      } else {
+        setBalance(12.4);
+      }
+    };
+    animId = requestAnimationFrame(countStep);
+
+    // 2. Sequential Terminal Log Stream: Items appear one-by-one
+    const t0 = setTimeout(() => {
+      setVisibleStep(0);
+      setTerminalLines(["[INIT] BN254 GROTH16 ENCLAVE READY"]);
+    }, 200);
+
+    const t1 = setTimeout(() => {
+      setVisibleStep(1);
+      setTerminalLines((prev) => [...prev, "[LOG 1] DECRYPTED PAYOUT -0.300 ETH"]);
+    }, 850);
+
+    const t2 = setTimeout(() => {
+      setVisibleStep(2);
+      setTerminalLines((prev) => [...prev, "[LOG 2] FOLIO LEAF #1042 +10.000 ETH"]);
+    }, 1650);
+
+    const t3 = setTimeout(() => {
+      setVisibleStep(3);
+      setTerminalLines((prev) => [...prev, "[LOG 3] RELAYER SPONSORED -0.000003 ETH"]);
+    }, 2450);
+
+    const t4 = setTimeout(() => {
+      setVisibleStep(4);
+      setTerminalLines((prev) => [...prev, "[LOG 4] RESIDUAL CHANGE +2.400 ETH"]);
+    }, 3250);
+
+    const t5 = setTimeout(() => {
+      setTerminalLines((prev) => [...prev, "[OK] ZERO-KNOWLEDGE PROOF VERIFIED"]);
+    }, 3950);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      clearTimeout(t0);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      clearTimeout(t5);
+    };
+  }, [isInView]);
+
   return (
-    <div className="relative mx-auto w-full max-w-[1164px] [mask-image:linear-gradient(to_bottom,#000_0%,#000_34%,rgba(0,0,0,0.92)_46%,rgba(0,0,0,0.72)_58%,rgba(0,0,0,0.46)_70%,rgba(0,0,0,0.22)_82%,rgba(0,0,0,0.06)_92%,transparent_100%)]">
+    <div
+      ref={containerRef}
+      className="relative mx-auto w-full max-w-[1164px] [mask-image:linear-gradient(to_bottom,#000_0%,#000_34%,rgba(0,0,0,0.92)_46%,rgba(0,0,0,0.72)_58%,rgba(0,0,0,0.46)_70%,rgba(0,0,0,0.22)_82%,rgba(0,0,0,0.06)_92%,transparent_100%)]"
+    >
       <svg
         viewBox="0 0 1164 663"
         className="w-full text-dust"
@@ -196,7 +284,7 @@ export default function NoirpayAccountPreview() {
           fontSize="44"
           letterSpacing="-0.03em"
         >
-          12.400 ETH
+          {balance.toFixed(3)} ETH
         </text>
         <text
           x="48"
@@ -259,43 +347,19 @@ export default function NoirpayAccountPreview() {
           />
           <animate attributeName="opacity" values="0;0.9;0.9;0" dur="3.6s" repeatCount="indefinite" />
         </circle>
-        <path d="M32 330 H400" stroke="currentColor" strokeOpacity="0.15"></path>
 
-        <g transform="translate(372 100)">
-          <path
-            d="M2 10 C 8 2, 22 2, 28 10 C 22 18, 8 18, 2 10 Z"
-            fill="none"
-            stroke="currentColor"
-            strokeOpacity="0.5"
-          ></path>
-          <circle cx="15" cy="10" r="3" fill="currentColor" fillOpacity="0.5"></circle>
-          <path d="M4 19 L26 1" stroke="currentColor" strokeOpacity="0.8"></path>
-        </g>
-        <text
-          x="404"
-          y="140"
-          textAnchor="end"
-          className="font-mono"
-          fill="currentColor"
-          fillOpacity="0.45"
-          fontSize="9"
-          letterSpacing="0.08em"
-        >
-          0 ON THE EXPLORER
-        </text>
-
-        {/* VAULTS / POOL SECTION */}
+        {/* VAULT / NOTE INVENTORY */}
         <g>
-          <rect x="32" y="366" width="392" height="264" fill="currentColor" fillOpacity="0.025"></rect>
+          <rect x="32" y="362" width="392" height="268" fill="currentColor" fillOpacity="0.025"></rect>
           <path
-            d="M32 376 V366 H42 M414 366 H424 V376 M32 620 V630 H42 M414 630 H424 V620"
+            d="M32 372 V362 H42 M414 362 H424 V372 M32 620 V630 H42 M414 630 H424 V620"
             fill="none"
             stroke="currentColor"
             strokeOpacity="0.5"
           ></path>
           <text
             x="48"
-            y="390"
+            y="386"
             textAnchor="start"
             className="font-mono"
             fill="currentColor"
@@ -391,9 +455,14 @@ export default function NoirpayAccountPreview() {
           DECRYPTED IN YOUR BROWSER
         </text>
 
-        {/* Item 1 */}
-        <g opacity="0">
-          <animate attributeName="opacity" from="0" to="1" begin="0.2s" dur="0.5s" fill="freeze"></animate>
+        {/* Item 1: Groth16 Shielded Payout */}
+        <g
+          style={{
+            opacity: visibleStep >= 1 ? 1 : 0,
+            transform: visibleStep >= 1 ? "translateY(0)" : "translateY(10px)",
+            transition: "opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
           <rect x="464" y="136" width="28" height="28" rx="2" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.2"></rect>
           <path d="M472 154 L484 142 M476 142 H484 V150" stroke="currentColor" strokeOpacity="0.7" fill="none"></path>
           <text x="504" y="149" textAnchor="start" className="font-body" fill="currentColor" fillOpacity="0.85" fontSize="13" fontWeight="400">
@@ -408,9 +477,14 @@ export default function NoirpayAccountPreview() {
           <path d="M464 182 H800" stroke="currentColor" strokeOpacity="0.08"></path>
         </g>
 
-        {/* Item 2 */}
-        <g opacity="0">
-          <animate attributeName="opacity" from="0" to="1" begin="0.38s" dur="0.5s" fill="freeze"></animate>
+        {/* Item 2: Deposit Inscription */}
+        <g
+          style={{
+            opacity: visibleStep >= 2 ? 1 : 0,
+            transform: visibleStep >= 2 ? "translateY(0)" : "translateY(10px)",
+            transition: "opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
           <rect x="464" y="214" width="28" height="28" rx="2" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.2"></rect>
           <path d="M484 220 L472 232 M472 224 V232 H480" stroke="#ff8b3e" fill="none"></path>
           <text x="504" y="227" textAnchor="start" className="font-body" fill="currentColor" fillOpacity="0.85" fontSize="13" fontWeight="400">
@@ -425,9 +499,14 @@ export default function NoirpayAccountPreview() {
           <path d="M464 260 H800" stroke="currentColor" strokeOpacity="0.08"></path>
         </g>
 
-        {/* Item 3 */}
-        <g opacity="0">
-          <animate attributeName="opacity" from="0" to="1" begin="0.56s" dur="0.5s" fill="freeze"></animate>
+        {/* Item 3: Relayer Sponsorship */}
+        <g
+          style={{
+            opacity: visibleStep >= 3 ? 1 : 0,
+            transform: visibleStep >= 3 ? "translateY(0)" : "translateY(10px)",
+            transition: "opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
           <rect x="464" y="292" width="28" height="28" rx="2" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.2"></rect>
           <path d="M472 310 L484 298 M476 298 H484 V306" stroke="currentColor" strokeOpacity="0.7" fill="none"></path>
           <text x="504" y="305" textAnchor="start" className="font-body" fill="currentColor" fillOpacity="0.85" fontSize="13" fontWeight="400">
@@ -442,9 +521,14 @@ export default function NoirpayAccountPreview() {
           <path d="M464 338 H800" stroke="currentColor" strokeOpacity="0.08"></path>
         </g>
 
-        {/* Item 4 */}
-        <g opacity="0">
-          <animate attributeName="opacity" from="0" to="1" begin="0.74s" dur="0.5s" fill="freeze"></animate>
+        {/* Item 4: Change Note Split */}
+        <g
+          style={{
+            opacity: visibleStep >= 4 ? 1 : 0,
+            transform: visibleStep >= 4 ? "translateY(0)" : "translateY(10px)",
+            transition: "opacity 0.4s ease-out, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+          }}
+        >
           <rect x="464" y="370" width="28" height="28" rx="2" fill="currentColor" fillOpacity="0.06" stroke="currentColor" strokeOpacity="0.2"></rect>
           <path d="M484 376 L472 388 M472 380 V388 H480" stroke="#ff8b3e" fill="none"></path>
           <text x="504" y="383" textAnchor="start" className="font-body" fill="currentColor" fillOpacity="0.85" fontSize="13" fontWeight="400">
@@ -455,6 +539,49 @@ export default function NoirpayAccountPreview() {
           </text>
           <text x="800" y="388" textAnchor="end" className="font-mono text-sun" fill="#ff8b3e" fontSize="13">
             +2.400 ETH
+          </text>
+          <path d="M464 414 H800" stroke="currentColor" strokeOpacity="0.08"></path>
+        </g>
+
+        {/* LIVE TERMINAL LOG STREAM CONSOLE */}
+        <g>
+          {/* Terminal Box Frame */}
+          <rect x="464" y="432" width="336" height="182" rx="4" fill="#080706" stroke="#3F3630" strokeOpacity="0.7"></rect>
+          {/* Terminal Header */}
+          <rect x="464" y="432" width="336" height="24" rx="4" fill="#14110E"></rect>
+          <circle cx="478" cy="444" r="3" fill="#ef4444" fillOpacity="0.8"></circle>
+          <circle cx="488" cy="444" r="3" fill="#f59e0b" fillOpacity="0.8"></circle>
+          <circle cx="498" cy="444" r="3" fill="#10b981" fillOpacity="0.8"></circle>
+          <text x="512" y="448" className="font-mono" fill="#fbefd6" fillOpacity="0.6" fontSize="9" letterSpacing="0.06em">
+            ENCLAVE-STREAM · SECURE ZERO-KNOWLEDGE LOG
+          </text>
+
+          {/* Terminal Log Lines */}
+          {terminalLines.map((line, idx) => (
+            <text
+              key={idx}
+              x="476"
+              y={476 + idx * 22}
+              className="font-mono"
+              fill={idx === terminalLines.length - 1 ? "#ff8b3e" : "#fbefd6"}
+              fillOpacity={idx === terminalLines.length - 1 ? 0.95 : 0.65}
+              fontSize="9.5"
+              letterSpacing="0.04em"
+            >
+              &gt; {line}
+            </text>
+          ))}
+
+          {/* Terminal Blinking Cursor */}
+          <text
+            x="476"
+            y={476 + terminalLines.length * 22}
+            className="font-mono"
+            fill="#10b981"
+            fontSize="10"
+            fontWeight="bold"
+          >
+            &gt; {cursorBlink ? "█" : " "}
           </text>
         </g>
       </svg>

@@ -1,4 +1,7 @@
+"use client";
+
 import React from "react";
+import { motion } from "framer-motion";
 
 interface ProgressGaugeProps {
   progressPercentage: number;
@@ -17,12 +20,15 @@ export default function ProgressGauge({
 
   return (
     <div className={`w-full h-1 bg-[#1a1410] rounded-full overflow-hidden ${className}`}>
-      <div
-        className="h-full rounded-full transition-all duration-700 ease-out"
+      <motion.div
+        className="h-full rounded-full"
         style={{
-          width: `${clamped}%`,
           background: `linear-gradient(90deg, ${gradientFrom}, ${gradientTo})`,
         }}
+        initial={{ width: "0%" }}
+        whileInView={{ width: `${clamped}%` }}
+        viewport={{ once: false }}
+        transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
       />
     </div>
   );
