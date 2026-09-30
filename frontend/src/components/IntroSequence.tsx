@@ -17,57 +17,51 @@ export default function IntroSequence() {
       return;
     }
 
-    // Check if user already saw intro in this tab session
-    const hasSeen = typeof window !== "undefined" && sessionStorage.getItem("marginalia_intro_shown");
-    if (hasSeen) {
-      return;
-    }
-
     setIsVisible(true);
+    setProgress(0);
 
-    // Progress counter simulation (snappy ~0.9s sequence)
+    // Progress counter calibrated to run smoothly over ~2.9s
+    const startTime = Date.now();
+    const TARGET_DURATION = 2900; // 2.9 seconds to reach 100%
+
     const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        const next = prev + Math.floor(Math.random() * 15) + 18;
-        return next > 100 ? 100 : next;
-      });
-    }, 80);
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min(100, Math.floor((elapsed / TARGET_DURATION) * 100));
+      setProgress(pct);
+
+      if (pct >= 100) {
+        clearInterval(interval);
+      }
+    }, 40);
 
     return () => clearInterval(interval);
   }, [pathname]);
 
-  // Update status messages according to progress
+  // Update status messages according to progress phases
   useEffect(() => {
-    if (progress < 30) {
+    if (progress < 25) {
       setPhaseText("SYNTHESIZING BN254 WITNESS...");
-    } else if (progress < 65) {
+    } else if (progress < 55) {
       setPhaseText("FETCHING FOLIO ROOTS · ROBINHOOD CHAIN...");
-    } else if (progress < 90) {
+    } else if (progress < 85) {
       setPhaseText("ESTABLISHING ZERO-KNOWLEDGE PROVING KEY...");
     } else {
       setPhaseText("PROVEN. NOT REVEALED.");
     }
   }, [progress]);
 
-  // Auto-dismiss once reaching 100% after a short cinematic beat
+  // Hold for ~650ms after reaching 100% (Total sequence duration = ~3.5 to 3.6 seconds)
   useEffect(() => {
     if (progress === 100) {
       const dismissTimer = setTimeout(() => {
         handleDismiss();
-      }, 450);
+      }, 650);
       return () => clearTimeout(dismissTimer);
     }
   }, [progress]);
 
   const handleDismiss = () => {
     setIsVisible(false);
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("marginalia_intro_shown", "true");
-    }
   };
 
   // Keyboard shortcut: Press Escape to skip intro immediately
