@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { BookOpen, Shield, ArrowRight, Sparkles, Binary, Lock, Compass, CheckCircle2 } from "lucide-react";
 
 export const metadata = {
@@ -55,6 +56,50 @@ export default function CodexPage() {
               <p>
                 In the winter of 1637, the French magistrate and mathematician <strong className="text-dust font-semibold">Pierre de Fermat</strong> was annotating Claude Gaspard Bachet’s Latin translation of Diophantus’ <em className="text-sun">Arithmetica</em>. Beside Problem 8 in Book II, Fermat famously inscribed:
               </p>
+
+              {/* ARCHIVAL MANUSCRIPT ARTIFACT PLATE */}
+              <div className="my-6 rounded-xs border border-sun/30 bg-[#070605] p-3 sm:p-4 relative overflow-hidden group shadow-2xl">
+                <div className="absolute size-3 border-sun/60 top-0 left-0 border-t border-l" />
+                <div className="absolute size-3 border-sun/60 top-0 right-0 border-t border-r" />
+                <div className="absolute size-3 border-sun/60 bottom-0 left-0 border-b border-l" />
+                <div className="absolute size-3 border-sun/60 bottom-0 right-0 border-b border-r" />
+
+                <div className="flex items-center justify-between pb-3 mb-3 border-b border-dusk font-mono text-[11px] text-stroke-2">
+                  <div className="flex items-center gap-2 text-sun">
+                    <span className="size-1.5 rounded-full bg-sun animate-pulse" />
+                    <span className="uppercase tracking-widest font-semibold">ARCHIVAL ARTIFACT · CODEX FOLIO 61V</span>
+                  </div>
+                  <span className="tracking-wider text-dust/60">TOULOUSE ARCHIVES · 1637</span>
+                </div>
+
+                <div className="relative aspect-[16/10] sm:aspect-[16/9] w-full overflow-hidden rounded-xs border border-dusk/60 bg-black">
+                  <Image
+                    src="/images/fermat-manuscript.jpg"
+                    alt="Pierre de Fermat's marginal note in Diophantus' Arithmetica (1637) illuminated with cryptographic circuits"
+                    fill
+                    className="object-cover object-center filter saturate-[0.95] contrast-[1.05] transition-transform duration-700 group-hover:scale-[1.02]"
+                    priority
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/30 pointer-events-none" />
+                  
+                  {/* Micro coordinate callouts */}
+                  <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-[10px] font-mono text-dust/70 pointer-events-none">
+                    <div className="bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-xs border border-sun/30 text-sun">
+                      <span>LOC: BOOK II · PROBLEM 8 (Xⁿ + Yⁿ ≠ Zⁿ)</span>
+                    </div>
+                    <div className="hidden sm:block bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-xs border border-white/10 text-dust/60">
+                      <span>CIRCUIT EMBED: BN254 GROTH16</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] font-mono text-dust/60">
+                  <p>
+                    <span className="text-sun font-semibold">FIG. 1.1</span> — Diophanti Alexandrini <em className="text-dust/90 font-serif">Arithmetica</em> (Bachet translation, 1621), annotated 1637.
+                  </p>
+                  <span className="text-stroke-3 shrink-0">HANC MARGINIS EXIGUITAS NON CAPERET</span>
+                </div>
+              </div>
 
               <blockquote className="p-5 rounded-xs bg-[#14100e] border-l-2 border-sun font-serif italic text-dust/90 my-4 text-sm sm:text-base leading-relaxed">
                 "Cubum autem in duos cubos, aut quadrato-quadratum in duos quadrato-quadratos, et generaliter nullam in infinitum ultra quadratum potestatem in duos eiusdem nominis fas est dividere: cuius rei demonstrationem mirabilem sane detexi. Hanc marginis exiguitas non caperet."

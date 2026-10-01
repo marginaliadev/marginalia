@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState, useEffect } from "react";
 import {
   Shield,
@@ -285,24 +286,28 @@ export default function HomePage() {
           <div className="absolute inset-x-0 bottom-0 z-50 h-20 bg-linear-to-t from-white via-white via-[30%] md:h-[180px]"></div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10 flex flex-col items-center">
-          {/* Top Arc and Problem Header */}
-          <div className="text-center mb-8">
-            <div className="text-mono-s uppercase opacity-60 text-dust mb-3 tracking-widest">
-              The Blockchain Dilemma
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 relative z-10">
+          {/* Section Eyebrow and Header with architectural hairline */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 pb-6 border-b border-white/20 text-left">
+            <div>
+              <div className="flex items-center gap-2 text-mono-s uppercase text-sun mb-3 tracking-widest">
+                <span className="size-1.5 rounded-full bg-sun"></span>
+                <span>The Blockchain Dilemma</span>
+              </div>
+              <h2 className="text-heading-48 text-dust leading-tight">
+                Public Blockchains Expose Everything.
+              </h2>
             </div>
-            <div className="w-px h-16 bg-linear-to-b from-white opacity-50 mx-auto mb-6"></div>
+            <p className="text-body-16-light text-dust/70 max-w-sm leading-relaxed md:text-right">
+              A single on-chain transaction leaks balance, counterparties, and commercial intent.
+            </p>
           </div>
 
-          <h2 className="text-heading-48 text-center text-dust max-w-3xl mb-8 leading-tight">
-            Public Blockchains Expose Everything.
-          </h2>
-
-          <div className="text-heading-32 text-center text-dust/90 max-w-2xl mb-14 leading-relaxed font-light">
+          <div className="text-heading-32 text-left text-dust/90 max-w-3xl mb-14 leading-relaxed font-light">
             <p>
               On Robinhood Chain, payroll-grade stablecoins and tokenized assets sit in public addresses. A single transaction leaks your balance, counterparties, and net worth all at once.
             </p>
-            <p className="mt-6 text-base text-stroke-1 opacity-80 font-body">
+            <p className="mt-4 text-base text-stroke-1 opacity-80 font-body">
               Every legacy privacy tool turns that capital into dead funds the moment you deposit. No yield, no compliance statements, and nothing you can show a regulator.
             </p>
           </div>
@@ -396,18 +401,25 @@ export default function HomePage() {
       {/* 5. MARGINALIA IS AN ACCOUNT, NOT A MIXER (EXACT NOIRPAY ACCOUNT SHOWCASE) */}
       {/* ========================================================================= */}
       <section className="relative overflow-clip bg-linear-to-b from-white to-dust pb-24 text-black pt-20 w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
-          <div className="flex max-w-[46rem] flex-col items-center gap-y-4 mb-14">
-            <MarginaliaLogo
-              className="size-11 mb-2 drop-shadow-sm"
-              bracketColor="#0b0907"
-              mColor="#0b0907"
-            />
-            <h2 className="text-heading-48 text-pretty text-black">
-              Marginalia is an account, not a mixer
-            </h2>
-            <p className="text-body-18-light text-night/80 max-w-[43rem] font-body leading-relaxed">
-              Underneath the interface is a note-based shielded pool secured by Groth16 zero-knowledge proofs. Funds enter through licensed ramps, get screened by Association Set Providers (ASP) at the edge, and land as encrypted notes tied to your spending key. Balances stay shielded, withdrawals go to fresh addresses without link, and when you need compliance, you hand over a scoped Letter of Disclosure instead of your entire wallet history.
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-14 pb-8 border-b border-black/15 text-left">
+            <div className="max-w-xl">
+              <div className="flex items-center gap-2 mb-3">
+                <MarginaliaLogo
+                  className="size-7 drop-shadow-sm"
+                  bracketColor="#0b0907"
+                  mColor="#0b0907"
+                />
+                <span className="text-mono-s uppercase tracking-wider text-night/70 font-mono">
+                  ACCOUNT ARCHITECTURE
+                </span>
+              </div>
+              <h2 className="text-heading-48 text-pretty text-black leading-tight">
+                Marginalia is an account, not a mixer
+              </h2>
+            </div>
+            <p className="text-body-18-light text-night/80 max-w-lg font-body leading-relaxed md:text-right">
+              Underneath the interface is a note-based shielded pool secured by Groth16 zero-knowledge proofs. Balances stay shielded, withdrawals go to fresh addresses without link, and compliance statements are scoped to specific counterparties.
             </p>
           </div>
 
@@ -422,14 +434,17 @@ export default function HomePage() {
       <section id="how-it-works" className="w-full border-t border-dusk bg-[#0a0807] py-24 text-dust">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <RevealMotion direction="up">
-            <div className="text-center mb-16">
-              <div className="text-mono-s text-sun uppercase tracking-widest mb-3">
-                Section 02 • Verifiable State Transition
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14 pb-6 border-b border-dusk/60 text-left">
+              <div className="max-w-2xl">
+                <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
+                  <span className="size-1.5 rounded-full bg-sun"></span>
+                  <span>Section 02 · Verifiable State Transition</span>
+                </div>
+                <h2 className="text-heading-48 text-dust font-light leading-tight">
+                  The 5-Step Lifecycle
+                </h2>
               </div>
-              <h2 className="text-heading-48 text-dust">
-                The 5-Step Lifecycle
-              </h2>
-              <p className="text-body-16-light text-stroke-2 mt-3 max-w-xl mx-auto">
+              <p className="text-body-16-light text-stroke-2 max-w-md leading-relaxed md:text-right">
                 From deposit inscription to screened proof and clean payout on Robinhood Chain.
               </p>
             </div>
@@ -492,125 +507,192 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 7. THE PRIVACY LAYER & "THE FOLIO" VISUALIZATION (RADAR SWEEP) */}
+      {/* 7. THE PRIVACY LAYER & "THE FOLIO" VISUALIZATION (SCHEMATIC + RADAR SWEEP) */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <RevealMotion direction="up">
-          <div className="text-center mb-12">
-            <div className="text-mono-s text-sun uppercase tracking-widest mb-3">
-              Section 03 • Signature Visual Architecture
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 pb-6 border-b border-dusk/60 text-left">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
+                <span className="size-1.5 rounded-full bg-sun"></span>
+                <span>Section 03 · Signature Visual Architecture</span>
+              </div>
+              <h2 className="text-heading-48 text-dust font-light leading-tight">
+                The Privacy Layer
+              </h2>
             </div>
-            <h2 className="text-heading-48 text-dust">
-              The Privacy Layer
-            </h2>
-            <p className="text-body-16-light text-stroke-2 mt-3 max-w-xl mx-auto">
+            <p className="text-body-16-light text-stroke-2 max-w-md leading-relaxed md:text-right">
               The Folio acts as a cryptographic collective. Your note is one of over a million leaves in the tree.
             </p>
           </div>
         </RevealMotion>
 
-        {/* Signature Folio Matrix Card with Live Radar Sweep Animation */}
-        <RevealMotion delay={0.15}>
-          <div className="p-8 sm:p-12 rounded-xs border border-dusk bg-night/95 max-w-3xl mx-auto shadow-2xl relative overflow-hidden">
-            {/* 4-corner brackets */}
-            <div className="absolute size-3 border-current text-stroke-3 top-0 left-0 border-t border-l" />
-            <div className="absolute size-3 border-current text-stroke-3 top-0 right-0 border-t border-r" />
-            <div className="absolute size-3 border-current text-stroke-3 bottom-0 left-0 border-b border-l" />
-            <div className="absolute size-3 border-current text-stroke-3 bottom-0 right-0 border-b border-r" />
+        {/* Dual Architecture: 3D Merkle Tree Schematic + Interactive Note Radar Matrix */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          {/* Schematic 3D Merkle Lattice Card */}
+          <RevealMotion delay={0.1} className="lg:col-span-5 h-full">
+            <div className="p-6 sm:p-8 rounded-xs border border-dusk bg-night/95 h-full flex flex-col justify-between shadow-2xl relative overflow-hidden group">
+              {/* 4-corner brackets */}
+              <div className="absolute size-3 border-current text-stroke-3 top-0 left-0 border-t border-l" />
+              <div className="absolute size-3 border-current text-stroke-3 top-0 right-0 border-t border-r" />
+              <div className="absolute size-3 border-current text-stroke-3 bottom-0 left-0 border-b border-l" />
+              <div className="absolute size-3 border-current text-stroke-3 bottom-0 right-0 border-b border-r" />
 
-            {/* Animated Vertical Radar Sweep Beam */}
-            <div className="pointer-events-none absolute inset-x-0 h-24 bg-gradient-to-b from-transparent via-[#ff8b3e]/15 to-transparent animate-radar-sweep" />
+              <div>
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-dusk font-mono text-xs">
+                  <span className="text-sun font-semibold tracking-wider flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-sun animate-pulse" />
+                    SCHEMATIC 03.A · MERKLE CATHEDRAL
+                  </span>
+                  <span className="text-stroke-3 font-mono text-[11px]">DEPTH 20</span>
+                </div>
 
-            <div className="flex items-center justify-between mb-8 border-b border-dusk pb-4 font-mono text-xs relative z-10">
-              <span className="text-sun font-semibold tracking-wider flex items-center gap-2">
-                <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
-                MARGINALIA FOLIO (DEPTH 20)
-              </span>
-              <span className="text-stroke-2">CAPACITY: 1,048,576 NOTES</span>
-            </div>
+                <div className="relative aspect-[16/10] sm:aspect-[4/3] w-full overflow-hidden rounded-xs border border-dusk/60 bg-black">
+                  <Image
+                    src="/images/luminous-data-cathedral.png"
+                    alt="Luminous Arcane Data Cathedral — Cryptographic 3D Merkle Tree lattice visualization of the Marginalia Folio"
+                    fill
+                    priority
+                    className="object-cover object-center filter saturate-[1.0] contrast-[1.05] transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/20 pointer-events-none" />
+                  
+                  {/* Floating telemetry tags */}
+                  <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-xs border border-sun/30 text-[10px] font-mono text-sun">
+                    POSEIDON T3 ACCUMULATOR
+                  </div>
+                  <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-xs border border-emerald-500/30 text-[10px] font-mono text-emerald-400">
+                    ● STATE ROOT: 0x2e8f...94b1
+                  </div>
+                </div>
 
-            {/* Interactive Note Grid with Animated Leaves */}
-            <div className="grid grid-cols-6 sm:grid-cols-10 gap-3 sm:gap-4 justify-items-center my-6 relative z-10">
-              {dots.map((dot) => {
-                const isSelected = dot === selectedNoteIndex;
-                const isHovered = dot === hoveredDot;
-                const isPulsingLeaf = dot === 7 || dot === 19 || dot === 28;
-                return (
-                  <motion.button
-                    key={dot}
-                    whileHover={{ scale: 1.25 }}
-                    whileTap={{ scale: 0.9 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    onClick={() => setSelectedNoteIndex(dot)}
-                    onMouseEnter={() => setHoveredDot(dot)}
-                    onMouseLeave={() => setHoveredDot(null)}
-                    className={`w-8 h-8 rounded-xs flex items-center justify-center transition-colors duration-200 relative cursor-pointer ${
-                      isSelected
-                        ? "bg-sun text-night ring-4 ring-sun/40 shadow-lg shadow-sun/40 animate-beacon-ring"
-                        : isPulsingLeaf
-                        ? "bg-midnight text-sun animate-pulse-dot"
-                        : "bg-[#14100e] hover:bg-midnight text-stroke-3"
-                    }`}
-                    title={
-                      isSelected
-                        ? "Your Secret Note (Private)"
-                        : isPulsingLeaf
-                        ? "Recent Inscribed Leaf (Real-time)"
-                        : `Inscribed Leaf #${dot + 1042}`
-                    }
-                  >
-                    <span
-                      className={`text-xs font-mono ${
-                        isSelected
-                          ? "text-night font-bold"
-                          : isPulsingLeaf
-                          ? "text-sun"
-                          : "text-stroke-3"
-                      }`}
-                    >
-                      {isSelected ? "◉" : isPulsingLeaf ? "✦" : "●"}
-                    </span>
-                  </motion.button>
-                );
-              })}
-            </div>
-
-            <div className="text-center mt-8 pt-6 border-t border-dusk">
-              <div className="inline-flex items-center gap-2 text-xs font-mono text-sun mb-2">
-                <span>↑ Note Leaf Index #{selectedNoteIndex + 1042}</span>
-                <span className="wax-seal-badge text-[10px]">Your Secret Note</span>
+                <div className="mt-4 space-y-2 text-left">
+                  <h3 className="font-heading text-xl text-dust font-normal">
+                    Cryptographic Foliation
+                  </h3>
+                  <p className="text-xs text-stroke-1 leading-relaxed font-body">
+                    Every deposit commits to the binary Poseidon tree. A Groth16 membership proof evaluates a 20-step authentication path through the illuminated crystalline nodes without revealing which branch belongs to your note.
+                  </p>
+                </div>
               </div>
 
-              <div className="font-heading text-2xl text-dust max-w-md mx-auto my-3">
-                "I own a valid note."
-              </div>
-
-              <p className="text-xs text-stroke-2 font-mono">
-                You prove ownership. You never reveal which note is yours.
-              </p>
-
-              <div className="mt-4 inline-block px-4 py-1.5 rounded-xs bg-midnight border border-dusk text-[11px] font-mono text-sun">
-                PROOF ≠ DISCLOSURE
+              <div className="mt-6 pt-4 border-t border-dusk font-mono text-[11px] text-stroke-3 flex items-center justify-between">
+                <span>Total Leaves: 1,048,576</span>
+                <span className="text-sun font-medium">O(log N) Verifier</span>
               </div>
             </div>
-          </div>
-        </RevealMotion>
+          </RevealMotion>
+
+          {/* Signature Folio Matrix Card with Live Radar Sweep Animation */}
+          <RevealMotion delay={0.2} className="lg:col-span-7 h-full">
+            <div className="p-6 sm:p-8 md:p-10 rounded-xs border border-dusk bg-night/95 h-full flex flex-col justify-between shadow-2xl relative overflow-hidden">
+              {/* 4-corner brackets */}
+              <div className="absolute size-3 border-current text-stroke-3 top-0 left-0 border-t border-l" />
+              <div className="absolute size-3 border-current text-stroke-3 top-0 right-0 border-t border-r" />
+              <div className="absolute size-3 border-current text-stroke-3 bottom-0 left-0 border-b border-l" />
+              <div className="absolute size-3 border-current text-stroke-3 bottom-0 right-0 border-b border-r" />
+
+              {/* Animated Vertical Radar Sweep Beam */}
+              <div className="pointer-events-none absolute inset-x-0 h-24 bg-gradient-to-b from-transparent via-[#ff8b3e]/15 to-transparent animate-radar-sweep" />
+
+              <div>
+                <div className="flex items-center justify-between mb-6 border-b border-dusk pb-3 font-mono text-xs relative z-10">
+                  <span className="text-sun font-semibold tracking-wider flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+                    INTERACTIVE RADAR MATRIX
+                  </span>
+                  <span className="text-stroke-2">LIVE ANONYMITY SET</span>
+                </div>
+
+                {/* Interactive Note Grid with Animated Leaves */}
+                <div className="grid grid-cols-6 sm:grid-cols-10 gap-2.5 sm:gap-3 justify-items-center my-4 relative z-10">
+                  {dots.map((dot) => {
+                    const isSelected = dot === selectedNoteIndex;
+                    const isHovered = dot === hoveredDot;
+                    const isPulsingLeaf = dot === 7 || dot === 19 || dot === 28;
+                    return (
+                      <motion.button
+                        key={dot}
+                        whileHover={{ scale: 1.25 }}
+                        whileTap={{ scale: 0.9 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        onClick={() => setSelectedNoteIndex(dot)}
+                        onMouseEnter={() => setHoveredDot(dot)}
+                        onMouseLeave={() => setHoveredDot(null)}
+                        className={`w-8 h-8 rounded-xs flex items-center justify-center transition-colors duration-200 relative cursor-pointer ${
+                          isSelected
+                            ? "bg-sun text-night ring-4 ring-sun/40 shadow-lg shadow-sun/40 animate-beacon-ring"
+                            : isPulsingLeaf
+                            ? "bg-midnight text-sun animate-pulse-dot"
+                            : "bg-[#14100e] hover:bg-midnight text-stroke-3"
+                        }`}
+                        title={
+                          isSelected
+                            ? "Your Secret Note (Private)"
+                            : isPulsingLeaf
+                            ? "Recent Inscribed Leaf (Real-time)"
+                            : `Inscribed Leaf #${dot + 1042}`
+                        }
+                      >
+                        <span
+                          className={`text-xs font-mono ${
+                            isSelected
+                              ? "text-night font-bold"
+                              : isPulsingLeaf
+                              ? "text-sun"
+                              : "text-stroke-3"
+                          }`}
+                        >
+                          {isSelected ? "◉" : isPulsingLeaf ? "✦" : "●"}
+                        </span>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-dusk flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-left relative z-10">
+                <div>
+                  <div className="inline-flex items-center gap-2 text-xs font-mono text-sun mb-1">
+                    <span>↑ Note Leaf Index #{selectedNoteIndex + 1042}</span>
+                    <span className="wax-seal-badge text-[10px]">Your Secret Note</span>
+                  </div>
+
+                  <div className="font-heading text-xl sm:text-2xl text-dust my-1">
+                    "I own a valid note."
+                  </div>
+
+                  <p className="text-xs text-stroke-2 font-mono">
+                    You prove ownership. You never reveal which note is yours.
+                  </p>
+                </div>
+
+                <div className="px-3.5 py-1.5 rounded-xs bg-midnight border border-dusk text-[11px] font-mono text-sun shrink-0 self-start sm:self-auto">
+                  PROOF ≠ DISCLOSURE
+                </div>
+              </div>
+            </div>
+          </RevealMotion>
+        </div>
       </section>
 
       {/* ========================================================================= */}
       {/* 8. WHAT THE PROOF GUARANTEES (5 INVARIANTS) */}
       {/* ========================================================================= */}
       <section className="w-full border-t border-dusk bg-[#0c0908] py-24 text-dust">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <RevealMotion direction="up">
-            <div className="text-center mb-14">
-              <div className="text-mono-s text-sun uppercase tracking-widest mb-3">
-                Section 04 • Cryptographic Guarantees
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 pb-6 border-b border-dusk/60 text-left">
+              <div className="max-w-2xl lg:max-w-3xl">
+                <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
+                  <span className="size-1.5 rounded-full bg-sun"></span>
+                  <span>Section 04 · Cryptographic Guarantees</span>
+                </div>
+                <h2 className="text-heading-48 text-dust font-light leading-tight sm:whitespace-nowrap">
+                  What The Proof Guarantees
+                </h2>
               </div>
-              <h2 className="text-heading-48 text-dust">
-                What The Proof Guarantees
-              </h2>
-              <p className="text-body-16-light text-stroke-2 mt-3">
+              <p className="text-body-16-light text-stroke-2 max-w-sm lg:max-w-md leading-relaxed md:text-right shrink-0">
                 The verifier contract checks 5 mathematical statements on-chain without learning anything about your identity.
               </p>
             </div>
@@ -661,9 +743,13 @@ export default function HomePage() {
                 </motion.div>
               ))}
 
-              <div className="pt-6 text-center border-t border-dusk">
-                <span className="font-mono text-xs uppercase tracking-widest text-sun font-bold">
-                  WITHOUT REVEALING THE NOTE
+              <div className="pt-6 flex items-center justify-between border-t border-dusk font-mono text-xs">
+                <span className="uppercase tracking-widest text-sun font-bold flex items-center gap-2">
+                  <span className="size-1.5 rounded-full bg-sun"></span>
+                  Zero-Knowledge Invariant Enforcement
+                </span>
+                <span className="text-stroke-2 uppercase tracking-wider text-[11px]">
+                  Without Revealing Note Identity
                 </span>
               </div>
             </div>
@@ -674,98 +760,184 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 9. COMPLIANCE WITHOUT PUBLIC DISCLOSURE (ASP) */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-dust">
+      {/* ========================================================================= */}
+      {/* 9. COMPLIANCE WITHOUT PUBLIC DISCLOSURE (ASP) */}
+      {/* ========================================================================= */}
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-dust">
         <RevealMotion direction="up">
-          <div className="text-center mb-16">
-            <div className="text-mono-s text-sun uppercase tracking-widest mb-3">
-              Section 05 • Association Set Provider (ASP)
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14 pb-6 border-b border-dusk/60 text-left">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
+                <span className="size-1.5 rounded-full bg-sun"></span>
+                <span>Section 05 · Association Set Provider (ASP)</span>
+              </div>
+              <h2 className="text-heading-48 text-dust font-light leading-tight">
+                Compliance Without Public Disclosure
+              </h2>
             </div>
-            <h2 className="text-heading-48 text-dust">
-              Compliance Without Public Disclosure
-            </h2>
-            <p className="text-body-16-light text-stroke-2 mt-3 max-w-xl mx-auto">
+            <p className="text-body-16-light text-stroke-2 max-w-md leading-relaxed md:text-right">
               Privacy without abandoning verification. Proving that your funds originate from clean association sets.
             </p>
           </div>
         </RevealMotion>
 
-        {/* Diagram Flow */}
-        <RevealMotion delay={0.15}>
-          <div className="p-8 sm:p-12 rounded-xs border border-dusk bg-night/95 max-w-3xl mx-auto text-center relative">
-            <div className="absolute size-3 border-current text-stroke-3 top-0 left-0 border-t border-l" />
-            <div className="absolute size-3 border-current text-stroke-3 top-0 right-0 border-t border-r" />
-            <div className="absolute size-3 border-current text-stroke-3 bottom-0 left-0 border-b border-l" />
-            <div className="absolute size-3 border-current text-stroke-3 bottom-0 right-0 border-b border-r" />
+        {/* Dual Architecture: Magistrate Wax Seal Artifact + 4-Stage Screening Flow */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          {/* Left: Magistrate Wax Seal Macro Photography Card */}
+          <RevealMotion delay={0.1} className="lg:col-span-5 h-full">
+            <div className="p-6 sm:p-8 rounded-xs border border-dusk bg-night/95 h-full flex flex-col justify-between shadow-2xl relative overflow-hidden group">
+              {/* 4-corner brackets */}
+              <div className="absolute size-3 border-current text-stroke-3 top-0 left-0 border-t border-l" />
+              <div className="absolute size-3 border-current text-stroke-3 top-0 right-0 border-t border-r" />
+              <div className="absolute size-3 border-current text-stroke-3 bottom-0 left-0 border-b border-l" />
+              <div className="absolute size-3 border-current text-stroke-3 bottom-0 right-0 border-b border-r" />
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-xs mb-8">
-              <motion.div
-                whileHover={{ y: -3 }}
-                className={`p-3.5 rounded-xs transition-all duration-500 flex-1 w-full sm:w-auto border ${
-                  activeStage === 1
-                    ? "bg-midnight border-sun shadow-md shadow-sun/20 ring-1 ring-sun/30"
-                    : "bg-midnight/60 border-dusk opacity-70"
-                }`}
-              >
-                <span className={`block text-[10px] ${activeStage === 1 ? "text-sun font-bold" : "text-stroke-3"}`}>
-                  STAGE 1 {activeStage === 1 && "●"}
-                </span>
-                <span className="text-dust font-semibold">Deposit Label</span>
-              </motion.div>
-              <span className={`transition-all duration-300 ${activeStage === 1 || activeStage === 2 ? "text-sun font-bold scale-110" : "text-stroke-3"}`}>
-                →
-              </span>
-              <motion.div
-                whileHover={{ y: -3 }}
-                className={`p-3.5 rounded-xs transition-all duration-500 flex-1 w-full sm:w-auto border ${
-                  activeStage === 2
-                    ? "bg-midnight border-sun shadow-md shadow-sun/20 ring-1 ring-sun/30"
-                    : "bg-midnight/60 border-dusk opacity-70"
-                }`}
-              >
-                <span className={`block text-[10px] ${activeStage === 2 ? "text-sun font-bold" : "text-stroke-3"}`}>
-                  STAGE 2 {activeStage === 2 && "●"}
-                </span>
-                <span className="text-dust font-semibold">Magistrate Screening</span>
-              </motion.div>
-              <span className={`transition-all duration-300 ${activeStage === 2 || activeStage === 3 ? "text-sun font-bold scale-110" : "text-stroke-3"}`}>
-                →
-              </span>
-              <motion.div
-                whileHover={{ y: -3 }}
-                className={`p-3.5 rounded-xs transition-all duration-500 flex-1 w-full sm:w-auto border ${
-                  activeStage === 3
-                    ? "bg-midnight border-sun shadow-md shadow-sun/20 ring-1 ring-sun/30"
-                    : "bg-midnight/60 border-dusk opacity-70"
-                }`}
-              >
-                <span className={`block text-[10px] ${activeStage === 3 ? "text-sun font-bold" : "text-stroke-3"}`}>
-                  STAGE 3 {activeStage === 3 && "●"}
-                </span>
-                <span className="text-dust font-semibold">Approved ASP Tree</span>
-              </motion.div>
-              <span className={`transition-all duration-300 ${activeStage === 3 || activeStage === 4 ? "text-emerald-400 font-bold scale-110" : "text-stroke-3"}`}>
-                →
-              </span>
-              <motion.div
-                whileHover={{ y: -3 }}
-                className={`p-3.5 rounded-xs transition-all duration-500 flex-1 w-full sm:w-auto border ${
-                  activeStage === 4
-                    ? "bg-midnight border-emerald-400 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400/30"
-                    : "bg-midnight/60 border-dusk opacity-70"
-                }`}
-              >
-                <span className={`block text-[10px] ${activeStage === 4 ? "text-emerald-400 font-bold" : "text-stroke-3"}`}>
-                  STAGE 4 {activeStage === 4 && "●"}
-                </span>
-                <span className="text-emerald-300 font-semibold">ZK Proof Payout</span>
-              </motion.div>
+              <div>
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-dusk font-mono text-xs">
+                  <span className="text-sun font-semibold tracking-wider flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-sun animate-pulse" />
+                    MAGISTRATE SEAL · ATT-46630
+                  </span>
+                  <span className="text-stroke-3 font-mono text-[11px]">ASP REGISTER</span>
+                </div>
+
+                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xs border border-dusk/60 bg-black">
+                  <Image
+                    src="/images/magistrate-seal.jpg"
+                    alt="Macro photograph of the dark obsidian and translucent amber Magistrate Wax Seal"
+                    fill
+                    className="object-cover object-center filter saturate-[0.95] contrast-[1.05] transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/20 pointer-events-none" />
+                  
+                  {/* Floating seal telemetry */}
+                  <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-xs border border-sun/30 text-[10px] font-mono text-sun">
+                    NULLIFIER CERTIFICATE
+                  </div>
+                  <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-xs border border-emerald-500/30 text-[10px] font-mono text-emerald-400">
+                    CLEAN PROVENANCE ATTESTED
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-2 text-left">
+                  <h3 className="font-heading text-xl text-dust font-normal">
+                    Cryptographic Seal of Clean Origin
+                  </h3>
+                  <p className="text-xs text-stroke-1 leading-relaxed font-body">
+                    When withdrawing, you present a ZK proof that your note belongs to the Magistrate-approved association set. The seal nullifier is broken to prevent double-spending without ever exposing the deposit address.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-dusk font-mono text-[11px] text-stroke-3 flex items-center justify-between">
+                <span>Sanctions Contagion: Zero</span>
+                <span className="text-sun font-medium">100% Client-Side</span>
+              </div>
             </div>
+          </RevealMotion>
 
-            <p className="text-xs sm:text-sm text-stroke-1 leading-relaxed max-w-xl mx-auto font-body">
-              Unlike legacy mixers that pool illicit and honest funds together, MARGINALIA enforces association set proofs. Users prove their note belongs to the approved whitelist of non-sanctioned deposits, stopping contagion while keeping individual wallets private.
-            </p>
-          </div>
-        </RevealMotion>
+          {/* Right: 4-Stage Screening Flow & Technical Details */}
+          <RevealMotion delay={0.2} className="lg:col-span-7 h-full">
+            <div className="p-6 sm:p-8 md:p-10 rounded-xs border border-dusk bg-night/95 h-full flex flex-col justify-between shadow-2xl relative text-left">
+              {/* 4-corner brackets */}
+              <div className="absolute size-3 border-current text-stroke-3 top-0 left-0 border-t border-l" />
+              <div className="absolute size-3 border-current text-stroke-3 top-0 right-0 border-t border-r" />
+              <div className="absolute size-3 border-current text-stroke-3 bottom-0 left-0 border-b border-l" />
+              <div className="absolute size-3 border-current text-stroke-3 bottom-0 right-0 border-b border-r" />
+
+              <div>
+                <div className="flex items-center justify-between pb-3 mb-6 border-b border-dusk font-mono text-xs">
+                  <span className="text-sun font-semibold tracking-wider flex items-center gap-2">
+                    <span className="size-2 rounded-full bg-emerald-400 animate-pulse" />
+                    ASSOCIATION SET VERIFICATION PIPELINE
+                  </span>
+                  <span className="text-stroke-2">REAL-TIME GATING</span>
+                </div>
+
+                {/* 4-Stage Flow Cards */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-8 font-mono text-xs">
+                  <motion.div
+                    whileHover={{ y: -3 }}
+                    className={`p-3 rounded-xs transition-all duration-500 border ${
+                      activeStage === 1
+                        ? "bg-midnight border-sun shadow-md shadow-sun/20 ring-1 ring-sun/30"
+                        : "bg-midnight/60 border-dusk opacity-70"
+                    }`}
+                  >
+                    <span className={`block text-[10px] ${activeStage === 1 ? "text-sun font-bold" : "text-stroke-3"}`}>
+                      STAGE 1 {activeStage === 1 && "●"}
+                    </span>
+                    <span className="text-dust font-medium text-[11px] block mt-1">Deposit Label</span>
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{ y: -3 }}
+                    className={`p-3 rounded-xs transition-all duration-500 border ${
+                      activeStage === 2
+                        ? "bg-midnight border-sun shadow-md shadow-sun/20 ring-1 ring-sun/30"
+                        : "bg-midnight/60 border-dusk opacity-70"
+                    }`}
+                  >
+                    <span className={`block text-[10px] ${activeStage === 2 ? "text-sun font-bold" : "text-stroke-3"}`}>
+                      STAGE 2 {activeStage === 2 && "●"}
+                    </span>
+                    <span className="text-dust font-medium text-[11px] block mt-1">Magistrate Check</span>
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{ y: -3 }}
+                    className={`p-3 rounded-xs transition-all duration-500 border ${
+                      activeStage === 3
+                        ? "bg-midnight border-sun shadow-md shadow-sun/20 ring-1 ring-sun/30"
+                        : "bg-midnight/60 border-dusk opacity-70"
+                    }`}
+                  >
+                    <span className={`block text-[10px] ${activeStage === 3 ? "text-sun font-bold" : "text-stroke-3"}`}>
+                      STAGE 3 {activeStage === 3 && "●"}
+                    </span>
+                    <span className="text-dust font-medium text-[11px] block mt-1">Approved Tree</span>
+                  </motion.div>
+
+                  <motion.div
+                    whileHover={{ y: -3 }}
+                    className={`p-3 rounded-xs transition-all duration-500 border ${
+                      activeStage === 4
+                        ? "bg-midnight border-emerald-400 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-400/30"
+                        : "bg-midnight/60 border-dusk opacity-70"
+                    }`}
+                  >
+                    <span className={`block text-[10px] ${activeStage === 4 ? "text-emerald-400 font-bold" : "text-stroke-3"}`}>
+                      STAGE 4 {activeStage === 4 && "●"}
+                    </span>
+                    <span className="text-emerald-300 font-medium text-[11px] block mt-1">ZK Payout</span>
+                  </motion.div>
+                </div>
+
+                <div className="space-y-3 font-body text-xs sm:text-sm text-stroke-1 leading-relaxed">
+                  <p>
+                    Unlike legacy mixers that pool illicit and honest funds together, MARGINALIA enforces <strong className="text-dust font-semibold">Association Set Provider (ASP) proofs</strong>.
+                  </p>
+                  <p>
+                    Users mathematically prove that their note belongs to the approved whitelist of non-sanctioned deposits without revealing which specific note is theirs. Contagion is eliminated at the boundary, ensuring complete peace of mind for institutional payroll, commercial transactions, and private accounts.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-dusk flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                <span className="text-dust/70">
+                  Proof Verification Time: <strong className="text-emerald-400 font-normal">~3.6s</strong>
+                </span>
+                <Link
+                  href="/compliance"
+                  className="inline-flex items-center gap-1.5 text-sun hover:underline uppercase tracking-wider text-[11px]"
+                >
+                  <span>Explore Compliance Suite</span>
+                  <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            </div>
+          </RevealMotion>
+        </div>
       </section>
 
       {/* ========================================================================= */}
@@ -774,14 +946,17 @@ export default function HomePage() {
       <section id="technology" className="w-full border-t border-dusk bg-[#0a0807] py-24 text-dust">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <RevealMotion direction="up">
-            <div className="text-center mb-16">
-              <div className="text-mono-s text-sun uppercase tracking-widest mb-3">
-                Section 06 • Cryptographic Engine
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14 pb-6 border-b border-dusk/60 text-left">
+              <div className="max-w-2xl">
+                <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
+                  <span className="size-1.5 rounded-full bg-sun"></span>
+                  <span>Section 06 · Cryptographic Engine</span>
+                </div>
+                <h2 className="text-heading-48 text-dust font-light leading-tight">
+                  Technology Under The Hood
+                </h2>
               </div>
-              <h2 className="text-heading-48 text-dust">
-                Technology Under The Hood
-              </h2>
-              <p className="text-body-16-light text-stroke-2 mt-3 max-w-xl mx-auto">
+              <p className="text-body-16-light text-stroke-2 max-w-md leading-relaxed md:text-right">
                 The mathematical primitives and zero-knowledge circuit components powering the protocol.
               </p>
             </div>
@@ -806,13 +981,13 @@ export default function HomePage() {
             ))}
           </div>
 
-          <RevealMotion delay={0.3} className="text-center">
+          <RevealMotion delay={0.3} className="text-left">
             <Link
               href="/codex"
               className="inline-flex cursor-pointer items-center justify-center rounded-xs border px-6 py-3 text-center whitespace-nowrap transition-colors select-none bg-midnight border-dusk text-white hover:bg-night font-medium text-xs tracking-wider uppercase font-mono"
             >
               <span>Explore Architecture & Public Signals</span>
-              <ArrowRight className="size-3.5 ml-2" />
+              <ArrowRight className="size-3.5 ml-2 text-sun" />
             </Link>
           </RevealMotion>
         </div>
@@ -823,27 +998,30 @@ export default function HomePage() {
       {/* ========================================================================= */}
       <section id="security" className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-dust">
         <RevealMotion direction="up">
-          <div className="text-center mb-14">
-            <div className="text-mono-s text-sun uppercase tracking-widest mb-3">
-              Section 07 • Honest Engineering
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 pb-6 border-b border-dusk/60 text-left">
+            <div className="max-w-2xl">
+              <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
+                <span className="size-1.5 rounded-full bg-sun"></span>
+                <span>Section 07 · Honest Engineering</span>
+              </div>
+              <h2 className="text-heading-48 text-dust font-light leading-tight">
+                Built To Be Verified
+              </h2>
             </div>
-            <h2 className="text-heading-48 text-dust">
-              Built To Be Verified
-            </h2>
-            <p className="text-body-16-light text-stroke-2 mt-3 max-w-xl mx-auto">
+            <p className="text-body-16-light text-stroke-2 max-w-md leading-relaxed md:text-right">
               We prioritize cryptographic honesty over marketing hype. All invariants are test-covered.
             </p>
           </div>
         </RevealMotion>
 
         <RevealMotion delay={0.15}>
-          <div className="p-8 sm:p-10 rounded-xs border border-dusk bg-night/95 max-w-3xl mx-auto relative">
+          <div className="p-8 sm:p-10 rounded-xs border border-dusk bg-night/95 max-w-4xl mx-auto relative text-left">
             <div className="absolute size-3 border-current text-stroke-3 top-0 left-0 border-t border-l" />
             <div className="absolute size-3 border-current text-stroke-3 top-0 right-0 border-t border-r" />
             <div className="absolute size-3 border-current text-stroke-3 bottom-0 left-0 border-b border-l" />
             <div className="absolute size-3 border-current text-stroke-3 bottom-0 right-0 border-b border-r" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-left">
               <motion.div whileHover={{ y: -3 }} className="p-4 rounded-xs bg-midnight border border-dusk">
                 <span className="text-xs font-mono text-stroke-2 block mb-1">STATUS</span>
                 <span className="font-heading text-lg text-sun">Prototype</span>
@@ -868,7 +1046,7 @@ export default function HomePage() {
               <span className="text-emerald-400 font-bold">12 / 12 PASSING</span>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-3 font-mono text-xs">
+            <div className="flex flex-wrap items-center justify-start gap-3 font-mono text-xs">
               <Link
                 href="/explorer"
                 className="inline-flex cursor-pointer items-center justify-center rounded-xs border px-4 py-2 text-center whitespace-nowrap transition-colors select-none bg-midnight border-dusk text-white hover:bg-night"
@@ -901,13 +1079,19 @@ export default function HomePage() {
       <section className="w-full border-t border-dusk bg-[#0c0908] py-24 text-dust">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <RevealMotion direction="up">
-            <div className="text-center mb-16">
-              <div className="text-mono-s text-sun uppercase tracking-widest mb-3">
-                Section 08 • The Nomenclature
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14 pb-6 border-b border-dusk/60 text-left">
+              <div>
+                <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
+                  <span className="size-1.5 rounded-full bg-sun"></span>
+                  <span>Section 08 · The Nomenclature</span>
+                </div>
+                <h2 className="text-heading-48 text-dust font-light leading-tight">
+                  The Marginalia System
+                </h2>
               </div>
-              <h2 className="text-heading-48 text-dust">
-                The Marginalia System
-              </h2>
+              <p className="text-body-16-light text-stroke-2 max-w-md leading-relaxed md:text-right">
+                The vocabulary of private ledger architecture derived from medieval marginalia and zero-knowledge circuit terminology.
+              </p>
             </div>
           </RevealMotion>
 
@@ -963,13 +1147,19 @@ export default function HomePage() {
       {/* ========================================================================= */}
       <section className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-dust">
         <RevealMotion direction="up">
-          <div className="text-center mb-16">
-            <div className="text-mono-s text-sun uppercase tracking-widest mb-3">
-              Section 09 • Milestone Trajectory
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-14 pb-6 border-b border-dusk/60 text-left">
+            <div>
+              <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
+                <span className="size-1.5 rounded-full bg-sun"></span>
+                <span>Section 09 · Milestone Trajectory</span>
+              </div>
+              <h2 className="text-heading-48 text-dust font-light leading-tight">
+                Protocol Roadmap
+              </h2>
             </div>
-            <h2 className="text-heading-48 text-dust">
-              Protocol Roadmap
-            </h2>
+            <p className="text-body-16-light text-stroke-2 max-w-sm leading-relaxed md:text-right">
+              Milestones from mathematical prototypes to audited Robinhood Chain mainnet deployment.
+            </p>
           </div>
         </RevealMotion>
 

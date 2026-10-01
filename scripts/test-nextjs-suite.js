@@ -11,8 +11,20 @@ if (!fs.existsSync(ARTIFACTS_DIR)) {
   fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
 }
 
+async function dismissIntro(page) {
+  try {
+    await page.keyboard.press("Escape");
+    await page.evaluate(() => {
+      const intro = document.getElementById("introSequenceOverlay");
+      if (intro) intro.remove();
+    });
+    await new Promise((r) => setTimeout(r, 200));
+  } catch (_) {}
+}
+
 async function closeModal(page) {
   try {
+    await dismissIntro(page);
     const closeBtn = await page.$("#noirModalCloseBtn");
     if (closeBtn) {
       await closeBtn.click();
@@ -38,6 +50,7 @@ async function clearAndType(page, selector, text) {
 
 async function switchTab(page, tabName) {
   await closeModal(page);
+  await page.waitForSelector(`button[data-tab="${tabName}"]`, { timeout: 5000 });
   await page.evaluate((tab) => {
     const btn = document.querySelector(`button[data-tab="${tab}"]`);
     if (btn) btn.click();
@@ -64,6 +77,7 @@ async function runNextJsTestSuite() {
     // ------------------------------------------------------------------------------------
     console.log("\n[TEST 1] Loading Next.js Home (http://127.0.0.1:3002/)...");
     await page.goto("http://127.0.0.1:3002/", { waitUntil: "domcontentloaded" });
+    await dismissIntro(page);
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, "01_nextjs_home.png") });
 
     const homeTitle = await page.title();
@@ -79,6 +93,7 @@ async function runNextJsTestSuite() {
     // ------------------------------------------------------------------------------------
     console.log("\n[TEST 2] Navigating to http://127.0.0.1:3002/app...");
     await page.goto("http://127.0.0.1:3002/app", { waitUntil: "domcontentloaded" });
+    await dismissIntro(page);
     await page.evaluate(() => {
       document.querySelectorAll("form").forEach((f) => (f.noValidate = true));
     });
@@ -265,6 +280,7 @@ async function runNextJsTestSuite() {
     // ------------------------------------------------------------------------------------
     console.log("\n[TEST 10] Testing Explorer Page (http://127.0.0.1:3002/explorer)...");
     await page.goto("http://127.0.0.1:3002/explorer", { waitUntil: "domcontentloaded" });
+    await dismissIntro(page);
     await new Promise((r) => setTimeout(r, 1200));
 
     const folioCount = await page.$eval("#folioNotesCount", (el) => el.textContent.trim());
@@ -310,6 +326,7 @@ async function runNextJsTestSuite() {
     // ------------------------------------------------------------------------------------
     console.log("\n[TEST 12] Testing Compliance Page (http://127.0.0.1:3002/compliance)...");
     await page.goto("http://127.0.0.1:3002/compliance", { waitUntil: "domcontentloaded" });
+    await dismissIntro(page);
 
     const secComp = await M.newSecret();
     const compVal = 1000000000000000000n;
@@ -343,6 +360,7 @@ async function runNextJsTestSuite() {
     // ------------------------------------------------------------------------------------
     console.log("\n[TEST 13] Testing Codex & Lore Page (http://127.0.0.1:3002/codex)...");
     await page.goto("http://127.0.0.1:3002/codex", { waitUntil: "domcontentloaded" });
+    await dismissIntro(page);
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, "14_nextjs_codex_page.png") });
 
     const codexTitle = await page.title();

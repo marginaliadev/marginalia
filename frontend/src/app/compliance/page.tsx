@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Lock, Copy, Check, ShieldCheck, ArrowRight, Eye, Shield, FileText, CheckCircle2, XCircle } from "lucide-react";
 
 export default function CompliancePage() {
@@ -92,29 +93,49 @@ export default function CompliancePage() {
               <div className="bracket-x h-3 md:h-4 text-stroke-3 border-b"></div>
             </div>
 
-            {/* Right Metric Card */}
+            {/* Right Metric / Magistrate Attestation Card */}
             <div className="flex w-full shrink-0 flex-col justify-end md:w-5/12 md:max-w-[28rem]">
-              <div className="space-y-6 border border-dusk bg-night p-6 rounded-xs relative">
-                <div className="relative h-2 text-stroke-3">
+              <div className="border border-dusk bg-night p-6 rounded-xs relative group shadow-2xl">
+                <div className="relative h-2 text-stroke-3 -mt-2 mb-4">
                   <div className="absolute size-2.5 border-current top-0 left-0 border-t border-l"></div>
                   <div className="absolute size-2.5 border-current top-0 right-0 border-t border-r"></div>
                 </div>
-                <div className="flex items-center justify-between">
+
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-x-2.5">
-                    <div className="size-2 rounded-full bg-sun"></div>
-                    <span className="font-mono text-xs tracking-wider uppercase text-dust/70">DISCLOSURE STANDARD</span>
+                    <div className="size-2 rounded-full bg-sun animate-pulse"></div>
+                    <span className="font-mono text-xs tracking-wider uppercase text-dust/70">ASP MAGISTRATE SEAL</span>
                   </div>
                   <span className="rounded-xs border border-sun/30 bg-sun/10 px-2 py-0.5 font-mono text-[10px] text-sun">X25519-AES</span>
                 </div>
-                <div>
-                  <div className="font-heading text-5xl leading-none text-dust tracking-tight">0</div>
-                  <div className="mt-2.5 text-sm text-dust/80 leading-relaxed">
-                    Permanent master viewing keys. You disclose per auditor, per scope, per time window. Never the master private key.
+
+                {/* Macro Seal Preview Plate */}
+                <div className="relative aspect-[16/10] w-full overflow-hidden rounded-xs border border-dusk/70 bg-black mb-4">
+                  <Image
+                    src="/images/magistrate-seal.jpg"
+                    alt="Magistrate Official Wax Seal with Cryptographic Coordinates"
+                    fill
+                    className="object-cover object-center filter saturate-[0.95] contrast-[1.05] transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
+                  <div className="absolute bottom-2.5 left-2.5 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded-xs border border-sun/30 text-[10px] font-mono text-sun">
+                    ORBIT 46630 · ZERO RETENTION
                   </div>
                 </div>
-                <div className="pt-4 border-t border-dusk/60 flex items-center justify-between text-mono-s text-dust/60">
+
+                <div>
+                  <div className="flex items-baseline gap-3">
+                    <div className="font-heading text-4xl text-dust tracking-tight">0</div>
+                    <span className="text-xs font-mono text-stroke-2 uppercase">Permanent Master Keys</span>
+                  </div>
+                  <div className="mt-2 text-xs text-dust/80 leading-relaxed font-body">
+                    Attest clean provenance without custody. Disclose per auditor, per scope, per time window. Never the master private key.
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-dusk/60 flex items-center justify-between text-mono-s text-dust/60 text-[11px]">
                   <span>OFAC / ASP Screening</span>
-                  <span className="text-emerald-400 font-mono">100% Client-Side</span>
+                  <span className="text-emerald-400 font-mono font-medium">100% Client-Side</span>
                 </div>
               </div>
             </div>

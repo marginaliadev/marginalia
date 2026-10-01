@@ -1,29 +1,30 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import MarginaliaLogo from "@/components/MarginaliaLogo";
 
 export default function IntroSequence() {
-  const pathname = usePathname();
   const [isVisible, setIsVisible] = useState(false);
   const [progress, setProgress] = useState(0);
   const [phaseText, setPhaseText] = useState("INITIALIZING BN254 PAIRING...");
 
+  // Persistent within RootLayout across Next.js client-side navigations.
+  // Re-initializes to false on fresh tab load or browser page refresh (F5) on any page.
+  const [hasCompleted, setHasCompleted] = useState(false);
+
   useEffect(() => {
-    // Only display intro sequence on the main landing page
-    if (pathname !== "/") {
-      setIsVisible(false);
+    // If intro has already completed or been dismissed in this session, do not show on client navigation
+    if (hasCompleted) {
       return;
     }
 
     setIsVisible(true);
     setProgress(0);
 
-    // Progress counter calibrated to run smoothly over ~2.9s
+    // Progress counter calibrated to run smoothly over 3.3s + 0.7s hold = exactly 4.0s total
     const startTime = Date.now();
-    const TARGET_DURATION = 2900; // 2.9 seconds to reach 100%
+    const TARGET_DURATION = 3300; // 3.3 seconds to reach 100%
 
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -33,10 +34,10 @@ export default function IntroSequence() {
       if (pct >= 100) {
         clearInterval(interval);
       }
-    }, 40);
+    }, 30);
 
     return () => clearInterval(interval);
-  }, [pathname]);
+  }, [hasCompleted]);
 
   // Update status messages according to progress phases
   useEffect(() => {
@@ -51,18 +52,19 @@ export default function IntroSequence() {
     }
   }, [progress]);
 
-  // Hold for ~650ms after reaching 100% (Total sequence duration = ~3.5 to 3.6 seconds)
+  // Hold for 700ms after reaching 100% (Total sequence duration = 3300ms + 700ms = 4000ms = 4.0 seconds)
   useEffect(() => {
     if (progress === 100) {
       const dismissTimer = setTimeout(() => {
         handleDismiss();
-      }, 650);
+      }, 700);
       return () => clearTimeout(dismissTimer);
     }
   }, [progress]);
 
   const handleDismiss = () => {
     setIsVisible(false);
+    setHasCompleted(true);
   };
 
   // Keyboard shortcut: Press Escape to skip intro immediately
@@ -80,6 +82,7 @@ export default function IntroSequence() {
     <AnimatePresence>
       {isVisible && (
         <motion.div
+          id="introSequenceOverlay"
           onClick={handleDismiss}
           initial={{ opacity: 1 }}
           exit={{
