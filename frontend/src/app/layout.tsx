@@ -28,8 +28,37 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MARGINALIA — Compliant Shielded Pool on Robinhood Chain",
+  metadataBase: new URL("https://marginalia-production-5e9d.up.railway.app"),
+  title: "MARGINALIA: Compliant Shielded Pool on Robinhood Chain",
   description: "Mathematical privacy on Robinhood Orbit L2. Zero-Knowledge Groth16 proofs, association set providers, and cryptographic disclosure.",
+  applicationName: "Marginalia",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "MARGINALIA: Compliant Shielded Pool on Robinhood Chain",
+    description: "Mathematical privacy on Robinhood Orbit L2. Zero-Knowledge Groth16 proofs, association set providers, and cryptographic disclosure.",
+    url: "https://marginalia-production-5e9d.up.railway.app",
+    siteName: "MARGINALIA Protocol",
+    images: [
+      {
+        url: "/images/marginalia-hero.webp",
+        width: 1200,
+        height: 630,
+        alt: "MARGINALIA: Compliant Shielded Pool",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MARGINALIA: Compliant Shielded Pool on Robinhood Chain",
+    description: "Mathematical privacy on Robinhood Orbit L2. Zero-Knowledge Groth16 proofs, association set providers, and cryptographic disclosure.",
+    site: "@MarginaliaZK",
+    creator: "@MarginaliaZK",
+    images: ["/images/marginalia-hero.webp"],
+  },
   icons: {
     icon: [
       { url: "/favicon.svg?v=3", type: "image/svg+xml" },

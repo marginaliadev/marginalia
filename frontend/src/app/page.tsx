@@ -549,7 +549,7 @@ export default function HomePage() {
                 <div className="relative aspect-[16/10] sm:aspect-[4/3] w-full overflow-hidden rounded-xs border border-dusk/60 bg-black">
                   <Image
                     src="/images/luminous-data-cathedral.png"
-                    alt="Luminous Arcane Data Cathedral — Cryptographic 3D Merkle Tree lattice visualization of the Marginalia Folio"
+                    alt="Luminous Arcane Data Cathedral: Cryptographic 3D Merkle Tree lattice visualization of the Marginalia Folio"
                     fill
                     priority
                     className="object-cover object-center filter saturate-[1.0] contrast-[1.05] transition-transform duration-700 group-hover:scale-105"

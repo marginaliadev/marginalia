@@ -41,6 +41,30 @@
     background: #ff8b3e;
     color: #0f0c0b;
   }
+
+  /* Custom Obsidian / Gold Minimalist Scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #3f3630 #0b0907;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0b0907;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #3f3630;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #ff8b3e;
+  }
 }
 
 /* Exact Noirpay Typography Scale */

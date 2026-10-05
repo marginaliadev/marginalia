@@ -4,7 +4,7 @@ import { BookOpen, Shield, ArrowRight, Sparkles, Binary, Lock, Compass, CheckCir
 import MarginaliaLogo from "@/components/MarginaliaLogo";
 
 export const metadata = {
-  title: "The Codex — MARGINALIA",
+  title: "The Codex: MARGINALIA",
   description: "Historical foundation, mathematical treatise, and cryptographic primitives of MARGINALIA on Robinhood Chain.",
 };
 
@@ -96,7 +96,7 @@ export default function CodexPage() {
 
                 <div className="mt-3 pt-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] font-mono text-dust/60">
                   <p>
-                    <span className="text-sun font-semibold">FIG. 1.1</span> — Diophanti Alexandrini <em className="text-dust/90 font-serif">Arithmetica</em> (Bachet translation, 1621), annotated 1637.
+                    <span className="text-sun font-semibold">FIG. 1.1</span>: Diophanti Alexandrini <em className="text-dust/90 font-serif">Arithmetica</em> (Bachet translation, 1621), annotated 1637.
                   </p>
                   <span className="text-stroke-3 shrink-0">HANC MARGINIS EXIGUITAS NON CAPERET</span>
                 </div>
@@ -107,7 +107,7 @@ export default function CodexPage() {
               </blockquote>
 
               <p className="text-xs font-mono text-dust/50">
-                — Translation: "I have discovered a truly marvelous demonstration of this proposition, which this margin is too narrow to contain."
+                [Translation]: "I have discovered a truly marvelous demonstration of this proposition, which this margin is too narrow to contain."
               </p>
 
               <p>

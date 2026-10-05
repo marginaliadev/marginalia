@@ -373,14 +373,30 @@ export default function Footer() {
           <div className="bracket-x h-3 md:h-4 text-stroke-3 border-t"></div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 px-2">
-            <div className="flex items-center gap-3">
-              <MarginaliaLogo
-                variant="white"
-                className="size-7 shrink-0 rounded-md border border-white/20 shadow-sm"
-              />
-              <span className="font-cinzel text-xs tracking-wider text-dust/80 uppercase">
-                © 2026 MARGINALIA PROTOCOL · ROBINHOOD CHAIN
-              </span>
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex items-center gap-3">
+                <MarginaliaLogo
+                  variant="white"
+                  className="size-7 shrink-0 rounded-md border border-white/20 shadow-sm"
+                />
+                <span className="font-cinzel text-xs tracking-wider text-dust/80 uppercase">
+                  © 2026 MARGINALIA PROTOCOL · ROBINHOOD CHAIN
+                </span>
+              </div>
+
+              <a
+                href="https://x.com/MarginaliaZK"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Official X Account @MarginaliaZK"
+                title="Follow @MarginaliaZK on X"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xs border border-white/10 bg-white/5 hover:bg-white/10 text-dust/80 hover:text-sun text-xs font-mono transition-colors"
+              >
+                <svg className="size-3 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+                <span>@MarginaliaZK</span>
+              </a>
             </div>
 
             <div className="font-heading italic text-sm text-dust/60">

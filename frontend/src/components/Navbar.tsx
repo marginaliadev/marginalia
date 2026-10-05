@@ -14,6 +14,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const [account, setAccount] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [walletError, setWalletError] = useState<string | null>(null);
 
   useEffect(() => {
     // DO NOT eagerly trigger wallet popup unless user previously clicked connect
@@ -53,7 +54,8 @@ export default function Navbar() {
 
   const connectWallet = async () => {
     if (typeof window === "undefined" || !(window as any).ethereum) {
-      alert("No Web3 wallet found. Please install MetaMask or Rabby.");
+      setWalletError("No Web3 wallet detected. Please install MetaMask or Rabby.");
+      setTimeout(() => setWalletError(null), 4000);
       return;
     }
     setIsConnecting(true);
@@ -163,6 +165,20 @@ export default function Navbar() {
 
         {/* Right Action Buttons */}
         <div className="flex shrink-0 items-center gap-x-3">
+          {/* Official X (Twitter) Account */}
+          <a
+            href="https://x.com/MarginaliaZK"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Official X Account"
+            title="Follow @MarginaliaZK on X"
+            className="inline-flex cursor-pointer items-center justify-center size-9 rounded-xs border border-white/20 bg-transparent text-white/80 hover:text-sun hover:border-sun/60 hover:bg-white/5 transition-all duration-200"
+          >
+            <svg className="size-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </a>
+
           <div className="relative max-lg:hidden">
             <button
               type="button"
@@ -201,6 +217,13 @@ export default function Navbar() {
           )}
         </div>
       </div>
+
+      {/* Wallet Error In-App Banner */}
+      {walletError && (
+        <div className="bg-[#1b1613] border-b border-sun/40 px-4 py-2 text-center text-xs font-mono text-sun animate-fade-in flex items-center justify-center gap-2">
+          <span>{walletError}</span>
+        </div>
+      )}
     </header>
   );
 }
