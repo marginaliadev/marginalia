@@ -375,8 +375,8 @@ export default function Footer() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-6 px-2">
             <div className="flex items-center gap-3">
               <MarginaliaLogo
-                variant="black"
-                className="size-7 shrink-0 rounded-md border border-white/10"
+                variant="white"
+                className="size-7 shrink-0 rounded-md border border-white/20 shadow-sm"
               />
               <span className="font-cinzel text-xs tracking-wider text-dust/80 uppercase">
                 © 2026 MARGINALIA PROTOCOL · ROBINHOOD CHAIN

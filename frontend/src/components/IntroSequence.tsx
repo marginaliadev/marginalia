@@ -131,8 +131,8 @@ export default function IntroSequence() {
 
               {/* Core Emblem */}
               <MarginaliaLogo
-                variant="black"
-                className="size-14 drop-shadow-[0_0_25px_rgba(255,139,62,0.45)] rounded-xl border border-sun/40"
+                variant="white"
+                className="size-14 drop-shadow-[0_0_25px_rgba(255,255,255,0.35)] rounded-xl border border-white/20 shadow-xl"
               />
             </div>
 

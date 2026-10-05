@@ -16,7 +16,7 @@ export interface MarginaliaLogoProps {
 
 export default function MarginaliaLogo({
   className = "size-7",
-  variant = "black",
+  variant = "white",
   mColor,
   strokeColor,
   bracketColor,
