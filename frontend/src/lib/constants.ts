@@ -4,7 +4,7 @@ export const RH_TESTNET = {
   name: "Robinhood Chain Testnet",
   rpcUrl: process.env.NEXT_PUBLIC_RH_TESTNET_RPC_URL || "https://rpc.testnet.chain.robinhood.com",
   explorerUrl: process.env.NEXT_PUBLIC_EXPLORER_URL || "https://explorer.testnet.chain.robinhood.com",
-  poolAddress: (process.env.NEXT_PUBLIC_MARGINALIA_POOL_ADDRESS || "0x17Fbd586f4Cbf373A7f15a3330D1b50E52b088B4") as `0x${string}`,
+  poolAddress: (process.env.NEXT_PUBLIC_MARGINALIA_POOL_ADDRESS || "0x340E20C7CBe7eA83d463432ac8FA1e891bdca948") as `0x${string}`,
   symbol: "ETH",
 };
 

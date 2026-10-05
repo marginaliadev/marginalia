@@ -18,7 +18,19 @@ async function main() {
       .filter(Boolean)
   );
 
-  const deposits = await pool.queryFilter(pool.filters.Deposited(), d.deployBlock);
+  const currentBlock = await ethers.provider.getBlockNumber();
+  const startBlock = process.env.FROM_BLOCK ? parseInt(process.env.FROM_BLOCK) : d.deployBlock;
+  const CHUNK_SIZE = 10;
+  const deposits = [];
+  for (let from = startBlock; from <= currentBlock; from += CHUNK_SIZE) {
+    const to = Math.min(from + CHUNK_SIZE - 1, currentBlock);
+    try {
+      const chunk = await pool.queryFilter(pool.filters.Deposited(), from, to);
+      deposits.push(...chunk);
+    } catch (e) {
+      console.warn(`Warning fetching logs [${from}, ${to}]:`, e.message);
+    }
+  }
   const approved = [];
   for (const ev of deposits) {
     const who = ev.args.depositor.toLowerCase();

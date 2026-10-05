@@ -44,7 +44,7 @@ export async function GET() {
   }
 
   // Secure relayer address check
-  let relayerAddress = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266";
+  let relayerAddress = "0x673eF77ccb27e106769d2d56C536a4A0523B260E";
   const pk = process.env.DEPLOYER_PRIVATE_KEY;
   if (pk) {
     try {

@@ -8,3 +8,4 @@ build/*.sym
 .env
 notes/
 deployments/localhost.json
+contracts/

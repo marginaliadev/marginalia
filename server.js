@@ -148,7 +148,7 @@ app.get("/api/status", async (req, res) => {
     const approvedDeposits = await supabaseService.getDeposits("APPROVED");
 
     let poolBalanceWei = 0n;
-    const poolAddr = process.env.MARGINALIA_POOL_ADDRESS || "0x17Fbd586f4Cbf373A7f15a3330D1b50E52b088B4";
+    const poolAddr = process.env.MARGINALIA_POOL_ADDRESS || "0x340E20C7CBe7eA83d463432ac8FA1e891bdca948";
     try {
       const rpcUrl = process.env.RH_TESTNET_RPC_URL || "https://rpc.testnet.chain.robinhood.com";
       const provider = new ethers.JsonRpcProvider(rpcUrl);
@@ -466,7 +466,7 @@ app.post("/api/relay/quote", async (req, res) => {
     const baseCost = estimatedGas * gasPrice;
     const minFee = (baseCost * 11000n) / 10000n;
 
-    let relayerAddress = "0x17Fbd586f4Cbf373A7f15a3330D1b50E52b088B4";
+    let relayerAddress = "0x673eF77ccb27e106769d2d56C536a4A0523B260E";
     if (process.env.RELAYER_PRIVATE_KEY) {
       try {
         relayerAddress = new ethers.Wallet(process.env.RELAYER_PRIVATE_KEY).address;
@@ -511,7 +511,7 @@ app.post("/api/disclosure/generate", async (req, res) => {
       valueWei: parsed.value ? parsed.value.toString() : "0",
       valueEth: parsed.value ? ethers.formatEther(parsed.value.toString()) : "0",
       label: parsed.label ? parsed.label.toString() : "0",
-      poolAddress: process.env.MARGINALIA_POOL_ADDRESS || "0x17Fbd586f4Cbf373A7f15a3330D1b50E52b088B4",
+      poolAddress: process.env.MARGINALIA_POOL_ADDRESS || "0x340E20C7CBe7eA83d463432ac8FA1e891bdca948",
       timestamp: new Date().toISOString(),
       chainId: 46630,
     };

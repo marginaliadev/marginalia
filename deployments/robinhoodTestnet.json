@@ -1,13 +1,13 @@
 {
   "network": "robinhoodTestnet",
   "chainId": 46630,
-  "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "magistrate": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "poseidonT3": "0xfD7467C18e0037123D0feeA2EB1Eb04f94E5d416",
-  "poseidonT4": "0x7CF05e0AFbB45a1e062dA06ebdb64dD75d4d2EEc",
-  "verifier": "0x33801353c0810C09Dd15EeA23CcBE56856B021D2",
-  "ragequitVerifier": "0x543d6E250DDBE97Bc965332Fe5A489855929624A",
-  "register": "0xD8E2c5aDa9154FF9621520765414c5f4B2694522",
-  "pool": "0x17Fbd586f4Cbf373A7f15a3330D1b50E52b088B4",
-  "deployBlock": 125989459
+  "deployer": "0x673eF77ccb27e106769d2d56C536a4A0523B260E",
+  "magistrate": "0x673eF77ccb27e106769d2d56C536a4A0523B260E",
+  "poseidonT3": "0x17232E3B8290259179B53571aE414eAa7e7Ee7cb",
+  "poseidonT4": "0x386bAeadFB992dDe57a1b0bA890Cf84BdD7b2b30",
+  "verifier": "0xc8cd85f4D0b5fE22fC6Ba576F44353E19d0C5Dd7",
+  "ragequitVerifier": "0x789Fc69084a49bf7B0e6e5E038185e5357fd53de",
+  "register": "0x9a54AaADB10472a930822D635831Ee7aa3488d75",
+  "pool": "0x340E20C7CBe7eA83d463432ac8FA1e891bdca948",
+  "deployBlock": 129140787
 }
