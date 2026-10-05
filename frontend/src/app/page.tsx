@@ -406,9 +406,8 @@ export default function HomePage() {
             <div className="max-w-xl">
               <div className="flex items-center gap-2 mb-3">
                 <MarginaliaLogo
-                  className="size-7 drop-shadow-sm"
-                  bracketColor="#0b0907"
-                  mColor="#0b0907"
+                  variant="white"
+                  className="size-8 rounded-lg border border-black/15 shadow-sm"
                 />
                 <span className="text-mono-s uppercase tracking-wider text-night/70 font-mono">
                   ACCOUNT ARCHITECTURE

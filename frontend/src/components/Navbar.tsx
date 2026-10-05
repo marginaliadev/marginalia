@@ -102,9 +102,8 @@ export default function Navbar() {
           {/* Logo */}
           <Link aria-label="Home" className="shrink-0 flex items-center gap-3.5 group" href="/">
             <MarginaliaLogo
-              className="size-7.5 drop-shadow-[0_0_12px_rgba(255,139,62,0.22)] group-hover:scale-105 transition-all duration-300"
-              bracketColor="#ff8b3e"
-              mColor="#fbf6ec"
+              variant="black"
+              className="size-8.5 rounded-lg border border-white/10 group-hover:border-sun/40 drop-shadow-[0_0_12px_rgba(255,139,62,0.22)] group-hover:scale-105 transition-all duration-300"
             />
             <span className="font-cinzel text-xl sm:text-[22px] tracking-[0.14em] font-semibold text-dust group-hover:text-sun transition-colors uppercase">
               Marginalia

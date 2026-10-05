@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { BookOpen, Shield, ArrowRight, Sparkles, Binary, Lock, Compass, CheckCircle2 } from "lucide-react";
+import MarginaliaLogo from "@/components/MarginaliaLogo";
 
 export const metadata = {
   title: "The Codex — MARGINALIA",
@@ -167,6 +168,67 @@ export default function CodexPage() {
                 <p className="text-xs text-dust/70 leading-relaxed">
                   Nullifier derivation <code className="text-sun">H(sk, ρ)</code> ensures mathematical double-spending prevention.
                 </p>
+              </div>
+            </div>
+
+            <div className="relative h-2 text-stroke-3 -mb-2 mt-6">
+              <div className="absolute size-2.5 border-current bottom-0 left-0 border-b border-l"></div>
+              <div className="absolute size-2.5 border-current bottom-0 right-0 border-b border-r"></div>
+            </div>
+          </div>
+
+          {/* VISUAL IDENTITY & BRAND EMBLEMS */}
+          <div className="relative border border-dusk bg-night/70 p-6 sm:p-8 rounded-xs mb-12">
+            <div className="relative h-2 text-stroke-3 -mt-6 sm:-mt-8 mb-6">
+              <div className="absolute size-2.5 border-current top-0 left-0 border-t border-l"></div>
+              <div className="absolute size-2.5 border-current top-0 right-0 border-t border-r"></div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <div className="text-mono-s uppercase tracking-wider text-sun mb-1">Visual Identity</div>
+                <h3 className="text-heading-28 text-dust">Official Protocol Emblems</h3>
+              </div>
+              <span className="text-xs font-mono text-dust/60">Vector SVG · High Fidelity</span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Obsidian Dark Seal */}
+              <div className="p-5 rounded-xs bg-[#120f0d] border border-white/10 flex items-center gap-5">
+                <div className="shrink-0 p-2 bg-[#131313] rounded-xl border border-white/10 shadow-md">
+                  <MarginaliaLogo variant="black" className="size-14" />
+                </div>
+                <div>
+                  <div className="font-cinzel text-sm text-dust font-semibold uppercase tracking-wider">Obsidian Seal (Dark)</div>
+                  <p className="text-xs text-dust/60 mt-1 mb-3">Primary emblem for dark interfaces, navbar branding, and on-chain dApp.</p>
+                  <a
+                    href="/logo-bg-black.svg"
+                    download="marginalia-logo-black.svg"
+                    className="inline-flex items-center gap-1.5 text-xs font-mono text-sun hover:underline"
+                  >
+                    <span>Download SVG</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Parchment Light Seal */}
+              <div className="p-5 rounded-xs bg-[#120f0d] border border-white/10 flex items-center gap-5">
+                <div className="shrink-0 p-2 bg-white rounded-xl border border-black/10 shadow-md">
+                  <MarginaliaLogo variant="white" className="size-14" />
+                </div>
+                <div>
+                  <div className="font-cinzel text-sm text-dust font-semibold uppercase tracking-wider">Parchment Seal (Light)</div>
+                  <p className="text-xs text-dust/60 mt-1 mb-3">Inverted emblem for browser favicon, official audit certificates, and light documents.</p>
+                  <a
+                    href="/logo-bg-white.svg"
+                    download="marginalia-logo-white.svg"
+                    className="inline-flex items-center gap-1.5 text-xs font-mono text-sun hover:underline"
+                  >
+                    <span>Download SVG</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </a>
+                </div>
               </div>
             </div>
 
