@@ -22,6 +22,9 @@ import {
   Search,
   Check,
   Compass,
+  Database,
+  Cpu,
+  Hash,
 } from "lucide-react";
 
 import TechCard from "@/components/TechCard";
@@ -437,7 +440,7 @@ export default function HomePage() {
               <div className="max-w-2xl">
                 <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
                   <span className="size-1.5 rounded-full bg-sun"></span>
-                  <span>Section 02 · Verifiable State Transition</span>
+                  <span>Verifiable State Transition</span>
                 </div>
                 <h2 className="text-heading-48 text-dust font-light leading-tight">
                   The 5-Step Lifecycle
@@ -514,7 +517,7 @@ export default function HomePage() {
             <div className="max-w-2xl">
               <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
                 <span className="size-1.5 rounded-full bg-sun"></span>
-                <span>Section 03 · Signature Visual Architecture</span>
+                <span>Signature Visual Architecture</span>
               </div>
               <h2 className="text-heading-48 text-dust font-light leading-tight">
                 The Privacy Layer
@@ -685,7 +688,7 @@ export default function HomePage() {
               <div className="max-w-2xl lg:max-w-3xl">
                 <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
                   <span className="size-1.5 rounded-full bg-sun"></span>
-                  <span>Section 04 · Cryptographic Guarantees</span>
+                  <span>Cryptographic Guarantees</span>
                 </div>
                 <h2 className="text-heading-48 text-dust font-light leading-tight sm:whitespace-nowrap">
                   What The Proof Guarantees
@@ -706,38 +709,83 @@ export default function HomePage() {
 
               {[
                 {
+                  code: "INV-01",
+                  tag: "MERKLE MEMBERSHIP",
                   title: "Note Exists in the Folio",
                   desc: "The note commitment is proven to reside within the last 64 Merkle state roots.",
+                  icon: Database,
+                  badge: "64-Root Merkle",
                 },
                 {
+                  code: "INV-02",
+                  tag: "ASP COMPLIANCE",
                   title: "Note is Approved by Magistrate",
                   desc: "The note's label belongs to the latest published Association Set Provider (ASP) root.",
+                  icon: Scale,
+                  badge: "ASP Approved",
                 },
                 {
+                  code: "INV-03",
+                  tag: "NULLIFIER INTEGRITY",
                   title: "Wax Seal (Nullifier) is Unspent",
                   desc: "Double-spending is impossible: the unique nullifier N has never appeared on-chain.",
+                  icon: Lock,
+                  badge: "Unspent Seal",
                 },
                 {
+                  code: "INV-04",
+                  tag: "ARITHMETIC OVERDRAFT",
                   title: "Withdrawal Value is Valid",
                   desc: "Circuit enforces Num2Bits(128) overdraft lock; you cannot withdraw more than the note value.",
+                  icon: Cpu,
+                  badge: "Num2Bits(128)",
                 },
                 {
+                  code: "INV-05",
+                  tag: "PAYLOAD BINDING",
                   title: "Recipient & Fee Are Bound",
                   desc: "Proof is bound to keccak256(chainid, pool, recipient, relayer, fee); it cannot be front-run.",
+                  icon: Hash,
+                  badge: "keccak256 Bound",
                 },
-              ].map((item) => (
+              ].map((item, idx) => (
                 <motion.div
                   key={item.title}
                   whileHover={{ x: 6, backgroundColor: "rgba(255, 139, 62, 0.05)" }}
                   transition={{ duration: 0.2 }}
-                  className="flex items-start gap-3.5 p-3.5 rounded-xs bg-midnight/70 border border-dusk transition-colors"
+                  className="group relative flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xs bg-midnight/70 border border-dusk hover:border-sun/50 transition-all"
                 >
-                  <CheckCircle2 className="size-5 text-emerald-400 mt-0.5 shrink-0" />
-                  <div>
-                    <span className="font-mono text-sm font-semibold text-dust block">
-                      {item.title}
-                    </span>
-                    <span className="text-xs text-stroke-2 font-body">{item.desc}</span>
+                  <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                    <div className="relative size-10 rounded-xs bg-[#171311] border border-sun/30 flex items-center justify-center shrink-0 group-hover:border-sun group-hover:shadow-[0_0_12px_rgba(255,139,62,0.25)] transition-all">
+                      <item.icon className="size-5 text-sun group-hover:scale-110 transition-transform" />
+                      <span className="absolute -top-1.5 -right-1.5 px-1 text-[8px] font-mono text-sun/90 bg-night border border-sun/30 rounded-xs">
+                        0{idx + 1}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-mono tracking-wider text-sun font-semibold uppercase">
+                          {item.code}
+                        </span>
+                        <span className="text-stroke-3 text-[10px]">·</span>
+                        <span className="text-[10px] font-mono tracking-wider text-stroke-2 uppercase">
+                          {item.tag}
+                        </span>
+                      </div>
+                      <h3 className="font-mono text-sm sm:text-[15px] font-semibold text-dust group-hover:text-sand transition-colors">
+                        {item.title}
+                      </h3>
+                      <p className="text-xs text-stroke-2 font-body mt-0.5 leading-relaxed">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-start md:justify-end shrink-0 self-start md:self-center w-full md:w-52 md:pl-5 md:border-l md:border-dusk/60">
+                    <div className="w-full md:w-44 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xs bg-sun/10 border border-sun/20 text-sun font-mono text-[11px] tracking-wider uppercase font-medium">
+                      <span className="size-1.5 rounded-full bg-sun shadow-[0_0_6px_#ff8b3e] animate-pulse shrink-0" />
+                      <span>{item.badge}</span>
+                    </div>
                   </div>
                 </motion.div>
               ))}
@@ -768,7 +816,7 @@ export default function HomePage() {
             <div className="max-w-2xl">
               <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
                 <span className="size-1.5 rounded-full bg-sun"></span>
-                <span>Section 05 · Association Set Provider (ASP)</span>
+                <span>Association Set Provider (ASP)</span>
               </div>
               <h2 className="text-heading-48 text-dust font-light leading-tight">
                 Compliance Without Public Disclosure
@@ -949,7 +997,7 @@ export default function HomePage() {
               <div className="max-w-2xl">
                 <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
                   <span className="size-1.5 rounded-full bg-sun"></span>
-                  <span>Section 06 · Cryptographic Engine</span>
+                  <span>Cryptographic Engine</span>
                 </div>
                 <h2 className="text-heading-48 text-dust font-light leading-tight">
                   Technology Under The Hood
@@ -1001,7 +1049,7 @@ export default function HomePage() {
             <div className="max-w-2xl">
               <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
                 <span className="size-1.5 rounded-full bg-sun"></span>
-                <span>Section 07 · Honest Engineering</span>
+                <span>Honest Engineering</span>
               </div>
               <h2 className="text-heading-48 text-dust font-light leading-tight">
                 Built To Be Verified
@@ -1082,7 +1130,7 @@ export default function HomePage() {
               <div>
                 <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
                   <span className="size-1.5 rounded-full bg-sun"></span>
-                  <span>Section 08 · The Nomenclature</span>
+                  <span>The Nomenclature</span>
                 </div>
                 <h2 className="text-heading-48 text-dust font-light leading-tight">
                   The Marginalia System
@@ -1150,7 +1198,7 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-2 text-mono-s text-sun uppercase tracking-widest mb-3">
                 <span className="size-1.5 rounded-full bg-sun"></span>
-                <span>Section 09 · Milestone Trajectory</span>
+                <span>Milestone Trajectory</span>
               </div>
               <h2 className="text-heading-48 text-dust font-light leading-tight">
                 Protocol Roadmap
