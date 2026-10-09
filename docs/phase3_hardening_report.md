@@ -25,7 +25,7 @@
 - Terbukti: idempoten, dibatasi laju (3 jam simulasi → 12 publikasi, root tertua tetap valid), kontrol negatif (tanpa batas, 18 publikasi menghabiskan jendela 16 root), crash antara pin dan publish menghasilkan CID yang sama, kehilangan state tidak mengubah apa pun, deposit ragequit dan alamat denylist yang ditambahkan belakangan keluar dari daftar berikutnya, hanya kunci Magistrate yang bisa menerbitkan.
 - Di testnet: deposit dari UI → daftar terbit otomatis dalam **22–67 detik** tanpa langkah manual.
 - **Belum:** soak 48 jam (H1-TEST9) dan worker belum di-deploy di Railway.
-- **Dilengkapi kemudian:** `SupabaseStore` (state, verdict, log *append-only*, indeks `asp_roots`) + migrasi `supabase/migrations/20261009000000_phase3_magistrate.sql` + `scripts/supabase-check.js` (8 tes). **Migrasi belum diterapkan pada proyek Supabase Anda** (DDL harus dijalankan di SQL Editor); pemeriksa melaporkan 5 item yang kurang.
+- **Dilengkapi kemudian:** `SupabaseStore` (state, verdict, log *append-only*, indeks `asp_roots`) + migrasi `supabase/migrations/20261009000000_phase3_magistrate.sql` + `scripts/supabase-check.js` (8 tes). **Migrasi sudah diterapkan** pada proyek Supabase (2026-10-09): `node scripts/supabase-check.js` melaporkan "Schema is complete"; round trip `SupabaseStore`, kolom provenance `asp_roots`, dan RLS (anon ditolak pada tabel layanan) diverifikasi langsung.
 
 ### H2: IPFS ✔ (kode + tes), ✖ penyedia nyata
 - `lib/aspStore.js` (pin ke beberapa penyedia, fetch dengan fallback multi-gateway, verifikasi root on-chain), pembaca sisi server `frontend/src/lib/aspStore.ts`, dan `folio.ts` memakai CID dari `rootData(latestRoot)` sebagai sumber pertama.

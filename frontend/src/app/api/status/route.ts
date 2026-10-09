@@ -3,11 +3,12 @@ import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
 import { RH_TESTNET, POOL_ABI } from "@/lib/constants";
 import { relayerHealth } from "@/lib/relayer-health";
+import { makeProvider } from "@/lib/folio";
 
 export async function GET() {
   const rpcUrl = process.env.RH_TESTNET_RPC_URL || process.env.NEXT_PUBLIC_RH_TESTNET_RPC_URL || RH_TESTNET.rpcUrl;
   const poolAddress = process.env.MARGINALIA_POOL_ADDRESS || process.env.NEXT_PUBLIC_MARGINALIA_POOL_ADDRESS || RH_TESTNET.poolAddress;
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  const provider = makeProvider(rpcUrl);
 
   let poolBalanceEth = "0.0";
   let blockNumber: number | null = null;
