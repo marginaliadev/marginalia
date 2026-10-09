@@ -19,8 +19,9 @@ export async function POST() {
   const feeWei = (rawFeeWei * BigInt(110)) / BigInt(100);
   const minFeeEth = ethers.formatEther(feeWei);
 
-  let relayerAddress = "0x673eF77ccb27e106769d2d56C536a4A0523B260E";
-  const pk = process.env.RELAYER_PRIVATE_KEY || process.env.DEPLOYER_PRIVATE_KEY;
+  // Only advertise a relayer that can actually sign: the one backed by RELAYER_PRIVATE_KEY.
+  let relayerAddress: string | null = null;
+  const pk = process.env.RELAYER_PRIVATE_KEY;
   if (pk) {
     try {
       relayerAddress = new ethers.Wallet(pk).address;
@@ -29,6 +30,8 @@ export async function POST() {
 
   return NextResponse.json({
     relayer: relayerAddress,
+    relayerAvailable: relayerAddress !== null,
+    minFeeWei: feeWei.toString(),
     estimatedGas: Number(estimatedGas),
     gasPriceGwei: ethers.formatUnits(gasPrice, "gwei"),
     minFeeEth,
