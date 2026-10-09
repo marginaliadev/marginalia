@@ -8,3 +8,6 @@ build/*.sym
 .env
 notes/
 deployments/localhost.json
+
+# Magistrate service local state (cursor, decisions, dev IPFS blobs)
+services/magistrate/state/

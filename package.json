@@ -12,7 +12,11 @@
     "deposit": "hardhat run scripts/deposit.js",
     "approve": "hardhat run scripts/magistrate-approve.js",
     "withdraw": "hardhat run scripts/withdraw.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "magistrate": "node services/magistrate/index.js",
+    "magistrate:once": "node services/magistrate/index.js --once",
+    "test:relayer-health": "node scripts/test-relayer-health.js",
+    "test:governance": "node scripts/test-governance.js"
   },
   "keywords": [],
   "author": "",

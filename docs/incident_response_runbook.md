@@ -53,3 +53,33 @@ Once the vulnerability is patched or false-alarm resolved:
    pool.setDepositsPaused(false);
    ```
 4. Publish public post-mortem and transparency report.
+
+---
+
+## 4. Governance model after Fase 03 (Safe multisig + automated Magistrate)
+
+| Role | Holder | Can do | Cannot do |
+|---|---|---|---|
+| `MagistrateRegister.owner` | Safe (2-of-3) | `setMagistrate`, `setPool`, `transferOwnership` | publish roots (only the Magistrate can) |
+| `MagistrateRegister.magistrate` | **Publisher** hot key (services/magistrate) | `publishRoot`, `approveLabels` | change governance |
+| `MarginaliaPool.guardian` | Safe (2-of-3) | pause deposits, set deposit cap, hand over guardianship | pause withdrawals or ragequit (impossible by design) |
+| Deployer EOA | nobody | nothing (all 8 admin calls revert; proven by `scripts/test-governance.js`) | everything above |
+
+Scripts (all executed BY the Safe; on testnet `SAFE_SIGNER_KEYS=k1,k2` executes directly, on mainnet the script prints the transaction for the Safe UI):
+`scripts/governance/pause-deposits.js`, `rotate-magistrate.js`, `transfer-roles.js` (one-off migration, dry run by default).
+
+### 4.1 Publisher key compromised (or planned rotation)
+1. Generate a new key, fund it with ~0.001 ETH.
+2. `SAFE=0x.. NEW_PUBLISHER=0x.. node scripts/governance/rotate-magistrate.js` (2 Safe signatures). From this block the old key reverts with `NotMagistrate`.
+3. Stop the old worker, set `MAGISTRATE_PUBLISHER_KEY` to the new key, restart (state file is kept, nothing is lost).
+4. Review `services/magistrate/state/*.decisions.jsonl` and recent `RootPublished` events for roots you did not expect. A bad root can only mislead which labels are "approved"; it can never move funds. If one was published, publish a corrected list (a new root supersedes it) and consider pausing deposits.
+Drill result (testnet, real Safe): rotation executed in 1.6 s of signing + inclusion.
+
+### 4.2 Emergency pause
+`SAFE=0x.. PAUSED=true node scripts/governance/pause-deposits.js` then `PAUSED=false` to resume. Drill: 1.4 s. Withdrawals and ragequit keep working while paused (tested).
+
+### 4.3 The Magistrate worker stops
+Approvals queue up; nothing breaks. Users with already-approved deposits are unaffected, new deposits wait (or ragequit). Health: `GET :8081/` returns 503 when 3 consecutive ticks failed; alerts go to `ALERT_WEBHOOK_URL`. Restart the worker: it rebuilds all state from the chain.
+
+### 4.4 Courier relayer out of gas
+`/api/status` shows `relayer.balanceEth` and `healthy`. Below `RELAYER_MIN_BALANCE_ETH` the UI hides the Courier and `/api/relay/withdraw` answers 503 ("use your wallet"); one alert per 10 minutes is sent. Top up the relayer address from a treasury wallet (manual by design: no high-value key lives on the web server).
