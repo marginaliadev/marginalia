@@ -7,6 +7,8 @@ const { DEPLOY_DIR, deploymentFile } = require("./common");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
+  const chainId = Number((await ethers.provider.getNetwork()).chainId);
+  if (chainId === 4663) require("./ceremony/mainnet-guard").assertCeremonyBeforeMainnet(); // dev-setup verifiers can never reach mainnet
   const magistrate = process.env.MAGISTRATE_ADDRESS || deployer.address;
   console.log(`Network   : ${network.name} (chainId ${(await ethers.provider.getNetwork()).chainId})`);
   console.log(`Deployer  : ${deployer.address}`);

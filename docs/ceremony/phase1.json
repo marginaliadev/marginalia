@@ -1,0 +1,7 @@
+{
+  "comment": "Pin of the PUBLIC Phase-1 (Powers of Tau) file used for the real ceremony. The mainnet deploy guard refuses to run while blake2b is null. Fill it from the Hermez/PSE publication AFTER checking the file you downloaded against several independent sources.",
+  "file": "powersOfTau28_hez_final_15.ptau",
+  "power": 15,
+  "blake2b": null,
+  "sources": []
+}

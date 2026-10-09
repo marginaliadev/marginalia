@@ -11,3 +11,6 @@ deployments/localhost.json
 
 # Magistrate service local state (cursor, decisions, dev IPFS blobs)
 services/magistrate/state/
+
+# local circuit/ceremony build output
+.audit-build/

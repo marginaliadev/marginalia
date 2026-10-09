@@ -16,13 +16,19 @@
     "magistrate": "node services/magistrate/index.js",
     "magistrate:once": "node services/magistrate/index.js --once",
     "test:relayer-health": "node scripts/test-relayer-health.js",
-    "test:governance": "node scripts/test-governance.js"
+    "test:governance": "node scripts/test-governance.js",
+    "ceremony": "node scripts/ceremony/cli.js",
+    "ceremony:rehearsal": "node scripts/ceremony/rehearsal.js",
+    "audit:manifest": "node scripts/audit/manifest.js write",
+    "audit:check": "node scripts/audit/manifest.js check",
+    "test:fuzz": "hardhat test test/invariant_fuzz.test.js"
   },
   "keywords": [],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "circom2": "0.2.23",
     "circomlib": "^2.0.5",
     "circomlibjs": "^0.1.7",
     "dotenv": "^18.0.3",

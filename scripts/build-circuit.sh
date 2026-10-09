@@ -16,7 +16,7 @@ mkdir -p "$BUILD" "$ROOT/contracts"
 cd "$ROOT"
 
 echo "==> [1/5] Compiling circuit"
-circom circuits/withdraw.circom --r1cs --wasm --sym -o "$BUILD"
+circom circuits/withdraw.circom --r1cs --wasm --sym --O2 -o "$BUILD"
 $SNARKJS r1cs info "$BUILD/withdraw.r1cs"
 
 echo "==> [2/5] Powers of Tau (phase 1)"
@@ -46,7 +46,7 @@ $SNARKJS zkey export solidityverifier "$BUILD/withdraw_final.zkey" "$ROOT/contra
 echo "Done. Artifacts in build/, verifier in contracts/Groth16Verifier.sol"
 
 echo "==> [ragequit] Compiling + setup for circuits/ragequit.circom"
-circom circuits/ragequit.circom --r1cs --wasm -o "$BUILD"
+circom circuits/ragequit.circom --r1cs --wasm --O2 -o "$BUILD"
 $SNARKJS groth16 setup "$BUILD/ragequit.r1cs" "$BUILD/pot_final.ptau" "$BUILD/ragequit_0.zkey"
 $SNARKJS zkey contribute "$BUILD/ragequit_0.zkey" "$BUILD/ragequit_final.zkey" \
   --name="dev-phase2-ragequit" -e="$(head -c 64 /dev/urandom | base64)"
