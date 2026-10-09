@@ -1,8 +1,8 @@
 // Mersenne Courier policy: fee quoting, relayer wallet health and serialization of relays.
 import { ethers } from "ethers";
+import { createClient } from "@supabase/supabase-js";
+import { estimateGas, quoteFee, cleanSamples, MAX_SAMPLES, type GasEstimate } from "@/lib/gas-estimator";
 
-/** Measured on testnet: a relayed withdraw uses ~1.07-1.10M gas. Keep in sync with server.js / lib/relayer.js. */
-export const ESTIMATED_GAS = BigInt(1150000);
 /** Quoted minimum = gas * price * 110% */
 export const QUOTE_MARGIN_BPS = BigInt(11000);
 /** The relay accepts a fee down to 90% of the current minimum, so a small gas-price move between quote and relay does not void a proof. */
@@ -12,8 +12,37 @@ export const MAX_FEE_SHARE_BPS = BigInt(5000);
 
 const BPS = BigInt(10000);
 
-export function minFeeFor(gasPrice: bigint): bigint {
-  return (ESTIMATED_GAS * gasPrice * QUOTE_MARGIN_BPS) / BPS;
+// ---- empirical gas model: what the Courier actually spent on recent relays (see gas-estimator.ts for the reasoning)
+const gs = globalThis as unknown as { __relayerGasSamples?: number[]; __relayerGasWarm?: Promise<void> };
+const samples = (): number[] => (gs.__relayerGasSamples ??= []);
+
+/** Remember the gas of a confirmed relay (also persisted in relayer_jobs by the relay route). */
+export function recordGasSample(gasUsed: number | bigint) {
+  const all = cleanSamples([...samples(), Number(gasUsed)]);
+  gs.__relayerGasSamples = all.slice(-MAX_SAMPLES);
+}
+
+/** After a restart: reload the last relays' gas from relayer_jobs (best effort, read-only key is enough). */
+export function warmGasSamples(): Promise<void> {
+  return (gs.__relayerGasWarm ??= (async () => {
+    const url = process.env.SUPABASE_URL;
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    if (!url || !key) return;
+    try {
+      const { data } = await createClient(url, key, { auth: { persistSession: false } })
+        .from("relayer_jobs").select("gas_used").eq("status", "CONFIRMED").not("gas_used", "is", null).order("created_at", { ascending: false }).limit(MAX_SAMPLES);
+      if (data && data.length) gs.__relayerGasSamples = cleanSamples([...data.map((r) => r.gas_used).reverse(), ...samples()]).slice(-MAX_SAMPLES);
+    } catch {}
+  })());
+}
+
+/** Current gas estimate used by the quote: observed p90 + headroom, or the measured constant until there are enough samples. */
+export function currentGasEstimate(): GasEstimate {
+  return estimateGas(samples());
+}
+
+export function minFeeFor(gasPrice: bigint, gas: number = currentGasEstimate().gas): bigint {
+  return quoteFee(gas, gasPrice);
 }
 export function feeAcceptable(fee: bigint, minFee: bigint): boolean {
   return fee >= (minFee * FEE_TOLERANCE_BPS) / BPS;

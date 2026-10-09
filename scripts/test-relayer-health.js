@@ -53,6 +53,7 @@ const forged = (value, fee) => ({
 
     // ---- quote shape
     rec("H4-T1a quote is valid for 120s", qa.validUntil - Date.now() > 100000 && qa.validUntil - Date.now() <= 121000, `${Math.round((qa.validUntil - Date.now()) / 1000)}s`);
+    rec("H4-T1c quote reports its gas basis (no relays yet -> measured default)", qa.gasSource === "default" && qa.gasSamples === 0 && qa.estimatedGas === 1150000, `${qa.gasSource}, ${qa.gasSamples} samples, ${qa.estimatedGas} gas`);
     const minFee = BigInt(qa.minFeeWei);
     rec("H4-T1b quoted minimum = gas x price x 110%", minFee === (BigInt(qa.estimatedGas) * ethers.parseUnits(qa.gasPriceGwei, "gwei") * 11000n) / 10000n, `${qa.minFeeEth} ETH`);
 

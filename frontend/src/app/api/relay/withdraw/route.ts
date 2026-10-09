@@ -3,7 +3,23 @@ import { ethers } from "ethers";
 import { POOL_ABI } from "@/lib/constants";
 import { leavesFromTx, makeProvider, persistLeaves, poolAddress } from "@/lib/folio";
 import { rateLimited } from "@/lib/ratelimit";
-import { feeAcceptable, feeWithinShare, minFeeFor, relayerHealth, serialized } from "@/lib/relayer-health";
+import { feeAcceptable, feeWithinShare, minFeeFor, recordGasSample, relayerHealth, serialized, warmGasSamples } from "@/lib/relayer-health";
+import { feeCoversCost, requiredFee } from "@/lib/gas-estimator";
+import { createClient } from "@supabase/supabase-js";
+
+/** Best effort: record the relay (cost vs fee) in relayer_jobs. Needs the service-role key; falls back to the base columns if the Fase 03 migration is not applied yet. */
+async function persistRelay(j: { recipient: string; relayer: string; fee: bigint; nullifier: string; txHash: string; gasEstimate: bigint; gasUsed: bigint; gasCost: bigint; net: bigint }) {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return;
+  try {
+    const db = createClient(url, key, { auth: { persistSession: false } });
+    const base = { recipient: j.recipient.toLowerCase(), relayer_address: j.relayer.toLowerCase(), fee: j.fee.toString(), nullifier_hash: j.nullifier, status: "CONFIRMED", tx_hash: j.txHash, gas_used: j.gasUsed.toString() };
+    const full = { ...base, gas_estimate: j.gasEstimate.toString(), gas_cost_wei: j.gasCost.toString(), fee_wei: j.fee.toString(), net_wei: j.net.toString() };
+    const { error } = await db.from("relayer_jobs").insert(full);
+    if (error) await db.from("relayer_jobs").insert(base);
+  } catch {}
+}
 
 const isUint = (v: unknown) => (typeof v === "string" || typeof v === "number") && /^\d{1,78}$/.test(String(v));
 
@@ -41,6 +57,7 @@ export async function POST(req: Request) {
     const fee = BigInt(withdrawal.fee);
     const withdrawnValue = BigInt(proof.pubSignals[0]);
     const gasPrice = (await provider.getFeeData()).gasPrice ?? ethers.parseUnits("1", "gwei");
+    await warmGasSamples();
     const minFee = minFeeFor(gasPrice);
     if (!feeAcceptable(fee, minFee)) {
       return NextResponse.json({ error: `Insufficient relayer fee: provided ${fee}, minimum ${minFee}. Request a fresh quote.` }, { status: 400 });
@@ -65,15 +82,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: `Relayer validation failed: ${name}` }, { status: 400 });
     }
 
+    // The proof exists now, so the cost of THIS transaction can be estimated exactly (including the L1-data component).
+    // The fee (already bound into the proof) must cover it; otherwise the relayer would lose money on this relay.
+    let exactGas: bigint;
+    try {
+      exactGas = await pool.withdraw.estimateGas(w, p);
+    } catch (e: any) {
+      return NextResponse.json({ error: `Relayer validation failed: ${e.revert?.name || e.shortMessage || "gas estimation failed"}` }, { status: 400 });
+    }
+    if (!feeCoversCost(fee, exactGas, gasPrice)) {
+      return NextResponse.json({ error: `Fee too low for this transaction: it needs about ${requiredFee(exactGas, gasPrice)} wei (estimated ${exactGas} gas), provided ${fee}. Request a fresh quote.` }, { status: 400 });
+    }
+
     // one hot wallet = one nonce sequence: relays run strictly one after another
     const result = await serialized(async () => {
-      const tx = await pool.withdraw(w, p);
+      const tx = await pool.withdraw(w, p, { gasLimit: (exactGas * BigInt(125)) / BigInt(100) });
       const receipt = await tx.wait();
       return { tx, receipt };
     });
     const { tx, receipt } = result;
     const gasCost = BigInt(receipt.gasUsed) * BigInt(receipt.gasPrice ?? gasPrice);
-    console.info(`[relay] tx=${tx.hash} gas=${receipt.gasUsed} cost=${gasCost} fee=${fee} net=${fee - gasCost}`);
+    console.info(`[relay] tx=${tx.hash} estimate=${exactGas} gas=${receipt.gasUsed} cost=${gasCost} fee=${fee} net=${fee - gasCost}`);
+    recordGasSample(receipt.gasUsed);
+    await persistRelay({
+      recipient: withdrawal.recipient, relayer: withdrawal.relayer, fee, nullifier: String(proof.pubSignals[4]), txHash: tx.hash,
+      gasEstimate: exactGas, gasUsed: receipt.gasUsed, gasCost, net: fee - gasCost,
+    });
     try {
       await persistLeaves(await leavesFromTx(provider, tx.hash));
     } catch {}

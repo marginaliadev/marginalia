@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { RH_TESTNET } from "@/lib/constants";
 import { makeProvider } from "@/lib/folio";
-import { ESTIMATED_GAS, minFeeFor, relayerHealth } from "@/lib/relayer-health";
+import { currentGasEstimate, minFeeFor, relayerHealth, warmGasSamples } from "@/lib/relayer-health";
 
 export async function POST() {
   const provider = makeProvider();
@@ -13,7 +13,9 @@ export async function POST() {
     if (feeData.gasPrice) gasPrice = feeData.gasPrice;
   } catch (_) {}
 
-  const feeWei = minFeeFor(gasPrice);
+  await warmGasSamples();
+  const gas = currentGasEstimate();
+  const feeWei = minFeeFor(gasPrice, gas.gas);
   const health = await relayerHealth(provider);
 
   return NextResponse.json({
@@ -22,7 +24,9 @@ export async function POST() {
     relayerAvailable: health.healthy,
     relayerReason: health.reason,
     minFeeWei: feeWei.toString(),
-    estimatedGas: Number(ESTIMATED_GAS),
+    estimatedGas: gas.gas,
+    gasSource: gas.source, // 'observed' (p90 of recent relays + headroom) or 'default' (measured constant)
+    gasSamples: gas.samples,
     gasPriceGwei: ethers.formatUnits(gasPrice, "gwei"),
     minFeeEth: ethers.formatEther(feeWei),
     chain: RH_TESTNET.name,
