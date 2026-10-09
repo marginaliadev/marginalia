@@ -294,35 +294,61 @@ app.post("/api/note/prepare-deposit", async (req, res) => {
  * POST /api/deposit/record - Indexes on-chain mined deposit into Supabase & Folio state.
  */
 app.post("/api/deposit/record", async (req, res) => {
-  const { label, depositor, commitment, value, precommitment, index, txHash, blockNumber } = req.body;
-  if (!label || !commitment || !value) {
-    return res.status(400).json({ error: "Missing deposit parameters" });
+  const { txHash } = req.body || {};
+  if (typeof txHash !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
+    return res.status(400).json({ error: "txHash must be a 32-byte hex string" });
   }
+  const poolAddr = process.env.MARGINALIA_POOL_ADDRESS || "0x340E20C7CBe7eA83d463432ac8FA1e891bdca948";
 
   try {
-    const depRecord = await supabaseService.saveDeposit({
-      label: label.toString(),
-      depositor: (depositor || ethers.ZeroAddress).toLowerCase(),
-      commitment: commitment.toString(),
-      value: value.toString(),
-      precommitment: precommitment ? precommitment.toString() : "0",
-      index: index !== undefined ? Number(index) : 0,
-      status: "APPROVED",
-      txHash: txHash || "",
-      blockNumber: blockNumber ? Number(blockNumber) : 0,
-    });
+    // Everything is read from the mined receipt; the request body can never inject commitments.
+    const receipt = await chainProvider().getTransactionReceipt(txHash);
+    if (!receipt || receipt.status !== 1) return res.status(404).json({ error: "Transaction not found or failed" });
+    const iface = new ethers.Interface([
+      "event LeafInserted(uint256 indexed index, uint256 leaf, uint256 root)",
+      "event Deposited(address indexed depositor, uint256 commitment, uint256 label, uint256 value, uint256 precommitment, uint256 index)",
+    ]);
+    let deposit = null;
+    const leaves = [];
+    for (const log of receipt.logs) {
+      if (log.address.toLowerCase() !== poolAddr.toLowerCase()) continue;
+      let ev;
+      try { ev = iface.parseLog(log); } catch (_) { continue; }
+      if (!ev) continue;
+      if (ev.name === "Deposited") deposit = ev.args;
+      if (ev.name === "LeafInserted") leaves.push(ev.args);
+    }
+    if (leaves.length === 0) return res.status(400).json({ error: "Transaction did not insert a Folio leaf" });
 
-    const leafRecord = await supabaseService.saveLeaf({
-      index: index !== undefined ? Number(index) : 0,
-      leaf: commitment.toString(),
-      poolAddress: process.env.MARGINALIA_POOL_ADDRESS || "",
-      txHash: txHash || "",
-      blockNumber: blockNumber ? Number(blockNumber) : 0,
-    });
-
-    res.json({ success: true, deposit: depRecord, leaf: leafRecord });
+    let depRecord = null;
+    if (deposit) {
+      depRecord = await supabaseService.saveDeposit({
+        label: deposit.label.toString(),
+        depositor: deposit.depositor.toLowerCase(),
+        commitment: deposit.commitment.toString(),
+        value: deposit.value.toString(),
+        precommitment: deposit.precommitment.toString(),
+        index: Number(deposit.index),
+        status: "PENDING_SCREENING", // the Magistrate approves labels; nothing is approved by default
+        txHash,
+        blockNumber: receipt.blockNumber,
+      });
+    }
+    const leafRecords = [];
+    for (const l of leaves) {
+      leafRecords.push(
+        await supabaseService.saveLeaf({
+          index: Number(l.index),
+          leaf: l.leaf.toString(),
+          poolAddress: poolAddr,
+          txHash,
+          blockNumber: receipt.blockNumber,
+        })
+      );
+    }
+    res.json({ success: true, deposit: depRecord, leaves: leafRecords });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.shortMessage || err.message });
   }
 });
 

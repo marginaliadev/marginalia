@@ -20,7 +20,7 @@ async function main() {
 
   const currentBlock = await ethers.provider.getBlockNumber();
   const startBlock = process.env.FROM_BLOCK ? parseInt(process.env.FROM_BLOCK) : d.deployBlock;
-  const CHUNK_SIZE = 10;
+  const CHUNK_SIZE = Math.max(1, parseInt(process.env.RH_LOG_CHUNK || "10", 10));
   const deposits = [];
   for (let from = startBlock; from <= currentBlock; from += CHUNK_SIZE) {
     const to = Math.min(from + CHUNK_SIZE - 1, currentBlock);

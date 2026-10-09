@@ -7,7 +7,7 @@
 [![Circom](https://img.shields.io/badge/Circom-2.1.8-FF6B6B?style=for-the-badge)](https://iden3.io/circom)
 [![Groth16 BN254](https://img.shields.io/badge/ZK_Snarks-Groth16_BN254-8A2BE2?style=for-the-badge)](https://en.wikipedia.org/wiki/Zero-knowledge_proof)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.badge?style=for-the-badge)](LICENSE)
-[![Tests Passing](https://img.shields.io/badge/Tests-57%2F57_Passing-success?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/marginaliadev/marginalia/actions)
+[![Tests Passing](https://img.shields.io/badge/Tests-78%2F78_Passing-success?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/marginaliadev/marginalia/actions)
 
 ---
 

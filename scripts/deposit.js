@@ -3,6 +3,7 @@
 const { ethers } = require("hardhat");
 const M = require("../lib/marginalia");
 const { contracts, saveNote } = require("./common");
+const { tryRecord } = require("../lib/folio-index");
 
 async function main() {
   const amount = ethers.parseEther(process.env.AMOUNT || "0.01");
@@ -21,6 +22,7 @@ async function main() {
   console.log(`label  : ${note.label}`);
   console.log(`note   : ${noteStr}`);
   console.log(`saved  : ${file}`);
+  await tryRecord(ethers.provider, await pool.getAddress(), tx.hash);
   console.log("\nNext: the Magistrate must approve this label before it can be withdrawn privately.");
 }
 

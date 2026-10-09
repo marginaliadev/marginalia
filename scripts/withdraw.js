@@ -7,6 +7,7 @@
 const { ethers } = require("hardhat");
 const M = require("../lib/marginalia");
 const { contracts, loadApprovedLabels, saveNote, requireEnv } = require("./common");
+const { tryRecord, treeFromIndex } = require("../lib/folio-index");
 
 async function main() {
   const note = M.parseNote(requireEnv("NOTE"));
@@ -18,8 +19,9 @@ async function main() {
   const { d, pool } = await contracts();
   const [signer] = await ethers.getSigners();
 
-  console.log("Rebuilding the Folio from chain events ...");
-  const stateTree = await M.buildStateTree(pool, d.deployBlock);
+  console.log("Rebuilding the Folio ...");
+  // fast path: the Supabase index, accepted only if it reproduces the pool's on-chain root
+  const stateTree = (await treeFromIndex(M, pool)) || (await M.buildStateTree(pool, d.deployBlock));
   const aspTree = await M.buildAspTree(loadApprovedLabels());
 
   const w = { recipient, relayer, fee };
@@ -32,6 +34,7 @@ async function main() {
 
   const tx = await pool.connect(signer).withdraw(w, proof);
   await tx.wait();
+  await tryRecord(ethers.provider, await pool.getAddress(), tx.hash);
   console.log(`Withdrew ${ethers.formatEther(amount)} ETH -> ${recipient}\ntx ${tx.hash}`);
 
   if (changeNote.value > 0n) {
