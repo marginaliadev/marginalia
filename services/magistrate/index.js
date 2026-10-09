@@ -8,6 +8,7 @@
 // RPC          : RH_TESTNET_RPC_URL and RH_LOGS_RPC_URL accept several comma-separated URLs (automatic fallback)
 // Tuning       : MAGISTRATE_MIN_INTERVAL_MIN (15)  MAGISTRATE_TICK_SEC (60)  MAGISTRATE_MIN_BALANCE_ETH (0.0005)
 //                MAGISTRATE_LAG_ALERT_MIN (30)  RH_LOG_CHUNK (10; large on RPCs that allow it)  RH_LOGS_RPC_URL
+//                MAGISTRATE_STORE=supabase (state, verdict log and root index in Supabase; default is a local file)
 //                MAGISTRATE_STATE_FILE  MAGISTRATE_HEALTH_PORT  DEPLOYMENT_FILE  ALERT_WEBHOOK_URL  ASP_IPFS_GATEWAYS
 require("dotenv").config();
 const fs = require("fs");
@@ -18,7 +19,7 @@ const M = require("../../lib/marginalia");
 const aspStore = require("../../lib/aspStore");
 const { MagistrateService } = require("./service");
 const { denylistPolicy, ofacPolicy, chainalysisPolicy, composePolicies } = require("./policy");
-const { FileStore } = require("./store");
+const { FileStore, SupabaseStore } = require("./store");
 
 const env = process.env;
 const log = (m) => console.log(`[${new Date().toISOString()}] ${m}`);
@@ -79,11 +80,23 @@ async function build() {
   const stateFile = env.MAGISTRATE_STATE_FILE || path.join(__dirname, "state", `${d.network || "network"}.json`);
   acquireLock(stateFile + ".lock");
 
+  // State: Supabase when MAGISTRATE_STORE=supabase (needs SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY and the Fase 03 migration); else a local file.
+  let store;
+  if (env.MAGISTRATE_STORE === "supabase") {
+    if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("MAGISTRATE_STORE=supabase needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
+    const { createClient } = require("@supabase/supabase-js");
+    store = new SupabaseStore(createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } }), { poolAddress: d.pool, log });
+    await store.load();
+    log(`state restored from Supabase: cursor ${store.state.cursor}, ${Object.keys(store.state.deposits).length} deposits${store.errors ? ", WITH ERRORS: " + store.lastError : ""}`);
+  } else {
+    store = new FileStore(stateFile);
+  }
+
   const pinners = aspStore.pinnersFromEnv(env);
   if (!pinners.length) throw new Error("No IPFS pinner configured (PINATA_JWT / IPFS_RPC_URL)");
   const svc = new MagistrateService({
     provider: logsProvider, pool, register, M,
-    store: new FileStore(stateFile),
+    store,
     policy: buildPolicy(),
     pinners, chainId: d.chainId || 46630, deployBlock: d.deployBlock || 0, logChunk: Number(env.RH_LOG_CHUNK || 10),
     minIntervalMs: Number(env.MAGISTRATE_MIN_INTERVAL_MIN || 15) * 60_000,

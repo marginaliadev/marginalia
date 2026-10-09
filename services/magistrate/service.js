@@ -55,7 +55,7 @@ class MagistrateService {
       }
     }
     st.cursor = head;
-    this.store.save();
+    await this.store.save();
     return head;
   }
 
@@ -64,20 +64,23 @@ class MagistrateService {
     const st = this.store.state;
     const open = Object.entries(st.deposits).filter(([label]) => !st.ragequit.includes(label));
     const verdicts = await this.policy.screenAll(open.map(([label, d]) => ({ label, ...d })));
-    open.forEach(([label, d], i) => {
+    for (let i = 0; i < open.length; i++) {
+      const [label, d] = open[i];
       const v = verdicts[i];
       if (d.decision !== v.decision) {
-        this.store.audit({ label, depositor: d.depositor, from: d.decision, to: v.decision, reason: v.reason });
+        await this.store.audit({ label, depositor: d.depositor, from: d.decision, to: v.decision, reason: v.reason });
         d.decision = v.decision;
         d.reason = v.reason;
       }
-    });
-    // a ragequit label is never approved again
-    for (const label of st.ragequit) if (st.deposits[label] && st.deposits[label].decision !== "RAGEQUIT") {
-      this.store.audit({ label, from: st.deposits[label].decision, to: "RAGEQUIT", reason: "depositor exited" });
-      st.deposits[label].decision = "RAGEQUIT";
     }
-    this.store.save();
+    // a ragequit label is never approved again
+    for (const label of st.ragequit) {
+      if (st.deposits[label] && st.deposits[label].decision !== "RAGEQUIT") {
+        await this.store.audit({ label, depositor: st.deposits[label].depositor, from: st.deposits[label].decision, to: "RAGEQUIT", reason: "depositor exited" });
+        st.deposits[label].decision = "RAGEQUIT";
+      }
+    }
+    await this.store.save();
   }
 
   approvedLabels() {
@@ -100,9 +103,9 @@ class MagistrateService {
     const root = tree.root();
     const latest = BigInt(await this.register.latestRoot());
     const st = this.store.state;
-    if (root === latest) { st.pendingSince = null; this.store.save(); return { action: "noop", reason: "root already published", root }; }
+    if (root === latest) { st.pendingSince = null; await this.store.save(); return { action: "noop", reason: "root already published", root }; }
 
-    if (!st.pendingSince) { st.pendingSince = this.now(); this.store.save(); }
+    if (!st.pendingSince) { st.pendingSince = this.now(); await this.store.save(); }
     const last = st.lastPublish;
     if (last && this.now() - last.at < this.minIntervalMs) {
       return { action: "deferred", reason: `last publication ${Math.round((this.now() - last.at) / 1000)}s ago, minimum interval ${this.minIntervalMs / 1000}s`, root };
@@ -125,8 +128,15 @@ class MagistrateService {
     const receipt = await tx.wait();
     st.lastPublish = { root: root.toString(), cid: pin.cid, at: this.now(), tx: receipt.hash, labels: labels.length };
     st.pendingSince = null;
-    this.store.save();
-    this.store.audit({ event: "published", root: root.toString(), cid: pin.cid, labels: labels.length, tx: receipt.hash });
+    await this.store.save();
+    await this.store.audit({ event: "published", root: root.toString(), cid: pin.cid, labels: labels.length, tx: receipt.hash });
+    // index of every published root (public table `asp_roots` on Supabase; no-op for file/memory stores)
+    if (this.store.recordRoot) {
+      await this.store.recordRoot({
+        root: root.toString(), cid: pin.cid, labels: labels.length, tx: receipt.hash, publisher: await this.register.runner.getAddress(),
+        register: await this.register.getAddress(), chainId: this.chainId, documentSha256: pin.sha256 || null, previousCid: last ? last.cid : null,
+      });
+    }
     this.log(`published root ${root} (${labels.length} labels) ipfs://${pin.cid} tx ${receipt.hash}`);
 
     // best effort: confirm the document is retrievable (IPFS propagation can lag; this only raises an alarm)
