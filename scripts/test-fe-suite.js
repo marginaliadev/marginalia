@@ -274,7 +274,7 @@ async function runFeTestSuite() {
     console.log(`Explorer Telemetry -> Folio: ${folioNotesCount}, ASP: ${aspApprovedCount}, TVL: ${poolBalance} ETH`);
 
     // Test Wax Seal Verifier with spent hash
-    await page.type("#nullifierHashInput", "999888777666555444333");
+    await page.type("#nullifierHashInput", "8514309743580435606405499989571109382450448814222988967129436610895366290229");
     await page.click('button[type="submit"]');
     await page.waitForSelector("#sealCheckResult:not(.hidden)", { visible: true });
     await new Promise((r) => setTimeout(r, 500));

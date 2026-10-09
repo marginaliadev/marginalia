@@ -76,7 +76,12 @@ export default function ShieldedAppPage() {
       return;
     }
 
-    showModal("Deposit Inscription", `Ready to deposit ${depositAmount} ETH into the Folio tree on Robinhood Chain.`, "info", "Confirm");
+    showModal(
+      "Deposit Not Yet Wired",
+      `Browser deposits (note secret generation + wallet transaction) are not implemented in this UI yet, so nothing was sent. To deposit ${depositAmount} ETH use: AMOUNT=${depositAmount} npx hardhat run scripts/deposit.js --network robinhoodTestnet`,
+      "info",
+      "Understood"
+    );
   };
 
   const handleWithdrawSubmit = async (e: React.FormEvent) => {
@@ -142,23 +147,16 @@ export default function ShieldedAppPage() {
 
       addLog("0.45s", `Note integrity verified: leaf commitment = ${data.commitment ? data.commitment.slice(0, 18) + "..." : "OK"}`);
       addLog("0.60s", `Wax Seal (nullifier) verified intact: ${data.nullifierHash.slice(0, 18)}... (unspent)`);
-      setWithdrawProgress(55);
-      setWithdrawStage("SYNTHESIZING BN254 WITNESS");
-
-      // Synthesis & Groth16 step simulation
-      setTimeout(() => {
-        addLog("1.10s", "Evaluating QAP polynomials: 24,236 R1CS constraints satisfied!");
-        addLog("1.80s", "Generated elliptic curve proof elements: A ∈ G₁, B ∈ G₂, C ∈ G₁.");
-        setWithdrawProgress(90);
-        setWithdrawStage("RELAYING TO ROBINHOOD CHAIN");
-
-        setTimeout(() => {
-          addLog("2.40s", "Transaction confirmed on Robinhood Orbit L2. Status: PROVEN & MINED ✓");
-          setWithdrawProgress(100);
-          setIsWithdrawing(false);
-          showModal("Withdrawal Confirmed", "Groth16 zero-knowledge proof verified on Robinhood Chain.\n\nFunds delivered to clean recipient address without revealing linkage.", "success", "Done");
-        }, 800);
-      }, 900);
+      setWithdrawProgress(100);
+      setWithdrawStage("NOTE VERIFIED ON-CHAIN");
+      addLog("0.80s", "Validation only: no proof was generated and no transaction was sent.");
+      setIsWithdrawing(false);
+      showModal(
+        "Note Verified (No Withdrawal Sent)",
+        "This note is genuine, inscribed in the Folio and still unspent.\n\nIn-browser proof generation is not wired into this UI yet. To withdraw, run: NOTE=<note> RECIPIENT=<address> npx hardhat run scripts/withdraw.js --network robinhoodTestnet",
+        "info",
+        "Understood"
+      );
     } catch (err: any) {
       showModal("Validation Error", err.message, "danger");
       setIsWithdrawing(false);
@@ -194,7 +192,30 @@ export default function ShieldedAppPage() {
       return;
     }
 
-    showModal("Invalid Secret Note", "Malformed Note: Note format invalid or cannot be parsed.", "danger");
+    if (!ethers.isAddress(ragequitRecipient.trim()) || ragequitRecipient.trim() === ethers.ZeroAddress) {
+      showModal("Invalid Recipient Address", "Please enter a valid, non-zero Ethereum address.", "danger");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/note/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: ragequitNote.trim() }),
+      });
+      const data = await res.json();
+      if (!data.valid) {
+        showModal("Invalid Secret Note", data.error, "danger");
+        return;
+      }
+      showModal(
+        "Note Verified (No Exit Sent)",
+        "Ragequit must be sent by the original depositor wallet and needs a ragequit proof, which is not wired into this UI yet. Use the CLI proveRagequit flow (lib/marginalia.js) with the depositor key.",
+        "info"
+      );
+    } catch (err: any) {
+      showModal("Validation Error", err.message, "danger");
+    }
   };
 
   const handleUnlockVault = async () => {

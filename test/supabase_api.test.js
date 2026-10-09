@@ -140,9 +140,9 @@ describe("MARGINALIA Supabase Persistence & REST API Layer", function () {
     it("POST /api/relay/withdraw refuses to fake a confirmation when the relayer is not configured", async function () {
       const prev = process.env.ALLOW_DEV_HARNESS;
       delete process.env.ALLOW_DEV_HARNESS;
-      const nullifier = "0xVictimNullifier" + Date.now();
+      const nullifier = String(Date.now()) + "1";
       const body = JSON.stringify({
-        withdrawal: { recipient: "0xBob", relayer: "0xRelayer", fee: "0" },
+        withdrawal: { recipient: "0x00000000000000000000000000000000000000b0", relayer: "0x00000000000000000000000000000000000000a1", fee: "0" },
         proof: { pubSignals: ["1", "0", "0", "0", nullifier, "0"] },
       });
       const opts = { method: "POST", headers: { "Content-Type": "application/json" }, body };
@@ -156,15 +156,15 @@ describe("MARGINALIA Supabase Persistence & REST API Layer", function () {
 
     it("POST /api/relay/withdraw relays withdrawal and rejects double-spend (ALLOW_DEV_HARNESS=1)", async function () {
       process.env.ALLOW_DEV_HARNESS = "1";
-      const nullifier = "0xUniqueNullifier" + Date.now();
+      const nullifier = String(Date.now()) + "2";
       const payload = {
         withdrawal: {
-          recipient: "0xBobAddress",
-          relayer: "0xRelayerAddress",
+          recipient: "0x00000000000000000000000000000000000000b0",
+          relayer: "0x00000000000000000000000000000000000000a1",
           fee: "10000000000000000",
         },
         proof: {
-          pubSignals: ["1000000", "0xState", "0xAsp", "0xContext", nullifier, "0xNewCm"],
+          pubSignals: ["1000000", "11", "12", "13", nullifier, "14"],
         },
       };
 

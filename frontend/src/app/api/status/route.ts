@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
-import { RH_TESTNET } from "@/lib/constants";
+import { RH_TESTNET, POOL_ABI } from "@/lib/constants";
 
 export async function GET() {
   const rpcUrl = process.env.RH_TESTNET_RPC_URL || process.env.NEXT_PUBLIC_RH_TESTNET_RPC_URL || RH_TESTNET.rpcUrl;
@@ -30,22 +30,24 @@ export async function GET() {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_ANON_KEY;
 
+  // Leaf count comes from the chain (source of truth), not from the optional database.
+  try {
+    const pool = new ethers.Contract(poolAddress, POOL_ABI, provider);
+    leavesCount = Number(await pool.nextIndex());
+  } catch (_) {}
+
   if (supabaseUrl && supabaseKey) {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey);
-      const [leavesRes, aspRes] = await Promise.all([
-        supabase.from("leaves").select("*", { count: "exact", head: true }),
-        supabase.from("asp_roots").select("*", { count: "exact", head: true }),
-      ]);
-      leavesCount = leavesRes.count ?? 0;
+      const aspRes = await supabase.from("asp_roots").select("*", { count: "exact", head: true });
       aspCount = aspRes.count ?? 0;
-      dbConnected = !leavesRes.error;
+      dbConnected = !aspRes.error;
     } catch (_) {}
   }
 
   // Secure relayer address check
   let relayerAddress = "0x673eF77ccb27e106769d2d56C536a4A0523B260E";
-  const pk = process.env.DEPLOYER_PRIVATE_KEY;
+  const pk = process.env.RELAYER_PRIVATE_KEY || process.env.DEPLOYER_PRIVATE_KEY;
   if (pk) {
     try {
       relayerAddress = new ethers.Wallet(pk).address;

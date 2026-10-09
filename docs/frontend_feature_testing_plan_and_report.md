@@ -51,7 +51,7 @@ Berikut adalah matriks rencana pengujian untuk masing-masing fitur antarmuka:
 | **07** | **Mersenne Courier Relayer** | Tab `#courier` | Klik tombol "Fetch Courier Quote" | Kotak quote muncul berisi Gas Price (Gwei), Min Fee (ETH), dan alamat relayer aktif | Menghitung fee dinamis dari `eth_gasPrice` RPC live | **PASS** |
 | **08** | **Emergency Exit (Ragequit)** | Tab `#ragequit` | Note: `marginalia-note-v1-invalidragequitnote` | Muncul Noir Modal penolakan format note | Circuit lock memastikan dana hanya keluar jika precommitment valid | **PASS** |
 | **09** | **Encrypted Local Vault** | Tab `#vault` | Klik tombol "Unlock Encrypted Vault" | Muncul Noir Modal `Wallet Required` | Kunci AES-256-GCM diturunkan dari EIP-712 wallet signature | **PASS** |
-| **10** | **Wax Seal Verifier (Spent)** | `/explorer.html` | Nullifier Hash: `999888777666555444333` | Menampilkan badge `WAX SEAL BROKEN (SPENT)` | Cek query `pool.nullifierSpent()` on-chain via smart contract | **PASS** |
+| **10** | **Wax Seal Verifier (Spent)** | `/explorer.html` | Nullifier Hash: `8514309743580435606405499989571109382450448814222988967129436610895366290229` | Menampilkan badge `WAX SEAL BROKEN (SPENT)` | Cek query `pool.nullifierSpent()` on-chain via smart contract | **PASS** |
 | **11** | **Wax Seal Verifier (Unspent)**| `/explorer.html` | Nullifier Hash: `111222333444555666777` | Menampilkan badge `WAX SEAL INTACT (UNSPENT)` | Mengonfirmasi status nullifier belum pernah digunakan | **PASS** |
 | **12** | **Letter of Disclosure Generator** | `/compliance.html` | Note BN254 asli hasil generator | Muncul paket JSON standar `LETTER_OF_DISCLOSURE_V1` dengan enkripsi X25519 ECDH | Tidak membocorkan private key deployer maupun `sk` note pengguna | **PASS** |
 

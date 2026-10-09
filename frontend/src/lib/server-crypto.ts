@@ -1,4 +1,22 @@
 import crypto from "crypto";
+import { ethers } from "ethers";
+import { POOL_ABI, POSEIDON_ABI } from "@/lib/constants";
+
+// The frontend has no Poseidon library, but the pool exposes its Poseidon hashers as pure
+// view contracts, so the exact hash the circuit uses can be evaluated via RPC.
+export async function onChainPoseidon(provider: ethers.Provider, poolAddress: string) {
+  const pool = new ethers.Contract(poolAddress, POOL_ABI, provider);
+  const [a1, a2, a3] = await Promise.all([pool.hasher1(), pool.hasher2(), pool.hasher3()]);
+  const h1 = new ethers.Contract(a1, POSEIDON_ABI[1], provider);
+  const h2 = new ethers.Contract(a2, POSEIDON_ABI[2], provider);
+  const h3 = new ethers.Contract(a3, POSEIDON_ABI[3], provider);
+  return {
+    pool,
+    p1: (x: bigint[]) => h1.poseidon(x) as Promise<bigint>,
+    p2: (x: bigint[]) => h2.poseidon(x) as Promise<bigint>,
+    p3: (x: bigint[]) => h3.poseidon(x) as Promise<bigint>,
+  };
+}
 
 export function generateViewingKeypair() {
   const { publicKey, privateKey } = crypto.generateKeyPairSync("x25519", {

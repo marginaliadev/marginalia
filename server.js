@@ -24,8 +24,7 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (
-        !allowedOrigins ||
-        allowedOrigins.includes(origin) ||
+        (allowedOrigins && allowedOrigins.includes(origin)) ||
         origin.startsWith("http://localhost:") ||
         origin.startsWith("http://127.0.0.1:")
       ) {
@@ -38,7 +37,16 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.disable("x-powered-by");
+app.use((req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Cache-Control", "no-store");
+  next();
+});
+
+app.use(express.json({ limit: "100kb" }));
 
 // In-memory rate limiting middleware for /api/ routes
 const rateLimitMap = new Map();
@@ -58,6 +66,9 @@ function apiRateLimiter(req, res, next) {
   }
 
   rateLimitMap.set(ip, entry);
+  if (rateLimitMap.size > 10000) {
+    for (const [k, v] of rateLimitMap) if (now > v.resetAt) rateLimitMap.delete(k);
+  }
 
   if (entry.count > MAX_REQUESTS_PER_WINDOW) {
     return res.status(429).json({
@@ -143,16 +154,27 @@ app.get("/api/health", (req, res) => {
  */
 app.get("/api/status", async (req, res) => {
   try {
-    const leaves = await supabaseService.getAllLeaves();
-    const deposits = await supabaseService.getDeposits();
-    const approvedDeposits = await supabaseService.getDeposits("APPROVED");
+    let leaves = [], deposits = [], approvedDeposits = [], dbOk = true;
+    try {
+      leaves = await supabaseService.getAllLeaves();
+      deposits = await supabaseService.getDeposits();
+      approvedDeposits = await supabaseService.getDeposits("APPROVED");
+    } catch (dbErr) {
+      dbOk = false;
+      console.warn("Status: database unavailable, using chain only:", dbErr.message);
+    }
 
     let poolBalanceWei = 0n;
+    let onChainLeaves = null;
     const poolAddr = process.env.MARGINALIA_POOL_ADDRESS || "0x340E20C7CBe7eA83d463432ac8FA1e891bdca948";
     try {
       const rpcUrl = process.env.RH_TESTNET_RPC_URL || "https://rpc.testnet.chain.robinhood.com";
       const provider = new ethers.JsonRpcProvider(rpcUrl);
       poolBalanceWei = await provider.getBalance(poolAddr);
+      {
+        const p = new ethers.Contract(poolAddr, ["function nextIndex() view returns (uint32)"], provider);
+        onChainLeaves = Number(await p.nextIndex());
+      }
     } catch (balErr) {
       console.warn("Status pool balance warning:", balErr.message);
     }
@@ -160,12 +182,13 @@ app.get("/api/status", async (req, res) => {
     res.json({
       chainId: 46630,
       network: "Robinhood Chain",
-      totalLeaves: leaves.length,
+      totalLeaves: onChainLeaves ?? leaves.length,
       totalDeposits: deposits.length,
       approvedDeposits: approvedDeposits.length,
       poolAddress: poolAddr,
       poolBalanceEth: ethers.formatEther(poolBalanceWei),
       supabaseEnabled: supabaseService.isConfigured(),
+      databaseReachable: dbOk,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -370,7 +393,7 @@ app.post("/api/note/validate", async (req, res) => {
     }
 
     // Check if nullifier is already spent (Wax Seal broken)
-    const isSpentDb = await supabaseService.isNullifierSpent(nullifierHash.toString());
+    const isSpentDb = await dbNullifierSpent(nullifierHash.toString());
     let isSpentChain = false;
 
     if (process.env.MARGINALIA_POOL_ADDRESS) {
@@ -392,8 +415,14 @@ app.post("/api/note/validate", async (req, res) => {
       });
     }
 
-    // Check if commitment exists in Folio tree
-    const leaves = await supabaseService.getAllLeaves();
+    // Check if commitment exists in the Folio tree. The DB is only a positive hint (it can be
+    // stale or unreachable, e.g. CLI deposits are not recorded); a miss is settled by the chain.
+    let leaves = [];
+    try {
+      leaves = await supabaseService.getAllLeaves();
+    } catch (e) {
+      console.warn("DB leaves unavailable, falling back to on-chain label check:", e.message);
+    }
     let leafFound = false;
     let leafIndex = -1;
     if (commitment !== undefined) {
@@ -405,11 +434,27 @@ app.post("/api/note/validate", async (req, res) => {
       }
     }
 
-    if (leaves.length > 0 && !leafFound && commitment !== undefined) {
-      return res.status(404).json({
-        valid: false,
-        error: "Commitment Not Found: Note commitment is not inscribed in the Folio tree on Robinhood Chain.",
-      });
+    if (!leafFound && commitment !== undefined) {
+      let knownOnChain = false;
+      if (label !== undefined && process.env.MARGINALIA_POOL_ADDRESS) {
+        // Labels are assigned by the pool at deposit time; an unknown label can never be spent.
+        try {
+          const pool = new ethers.Contract(
+            process.env.MARGINALIA_POOL_ADDRESS,
+            ["function labelDepositor(uint256) view returns (address)"],
+            chainProvider()
+          );
+          knownOnChain = (await pool.labelDepositor(label)) !== ethers.ZeroAddress;
+        } catch (e) {
+          return res.status(502).json({ valid: false, error: `Cannot verify note on-chain: ${e.shortMessage || e.message}` });
+        }
+      }
+      if (!knownOnChain) {
+        return res.status(404).json({
+          valid: false,
+          error: "Commitment Not Found: Note commitment is not inscribed in the Folio tree on Robinhood Chain.",
+        });
+      }
     }
 
     return res.json({
@@ -433,19 +478,25 @@ app.post("/api/note/validate", async (req, res) => {
 app.post("/api/nullifier/check", async (req, res) => {
   const { nullifier } = req.body;
   if (!nullifier) return res.status(400).json({ error: "Missing nullifier parameter" });
+  if (typeof nullifier !== "string" && typeof nullifier !== "number") {
+    return res.status(400).json({ error: "Nullifier must be a decimal integer string" });
+  }
+  if (!/^\d{1,78}$/.test(String(nullifier).trim())) {
+    return res.status(400).json({ error: "Nullifier must be a decimal integer string" });
+  }
 
   try {
-    const isSpentDb = await supabaseService.isNullifierSpent(nullifier);
+    const isSpentDb = await dbNullifierSpent(nullifier);
     let isSpentChain = false;
     if (process.env.MARGINALIA_POOL_ADDRESS) {
       try {
-        const rpcUrl = process.env.RH_TESTNET_RPC_URL || "https://rpc.testnet.chain.robinhood.com";
-        const provider = new ethers.JsonRpcProvider(rpcUrl);
         const abi = ["function nullifierSpent(uint256) view returns (bool)"];
-        const pool = new ethers.Contract(process.env.MARGINALIA_POOL_ADDRESS, abi, provider);
+        const pool = new ethers.Contract(process.env.MARGINALIA_POOL_ADDRESS, abi, chainProvider());
         isSpentChain = await pool.nullifierSpent(nullifier);
       } catch (e) {
+        // Never report "unspent" when neither source could be read.
         console.warn("Chain nullifier error:", e.message);
+        if (!isSpentDb) return res.status(502).json({ error: `Chain unreachable: ${e.shortMessage || e.message}` });
       }
     }
     const spent = Boolean(isSpentDb || isSpentChain);
@@ -461,7 +512,14 @@ app.post("/api/nullifier/check", async (req, res) => {
 app.post("/api/relay/quote", async (req, res) => {
   try {
     // Standard estimation: 1,150,000 gas * gasPrice + 10% margin
-    const gasPrice = ethers.parseUnits(req.body.gasPriceGwei || "2", "gwei");
+    let gasPrice;
+    if (req.body && req.body.gasPriceGwei) {
+      gasPrice = ethers.parseUnits(String(req.body.gasPriceGwei), "gwei");
+    } else {
+      // Same source the relayer validates against, so a quote is always accepted.
+      const feeData = await chainProvider().getFeeData();
+      gasPrice = feeData.gasPrice || ethers.parseUnits("1", "gwei");
+    }
     const estimatedGas = 1150000n;
     const baseCost = estimatedGas * gasPrice;
     const minFee = (baseCost * 11000n) / 10000n;
@@ -504,6 +562,12 @@ app.post("/api/disclosure/generate", async (req, res) => {
     if (!pubKeyPem || pubKeyPem.trim() === "" || pubKeyPem.startsWith("0x")) {
       generatedKeypair = generateViewingKeypair();
       pubKeyPem = generatedKeypair.viewingPublicKey;
+    }
+
+    try {
+      require("crypto").createPublicKey(pubKeyPem);
+    } catch (_) {
+      return res.status(400).json({ error: "auditorPublicKeyPem is not a valid X25519 public key (PEM)." });
     }
 
     const memoDetails = {
@@ -550,11 +614,24 @@ app.post("/api/relay/withdraw", async (req, res) => {
     return res.status(400).json({ error: "Missing or malformed withdrawal or proof payload" });
   }
 
+  const isUint = (v) => (typeof v === "string" || typeof v === "number") && /^\d{1,78}$/.test(String(v));
+  if (
+    typeof withdrawal !== "object" ||
+    !ethers.isAddress(withdrawal.recipient) ||
+    withdrawal.recipient === ethers.ZeroAddress ||
+    !ethers.isAddress(withdrawal.relayer) ||
+    !isUint(withdrawal.fee) ||
+    !Array.isArray(proof.pubSignals) ||
+    !proof.pubSignals.every(isUint)
+  ) {
+    return res.status(400).json({ error: "Malformed withdrawal: recipient/relayer must be valid addresses and fee/pubSignals unsigned integers" });
+  }
+
   try {
     const nullifierHash = proof.pubSignals[4];
 
     // 1. Check if nullifier is already spent in database
-    const alreadySpent = await supabaseService.isNullifierSpent(nullifierHash);
+    const alreadySpent = await dbNullifierSpent(nullifierHash);
     if (alreadySpent) {
       return res.status(409).json({ error: "Wax Seal (nullifier) already spent" });
     }
@@ -656,6 +733,15 @@ app.get("/api/relay/job/:id", async (req, res) => {
   }
 });
 
+// JSON error handler: never leak stack traces or framework internals.
+app.use((err, req, res, next) => {
+  if (err && err.type === "entity.parse.failed") return res.status(400).json({ error: "Malformed JSON body" });
+  if (err && err.type === "entity.too.large") return res.status(413).json({ error: "Request body too large" });
+  if (err && /CORS policy/.test(err.message || "")) return res.status(403).json({ error: "Origin not allowed" });
+  console.error("Unhandled error:", err && err.message);
+  res.status(500).json({ error: "Internal server error" });
+});
+
 // Start server if executed directly
 if (require.main === module) {
   app.listen(PORT, () => {
@@ -664,4 +750,18 @@ if (require.main === module) {
   });
 }
 
-module.exports = app;
+module.exports = app;// The chain is the source of truth. The database is an optional cache: if it is unreachable,
+// DB-backed checks degrade to the on-chain answer instead of failing the whole request.
+function chainProvider() {
+  return new ethers.JsonRpcProvider(process.env.RH_TESTNET_RPC_URL || "https://rpc.testnet.chain.robinhood.com");
+}
+async function dbNullifierSpent(hash) {
+  try {
+    return await supabaseService.isNullifierSpent(hash);
+  } catch (e) {
+    console.warn("DB nullifier lookup unavailable, relying on chain:", e.message);
+    return false;
+  }
+}
+
+

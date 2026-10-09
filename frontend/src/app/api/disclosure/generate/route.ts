@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { ethers } from "ethers";
 import { generateViewingKeypair, createEncryptedMemo, parseNoteString } from "@/lib/server-crypto";
 import { RH_TESTNET } from "@/lib/constants";
@@ -12,13 +13,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing marginal note parameter" }, { status: 400 });
     }
 
-    const parsed = parseNoteString(note.trim());
+    let parsed;
+    try {
+      parsed = parseNoteString(String(note).trim());
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
+    }
     let pubKeyPem = auditorPublicKeyPem;
     let generatedKeypair = null;
 
     if (!pubKeyPem || pubKeyPem.trim() === "" || pubKeyPem.startsWith("0x")) {
       generatedKeypair = generateViewingKeypair();
       pubKeyPem = generatedKeypair.viewingPublicKey;
+    }
+
+    try {
+      crypto.createPublicKey(pubKeyPem);
+    } catch {
+      return NextResponse.json({ error: "auditorPublicKeyPem is not a valid X25519 public key (PEM)." }, { status: 400 });
     }
 
     const memoDetails = {

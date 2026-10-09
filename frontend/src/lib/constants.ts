@@ -9,13 +9,24 @@ export const RH_TESTNET = {
 };
 
 export const POOL_ABI = [
-  "function deposit(uint256 commitment, uint256 label) external payable",
-  "function withdraw(bytes calldata proof, uint256 root, uint256 nullifierHash, address recipient, address relayer, uint256 fee, uint256 aspRoot) external",
-  "function ragequit(bytes calldata proof, uint256 commitment, address recipient) external",
+  "function deposit(uint256 precommitment) external payable returns (uint256 commitment)",
+  "function withdraw((address recipient, address relayer, uint256 fee) w, (uint256[2] pA, uint256[2][2] pB, uint256[2] pC, uint256[6] pubSignals) p) external",
+  "function ragequit(uint256 label, address recipient, (uint256[2] pA, uint256[2][2] pB, uint256[2] pC, uint256[2] pubSignals) p) external",
   "function nullifierSpent(uint256 nullifierHash) external view returns (bool)",
   "function isKnownRoot(uint256 root) external view returns (bool)",
-  "function nextLeafIndex() external view returns (uint32)",
+  "function nextIndex() external view returns (uint32)",
+  "function getLastRoot() external view returns (uint256)",
+  "function labelDepositor(uint256 label) external view returns (address)",
+  "function hasher1() external view returns (address)",
+  "function hasher2() external view returns (address)",
+  "function hasher3() external view returns (address)",
 ];
+
+export const POSEIDON_ABI = {
+  1: ["function poseidon(uint256[1] input) external pure returns (uint256)"],
+  2: ["function poseidon(uint256[2] input) external pure returns (uint256)"],
+  3: ["function poseidon(uint256[3] input) external pure returns (uint256)"],
+} as const;
 
 export interface NotePayload {
   sk: string;

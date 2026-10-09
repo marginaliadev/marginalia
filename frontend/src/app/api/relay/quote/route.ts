@@ -12,15 +12,15 @@ export async function POST() {
     if (feeData.gasPrice) gasPrice = feeData.gasPrice;
   } catch (_) {}
 
-  // Shielded withdrawal verification consumes approx 315,000 gas
-  const estimatedGas = BigInt(350000);
+  // Measured on testnet: a relayed withdraw uses ~1.07M gas (Poseidon-in-Solidity tree insert). Keep in sync with server.js.
+  const estimatedGas = BigInt(1150000);
   const rawFeeWei = estimatedGas * gasPrice;
   // Apply 10% safety buffer
   const feeWei = (rawFeeWei * BigInt(110)) / BigInt(100);
   const minFeeEth = ethers.formatEther(feeWei);
 
   let relayerAddress = "0x673eF77ccb27e106769d2d56C536a4A0523B260E";
-  const pk = process.env.DEPLOYER_PRIVATE_KEY;
+  const pk = process.env.RELAYER_PRIVATE_KEY || process.env.DEPLOYER_PRIVATE_KEY;
   if (pk) {
     try {
       relayerAddress = new ethers.Wallet(pk).address;
