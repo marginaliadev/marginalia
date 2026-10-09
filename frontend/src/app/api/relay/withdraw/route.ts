@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { POOL_ABI } from "@/lib/constants";
-import { leavesFromTx, persistLeaves, poolAddress, rpcUrl } from "@/lib/folio";
+import { leavesFromTx, makeProvider, persistLeaves, poolAddress } from "@/lib/folio";
 import { rateLimited } from "@/lib/ratelimit";
 
 const ESTIMATED_GAS = BigInt(1150000);
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const provider = new ethers.JsonRpcProvider(rpcUrl());
+    const provider = makeProvider();
     const wallet = new ethers.Wallet(pk, provider);
     if (withdrawal.relayer.toLowerCase() !== wallet.address.toLowerCase()) {
       return NextResponse.json({ error: `Invalid relayer address: expected ${wallet.address}` }, { status: 400 });

@@ -14,7 +14,7 @@
 //     balances to the deployer, so a hard crash is repaired by simply running the script again;
 //   - the run fails (Z1/Z2) if any ledger note is still open or if more than gas was spent.
 //   Crash drills: CRASH_AFTER_DEPOSIT=1, CRASH_AFTER_PARTIAL_WITHDRAW=1, and phase R (page killed mid-deposit).
-// Phases: 1 = vault + deposits, 2 = Magistrate approval (CLI), 3 = withdraw / courier / ragequit, R = app-level crash recovery drill, none = sweep only. Default: all.
+// Phases: 1 = vault + deposits, 2 = Magistrate approval (CLI), 3 = withdraw / courier / ragequit, R = app-level crash recovery drill, L = live-safe deposit + ragequit (no server pool needed), none = sweep only. Default: all.
 // Costs ~0.002 testnet ETH per run. Use `localhost`, not 127.0.0.1, with `next dev`.
 const os = require("os");
 const path = require("path");
@@ -229,6 +229,36 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const st = fs.existsSync(stateFile) ? JSON.parse(fs.readFileSync(stateFile, "utf8")) : {};
 
   try {
+    if (phase === "L") {
+      // Live-safe drill: only client-side on-chain steps (no Folio / relayer / approval needed), so it can run against
+      // a production URL: unlock vault, deposit, ragequit through the UI, and verify the refund hit our sink wallet.
+      await open();
+      await tab("vault");
+      await page.evaluate(() => document.getElementById("unlockVaultBtn").click());
+      let lm = await modal(); rec("L1 Vault unlock (live bundle)", lm.t === "Vault Unlocked", lm.t); await closeModal();
+      await tab("deposit");
+      await set("#depositAmount", "0.0003");
+      await page.evaluate(() => document.getElementById("submitDepositBtn").click());
+      lm = await modal();
+      const lnote = await page.$eval("#generatedNote", (e) => e.value).catch(() => null);
+      ledgerAdd("live-deposit", lnote);
+      rec("L2 Deposit 0.0003 ETH on the live site", lm.t === "Deposit Inscribed" && !!lnote, lm.t);
+      await closeModal();
+      if (lnote) {
+        await tab("ragequit");
+        await set("#ragequitNote", lnote);
+        await set("#ragequitRecipient", sink.address);
+        const b0 = await provider.getBalance(sink.address);
+        await page.evaluate(() => document.getElementById("submitRagequitBtn").click());
+        lm = await modal();
+        const d = (await provider.getBalance(sink.address)) - b0;
+        rec("L3 Ragequit through the live UI refunds 0.0003", lm.t === "Ragequit Complete" && d === ethers.parseEther("0.0003"), `${lm.t}; +${ethers.formatEther(d)}`);
+        await closeModal();
+        await page.evaluate(() => document.getElementById("submitRagequitBtn").click());
+        lm = await modal(); rec("L4 Second ragequit rejected", lm.t === "Ragequit Failed", lm.t + " / " + lm.b.slice(0, 50));
+      }
+    }
+
     if (phase === "R") {
       // App-level crash recovery: kill the page right after the deposit tx is sent, before the note is shown.
       await open();

@@ -14,6 +14,10 @@ const SCAN_BUDGET_MS = 25_000;
 export function rpcUrl() {
   return process.env.RH_TESTNET_RPC_URL || process.env.NEXT_PUBLIC_RH_TESTNET_RPC_URL || RH_TESTNET.rpcUrl;
 }
+export function makeProvider(url = rpcUrl()) {
+  // fixed network: no eth_chainId detection round trips (and no retry noise) on every request
+  return new ethers.JsonRpcProvider(url, RH_TESTNET.chainId, { staticNetwork: true });
+}
 export function poolAddress() {
   return process.env.MARGINALIA_POOL_ADDRESS || RH_TESTNET.poolAddress;
 }
@@ -122,16 +126,49 @@ async function scanLogs(provider: ethers.JsonRpcProvider, from: number, to: numb
   return out;
 }
 
-function aspLabelsFromFile(): bigint[] {
-  const file = process.env.ASP_LABELS_FILE || path.join(process.cwd(), "..", "asp", "robinhoodTestnet.labels.json");
-  const j = JSON.parse(fs.readFileSync(file, "utf8"));
+const DEFAULT_ASP_URL = "https://raw.githubusercontent.com/marginaliadev/marginalia/main/asp/robinhoodTestnet.labels.json";
+
+function parseLabels(j: any): bigint[] {
   return (j.labels as string[]).map((l) => BigInt(l));
+}
+
+/** Candidate approved-label lists, in order: local file (dev), then a published URL (deployments without the repo). */
+async function aspCandidates(): Promise<Array<{ source: string; load: () => Promise<bigint[]> }>> {
+  const file = process.env.ASP_LABELS_FILE || path.join(process.cwd(), "..", "asp", "robinhoodTestnet.labels.json");
+  const url = process.env.ASP_LABELS_URL || DEFAULT_ASP_URL;
+  return [
+    { source: `file ${file}`, load: async () => parseLabels(JSON.parse(fs.readFileSync(file, "utf8"))) },
+    {
+      source: `url ${url}`,
+      load: async () => {
+        const r = await fetch(url, { cache: "no-store" });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return parseLabels(await r.json());
+      },
+    },
+  ];
+}
+
+/** First candidate whose Merkle root the Magistrate's register accepts. Never serves an unverified set. */
+async function loadVerifiedAsp(register: ethers.Contract): Promise<{ labels: bigint[]; root: bigint }> {
+  const problems: string[] = [];
+  for (const c of await aspCandidates()) {
+    try {
+      const labels = await c.load();
+      const root = new MerkleTree(ASP_DEPTH, labels).root();
+      if (await register.isValidRoot(root)) return { labels, root };
+      problems.push(`${c.source}: root not published by the Magistrate`);
+    } catch (e: any) {
+      problems.push(`${c.source}: ${e.message}`);
+    }
+  }
+  throw new Error(`No approved-label list matches the Magistrate's on-chain root (${problems.join("; ")})`);
 }
 
 export async function getFolio(force = false): Promise<FolioData> {
   if (!force && g.__folioCache && Date.now() - g.__folioCache.at < 10_000) return g.__folioCache.data;
 
-  const provider = new ethers.JsonRpcProvider(rpcUrl());
+  const provider = makeProvider();
   const pool = new ethers.Contract(poolAddress(), POOL_ABI, provider);
   const register = new ethers.Contract(registerAddress(), REGISTER_ABI, provider);
   const [nextIndexBn, onchainRoot] = await Promise.all([pool.nextIndex(), pool.getLastRoot()]);
@@ -164,10 +201,8 @@ export async function getFolio(force = false): Promise<FolioData> {
     throw new Error("Folio index does not reproduce the on-chain root");
   }
 
-  // 3. ASP set
-  const aspLabels = aspLabelsFromFile();
-  const aspRoot = new MerkleTree(ASP_DEPTH, aspLabels).root();
-  if (!(await register.isValidRoot(aspRoot))) throw new Error("ASP label list is out of sync with the Magistrate's on-chain root");
+  // 3. ASP set (verified against the register)
+  const { labels: aspLabels, root: aspRoot } = await loadVerifiedAsp(register);
 
   const data: FolioData = {
     pool: poolAddress(),

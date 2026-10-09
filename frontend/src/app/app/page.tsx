@@ -205,6 +205,7 @@ export default function ShieldedAppPage() {
         const secret = { sk: BigInt(p.sk), rho: BigInt(p.rho), value: BigInt(p.value) };
         const folio = await (await fetch("/api/folio")).json();
         if (cancelled || !Array.isArray(folio.leaves)) return;
+        if (String(folio.pool).toLowerCase() !== RH_TESTNET.poolAddress.toLowerCase()) return; // server on another pool: never match leaves from it
         const note = recoverNote(secret, folio.leaves.map((l: string) => BigInt(l)), RH_TESTNET.chainId, RH_TESTNET.poolAddress);
         if (note) {
           const noteString = serializeNote(note);
@@ -376,6 +377,9 @@ Your note has been rebuilt below. SAVE IT NOW.`,
       const fres = await fetch("/api/folio");
       const folio = await fres.json();
       if (!fres.ok) return fail("Folio Unavailable", folio.error || "Could not load the Folio tree.");
+      if (String(folio.pool).toLowerCase() !== RH_TESTNET.poolAddress.toLowerCase()) {
+        return fail("Server Misconfigured", `This site's server is configured for a different pool (${folio.pool}) than the one this page uses (${RH_TESTNET.poolAddress}). Nothing was sent.`);
+      }
 
       const stateTree = new MerkleTree(DEPTH, folio.leaves.map((l: string) => BigInt(l)));
       const aspTree = new MerkleTree(ASP_DEPTH, folio.aspLabels.map((l: string) => BigInt(l)));
