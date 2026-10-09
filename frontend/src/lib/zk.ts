@@ -91,7 +91,16 @@ export class MerkleTree {
     this.depth = depth;
     for (let i = 1; i <= depth; i++) this.zeros.push(poseidon2([this.zeros[i - 1], this.zeros[i - 1]]));
     this.layers = Array.from({ length: depth + 1 }, () => []);
-    for (const l of leaves) this.insert(l);
+    // Bulk build level by level (~2n hashes instead of 20n); identical to repeated insert().
+    if (leaves.length > 0) {
+      this.layers[0] = [...leaves];
+      for (let lvl = 0; lvl < depth; lvl++) {
+        const cur = this.layers[lvl];
+        const next: bigint[] = [];
+        for (let i = 0; i < cur.length; i += 2) next.push(poseidon2([cur[i], cur[i + 1] ?? this.zeros[lvl]]));
+        this.layers[lvl + 1] = next;
+      }
+    }
   }
   insert(leaf: bigint) {
     let idx = this.layers[0].length;

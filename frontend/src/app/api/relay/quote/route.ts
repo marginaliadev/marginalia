@@ -1,43 +1,33 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { RH_TESTNET } from "@/lib/constants";
+import { makeProvider } from "@/lib/folio";
+import { ESTIMATED_GAS, minFeeFor, relayerHealth } from "@/lib/relayer-health";
 
 export async function POST() {
-  const rpcUrl = process.env.RH_TESTNET_RPC_URL || process.env.NEXT_PUBLIC_RH_TESTNET_RPC_URL || RH_TESTNET.rpcUrl;
-  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  const provider = makeProvider();
 
-  let gasPrice = BigInt(2000000000); // 2.0 Gwei default
+  let gasPrice = BigInt(2000000000); // 2.0 Gwei fallback when the RPC cannot answer
   try {
     const feeData = await provider.getFeeData();
     if (feeData.gasPrice) gasPrice = feeData.gasPrice;
   } catch (_) {}
 
-  // Measured on testnet: a relayed withdraw uses ~1.07M gas (Poseidon-in-Solidity tree insert). Keep in sync with server.js.
-  const estimatedGas = BigInt(1150000);
-  const rawFeeWei = estimatedGas * gasPrice;
-  // Apply 10% safety buffer
-  const feeWei = (rawFeeWei * BigInt(110)) / BigInt(100);
-  const minFeeEth = ethers.formatEther(feeWei);
-
-  // Only advertise a relayer that can actually sign: the one backed by RELAYER_PRIVATE_KEY.
-  let relayerAddress: string | null = null;
-  const pk = process.env.RELAYER_PRIVATE_KEY;
-  if (pk) {
-    try {
-      relayerAddress = new ethers.Wallet(pk).address;
-    } catch (_) {}
-  }
+  const feeWei = minFeeFor(gasPrice);
+  const health = await relayerHealth(provider);
 
   return NextResponse.json({
-    relayer: relayerAddress,
-    relayerAvailable: relayerAddress !== null,
+    relayer: health.address,
+    // offered only when a key exists AND the wallet can actually pay for gas
+    relayerAvailable: health.healthy,
+    relayerReason: health.reason,
     minFeeWei: feeWei.toString(),
-    estimatedGas: Number(estimatedGas),
+    estimatedGas: Number(ESTIMATED_GAS),
     gasPriceGwei: ethers.formatUnits(gasPrice, "gwei"),
-    minFeeEth,
+    minFeeEth: ethers.formatEther(feeWei),
     chain: RH_TESTNET.name,
     chainId: RH_TESTNET.chainId,
-    validUntil: Date.now() + 60000,
+    validUntil: Date.now() + 120_000,
   });
 }
 

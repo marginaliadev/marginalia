@@ -85,6 +85,7 @@ export interface StatusResponse {
 export const REGISTER_ABI = [
   "function isValidRoot(uint256 root) external view returns (bool)",
   "function latestRoot() external view returns (uint256)",
+  "function rootData(uint256 root) external view returns (string)",
   "function isApproved(uint256 label) external view returns (bool)",
 ];
 

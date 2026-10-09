@@ -7,6 +7,7 @@ import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
 import { RH_TESTNET, POOL_ABI, REGISTER_ABI, POOL_EVENTS_ABI } from "@/lib/constants";
 import { MerkleTree, DEPTH, ASP_DEPTH } from "@/lib/zk";
+import { loadAspLabelsFromIpfs } from "@/lib/aspStore";
 
 const DEPLOY_BLOCK = Number(process.env.POOL_DEPLOY_BLOCK || 129140787);
 const SCAN_BUDGET_MS = 25_000;
@@ -135,10 +136,17 @@ function parseLabels(j: any): bigint[] {
 }
 
 /** Candidate approved-label lists, in order: local file (dev), then a published URL (deployments without the repo). */
-async function aspCandidates(): Promise<Array<{ source: string; load: () => Promise<bigint[]> }>> {
+async function aspCandidates(register: ethers.Contract): Promise<Array<{ source: string; load: () => Promise<bigint[]> }>> {
   const file = process.env.ASP_LABELS_FILE || path.join(process.cwd(), "..", "asp", "robinhoodTestnet.labels.json");
   const url = process.env.ASP_LABELS_URL || DEFAULT_ASP_URL;
+  const list: Array<{ source: string; load: () => Promise<bigint[]> }> = [];
+  // 1st choice: the list the Magistrate pinned to IPFS. The CID is read from the chain (rootData of the latest root).
+  try {
+    const uri: string = await register.rootData(await register.latestRoot());
+    if (typeof uri === "string" && uri.startsWith("ipfs://")) list.push({ source: uri, load: () => loadAspLabelsFromIpfs(uri) });
+  } catch {}
   return [
+    ...list,
     { source: `file ${file}`, load: async () => parseLabels(JSON.parse(fs.readFileSync(file, "utf8"))) },
     {
       source: `url ${url}`,
@@ -160,7 +168,7 @@ async function loadVerifiedAsp(register: ethers.Contract): Promise<{ labels: big
   const problems: string[] = [];
   const latest = BigInt(await register.latestRoot());
   let fallback: { labels: bigint[]; root: bigint } | null = null;
-  for (const c of await aspCandidates()) {
+  for (const c of await aspCandidates(register)) {
     try {
       const labels = await c.load();
       const root = new MerkleTree(ASP_DEPTH, labels).root();

@@ -32,6 +32,10 @@ export default function ShieldedAppPage() {
   // Live telemetry (read from the chain by /api/status)
   const [poolLeaves, setPoolLeaves] = useState<number | null>(null);
   useEffect(() => {
+    fetch("/api/relay/quote", { method: "POST" })
+      .then((r) => r.json())
+      .then((q) => setCourierAvailable(Boolean(q?.relayerAvailable)))
+      .catch(() => setCourierAvailable(false));
     fetch("/api/status")
       .then((r) => r.json())
       .then((d) => setPoolLeaves(d?.database?.leavesCount ?? null))
@@ -60,6 +64,7 @@ export default function ShieldedAppPage() {
   // Courier State
   const [courierQuote, setCourierQuote] = useState<{ gasPrice: string; minFee: string; courierAddr: string } | null>(null);
   const [isLoadingCourier, setIsLoadingCourier] = useState(false);
+  const [courierAvailable, setCourierAvailable] = useState<boolean | null>(null);
 
   // Ragequit State
   const [ragequitNote, setRagequitNote] = useState("");
@@ -473,7 +478,11 @@ Your note has been rebuilt below. SAVE IT NOW.`,
       setCourierQuote({
         gasPrice: `${data.gasPriceGwei} Gwei`,
         minFee: `${data.minFeeEth} ETH`,
-        courierAddr: data.relayer ? `${data.relayer.slice(0, 6)}...${data.relayer.slice(-4)} (Active)` : "No relayer configured",
+        courierAddr: data.relayerAvailable
+          ? `${data.relayer.slice(0, 6)}...${data.relayer.slice(-4)} (Active)`
+          : data.relayer
+            ? `${data.relayer.slice(0, 6)}...${data.relayer.slice(-4)} (Unavailable: ${data.relayerReason})`
+            : "No relayer configured",
       });
     } catch (_) {
       showModal("Relayer Error", "Could not fetch quote from Mersenne Courier.", "danger");
@@ -846,7 +855,9 @@ Your note has been rebuilt below. SAVE IT NOW.`,
                     className="w-full bg-[#14100e] border border-dusk rounded-xs px-4 py-3.5 text-sm font-mono text-dust focus:outline-none focus:border-sun transition-colors"
                   >
                     <option value="wallet">My wallet (pays gas, less private)</option>
-                    <option value="relay">Mersenne Courier (gasless, fee deducted)</option>
+                    <option value="relay" disabled={courierAvailable === false}>
+                      {courierAvailable === false ? "Mersenne Courier (temporarily unavailable)" : "Mersenne Courier (gasless, fee deducted)"}
+                    </option>
                   </select>
                 </div>
               </div>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
 import { RH_TESTNET, POOL_ABI } from "@/lib/constants";
+import { relayerHealth } from "@/lib/relayer-health";
 
 export async function GET() {
   const rpcUrl = process.env.RH_TESTNET_RPC_URL || process.env.NEXT_PUBLIC_RH_TESTNET_RPC_URL || RH_TESTNET.rpcUrl;
@@ -45,14 +46,7 @@ export async function GET() {
     } catch (_) {}
   }
 
-  // Secure relayer address check
-  let relayerAddress: string | null = null;
-  const pk = process.env.RELAYER_PRIVATE_KEY;
-  if (pk) {
-    try {
-      relayerAddress = new ethers.Wallet(pk).address;
-    } catch (_) {}
-  }
+  const health = await relayerHealth(provider);
 
   return NextResponse.json({
     name: "MARGINALIA Next.js Relayer Engine",
@@ -75,8 +69,10 @@ export async function GET() {
       aspCount,
     },
     relayer: {
-      address: relayerAddress,
-      status: relayerAddress ? "active" : "not-configured",
+      address: health.address,
+      balanceEth: health.balanceWei === null ? null : ethers.formatEther(health.balanceWei),
+      healthy: health.healthy,
+      status: health.healthy ? "active" : health.reason,
     },
   });
 }

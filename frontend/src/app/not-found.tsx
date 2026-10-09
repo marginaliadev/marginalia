@@ -3,7 +3,8 @@ import MarginaliaLogo from "@/components/MarginaliaLogo";
 import { ArrowLeft, Home, Compass } from "lucide-react";
 
 export const metadata = {
-  title: "404: Page Not Found | MARGINALIA",
+  title: { absolute: "404: Page Not Found | MARGINALIA" },
+  robots: { index: false, follow: false },
   description: "The requested route does not exist in the Marginalia Folio.",
 };
 
