@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-09T14:26:44.848Z",
+  "gitCommit": "7ca973cddbd47514bdd8aa93031a2706cc709b1f",
+  "gitDirty": false,
+  "toolchain": {
+    "solc": "0.8.24",
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "evmVersion": "cancun",
+    "circom2Wasm": "0.2.23",
+    "snarkjs": "0.7.5",
+    "circomlib": "2.0.5",
+    "circomlibjs": "0.1.7",
+    "hardhat": "2.29.1",
+    "node": "v22.20.0"
+  },
+  "scope": {
+    "circuits": {
+      "circuits/withdraw.circom": {
+        "sha256": "26906f6b05f157c92334bec6be0f3c56671ef83e79ecdff1f48fc4bb138e4892",
+        "lines": 113
+      },
+      "circuits/ragequit.circom": {
+        "sha256": "44e2ab0c16831e88a0a2fbd192727b8028b90fd236aba3e47cec8f06dc498895",
+        "lines": 50
+      },
+      "circuits/lib/merkle.circom": {
+        "sha256": "8f8e57b2e10ff48fa2e42d95428426f4b283c02aad28d471ac4ed966966e67f2",
+        "lines": 38
+      }
+    },
+    "contracts": {
+      "contracts/MarginaliaPool.sol": {
+        "sha256": "78c66c1ca7cd07570562cd9755ae46748469dbf158a2107f33342b2cb395b44a",
+        "lines": 340
+      },
+      "contracts/MagistrateRegister.sol": {
+        "sha256": "345b68131e7c0867db9fa7fa332dba80f0d6eacf866739eaccba7cd3f687ba29",
+        "lines": 128
+      },
+      "contracts/interfaces/IPoseidon.sol": {
+        "sha256": "243b34a95ebcacf228eadc182f7a60c2e4d1114042c08c855067aa3893ea8df4",
+        "lines": 37
+      }
+    },
+    "generated": {
+      "contracts/Groth16Verifier.sol": {
+        "sha256": "6da6831dcd493202a5f0cdf0e8a1f55ee7be892247b81df7ea69aca6174ae240",
+        "lines": 204
+      },
+      "contracts/RagequitVerifier.sol": {
+        "sha256": "f00b822940f6034a4dd463e3e1b79e40b87d557a4ed76cb9b0bc3109b8c8b174",
+        "lines": 176
+      }
+    },
+    "outOfScope": {
+      "contracts/MarginaliaTokenPool.sol": {
+        "sha256": "7f5d4f5df005740f94676b8328c7a8428bb3fd3b18395e45ebef79de26f6b1b0",
+        "lines": 313
+      },
+      "contracts/mocks/MockERC20.sol": {
+        "sha256": "811898949097cac90098299db6b0825f04b6468f13aa73ad069485ed8d4b7d38",
+        "lines": 78
+      }
+    }
+  },
+  "circuitsCompiled": {
+    "withdraw": {
+      "optimisation": "--O2",
+      "constraints": 11432,
+      "publicInputs": 6,
+      "privateInputs": 85,
+      "r1csSha256": "7fe3a3e14e65c7c0dbd3c6fbce35616247e4578e19dbdf10cc36566134d1114f"
+    },
+    "ragequit": {
+      "optimisation": "--O2",
+      "constraints": 693,
+      "publicInputs": 2,
+      "privateInputs": 2,
+      "r1csSha256": "b0c4a83670766c6a045b8fe3773cdc3b36d21ec0bab01ba20eeb5eac1800631b"
+    }
+  },
+  "committedProvingArtifacts": {
+    "withdraw": {
+      "wasmSha256": "839d5a51eda2e0855712e6d3594adb55a73ab048b680f034cce3145d74730092",
+      "zkeySha256": "d912b91c014b7f6ace87e5ee0fcff24029b16d9a5675fe4be5d51a2b5b33d400",
+      "vkeySha256": "41b6dc9a1377f6c406ba2734d960416de4cb74332ebb31e39a58ea52ac6a749b",
+      "wasmProbe": "Not all inputs have been set. Only 0 out of 91",
+      "buildMatchesSource": null
+    },
+    "ragequit": {
+      "wasmSha256": "3d99dd0c0bffecea5acd8f39e56217be87b936012b4ad0b8dd5ac2b5f60680de",
+      "zkeySha256": "c334e49f69128480c0b1d5a9595abe4019134496890065b5974edbf106bbf4fd",
+      "vkeySha256": "451d513bb2c6c2bb6819794313c63e455600eefee0ca744c217bf146422ca666",
+      "wasmProbe": "Not all inputs have been set. Only 0 out of 4"
+    }
+  },
+  "notes": [
+    "Circuits are compiled with --O2 explicitly. circom2's default is --O1, which gives a different constraint system (e.g. withdraw 24,236 vs 11,432 constraints).",
+    "The proving artifacts currently committed under build/ come from a LOCAL, single-party dev setup and are not tied to a published ptau: they are replaced by the ceremony output before mainnet."
+  ]
+}

@@ -45,6 +45,33 @@ jobs:
       - name: Dependency audit (production, root)
         run: npm audit --omit=dev
 
+  static-analysis:
+    name: Slither (contracts) and circuit build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: "npm"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: npm ci || npm install
+      - name: Compile contracts
+        env:
+          USE_SOLCJS: "1"
+        run: npx hardhat compile
+      - name: Slither (fails on Medium or higher; verifiers are generated code)
+        run: |
+          pip install slither-analyzer
+          slither . --hardhat-ignore-compile --filter-paths "node_modules|Groth16Verifier|RagequitVerifier|mocks|TokenPool" --fail-medium
+      - name: Circuits compile reproducibly with the pinned optimisation level
+        run: |
+          node -e 'const {compileCircuit}=require("./scripts/ceremony/compile");for(const c of ["withdraw","ragequit"]){const a=compileCircuit(c,{force:true});console.log(c,a.r1cs)}; process.exit(0)'
+      # After the audit freeze, uncomment to fail the build when anything in scope changes:
+      # - run: node scripts/audit/manifest.js check
+
   frontend:
     name: Frontend type-check, build and audit
     runs-on: ubuntu-latest
