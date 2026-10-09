@@ -1,6 +1,6 @@
 # MARGINALIA: Paket Audit (Fase 04)
 
-Dokumen ini adalah titik masuk untuk auditor kontrak dan auditor ZK. Hash pasti dari seluruh berkas dalam lingkup ada di `manifest.json` (dihasilkan oleh `node scripts/audit/manifest.js write`, dijaga CI dengan `check` setelah freeze).
+Dokumen ini adalah titik masuk untuk auditor kontrak dan auditor ZK. Dokumen pendamping: `circuit_notes.md` (sirkuit), `../threat_model_and_audit_pack.md` (model ancaman v2.0), `slither_triage.md`, `../ceremony_guide.md`. Hash pasti dari seluruh berkas dalam lingkup ada di `manifest.json` (dihasilkan oleh `node scripts/audit/manifest.js write`, dijaga CI dengan `check` setelah freeze).
 
 ## 1. Lingkup
 

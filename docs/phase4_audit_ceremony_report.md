@@ -28,6 +28,11 @@
 4. Pembuktian "tidak ada konstrain `context`" didokumentasikan dan diuji (disengaja; diikat on-chain).
 5. Slither lama yang menyebut `arbitrary-send-eth` berasal dari artefak build basi; pada kode saat ini tidak ada.
 
+## 3b. Dilengkapi setelah laporan pertama
+- **A0-T3** `docs/audit/circuit_notes.md`: sinyal, constraint per komponen (213 / 240 / 261 / 128 / 4.860, jumlahnya tepat 11.432), properti keamanan, hal yang disengaja, dan cara mereproduksi.
+- **A0-T2** `docs/threat_model_and_audit_pack.md` ditulis ulang (v2.0): batas kepercayaan, invarian terhadap tes, 19 ancaman dengan status jujur, kebocoran privasi, status L1-L13, daftar periksa. Koreksi atas versi 1.0: tanda tangan `ragequit` salah, deskripsi vault keliru, klaim "formal invariant" berlebihan.
+- Celah baru yang tercatat di threat model: **tidak ada CSP/SRI** pada front end dan hash aset proving belum dipublikasikan (T18).
+
 ## 4. Belum selesai atau tidak dapat dilakukan di sini
 | Item | Alasan / langkah |
 |---|---|
@@ -36,6 +41,7 @@
 | **Pin hash Phase 1 publik** | Harus diisi pemilik dari sumber resmi Hermez/PSE (`docs/ceremony/phase1.json`) |
 | **Bukti proof nyata untuk withdraw O2** | `circom2` (WASM) tidak dapat menulis witness generator; perlu `circom` native yang dipin di CI (mengunduh biner: butuh izin Anda). Tercatat sebagai SKIP, bukan lulus |
 | Fuzz skala besar (Echidna/Foundry, jutaan langkah) | Fuzz in-repo hanya 84 langkah ber-proof; pasang Echidna/Foundry di CI |
+| CSP/SRI dan publikasi hash `public/zk/*` | Temuan T18 di threat model; belum dikerjakan |
 | Build reproducible di Docker/mesin bersih | Reproduktifitas dalam satu mesin terbukti; belum di Docker |
 | Redeploy verifier/pool pasca-ceremony, E2E dengan zkey final (D-T7) | Setelah ceremony nyata |
 | Freeze (tag, manifest final, `audit:check` di CI) | Setelah perbaikan hasil audit |

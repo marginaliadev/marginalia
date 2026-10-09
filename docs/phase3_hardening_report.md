@@ -24,7 +24,8 @@
 - `services/magistrate/` (kebijakan denylist, store atomik + log audit append-only, layanan, CLI dengan health endpoint, kunci instance tunggal, alarm webhook).
 - Terbukti: idempoten, dibatasi laju (3 jam simulasi → 12 publikasi, root tertua tetap valid), kontrol negatif (tanpa batas, 18 publikasi menghabiskan jendela 16 root), crash antara pin dan publish menghasilkan CID yang sama, kehilangan state tidak mengubah apa pun, deposit ragequit dan alamat denylist yang ditambahkan belakangan keluar dari daftar berikutnya, hanya kunci Magistrate yang bisa menerbitkan.
 - Di testnet: deposit dari UI → daftar terbit otomatis dalam **22–67 detik** tanpa langkah manual.
-- **Belum:** soak 48 jam (H1-TEST9), penyimpanan state di Supabase (dipakai file atomik), worker belum di-deploy di Railway.
+- **Belum:** soak 48 jam (H1-TEST9) dan worker belum di-deploy di Railway.
+- **Dilengkapi kemudian:** `SupabaseStore` (state, verdict, log *append-only*, indeks `asp_roots`) + migrasi `supabase/migrations/20261009000000_phase3_magistrate.sql` + `scripts/supabase-check.js` (8 tes). **Migrasi belum diterapkan pada proyek Supabase Anda** (DDL harus dijalankan di SQL Editor); pemeriksa melaporkan 5 item yang kurang.
 
 ### H2: IPFS ✔ (kode + tes), ✖ penyedia nyata
 - `lib/aspStore.js` (pin ke beberapa penyedia, fetch dengan fallback multi-gateway, verifikasi root on-chain), pembaca sisi server `frontend/src/lib/aspStore.ts`, dan `folio.ts` memakai CID dari `rootData(latestRoot)` sebagai sumber pertama.
@@ -43,7 +44,8 @@
 ### H4: Relayer sehat ✔
 - Saldo/kesehatan di `/api/status`, Courier otomatis dinonaktifkan (UI + API 503) di bawah `RELAYER_MIN_BALANCE_ETH`, alarm webhook maksimal sekali per 10 menit, toleransi fee 90% dan batas fee ≤ 50% nilai, relay diserialisasi (satu nonce), biaya gas aktual vs fee dicatat.
 - Data nyata: fee 25,3 µETH vs biaya gas ≈ 10,8 µETH; saldo relayer **naik** setelah relay.
-- **Belum:** pengukuran akurasi H4-TEST1 pada 20 relay (baru 2 sampel nyata); kuota dengan `estimateGas` sebenarnya tidak dibuat (konstanta 1,15 juta gas yang terukur dipertahankan).
+- **Dilengkapi kemudian:** quote kini empiris (persentil ke-90 gas relay nyata + headroom; konstanta terukur sebelum ada 3 sampel) dan saat relay `eth_estimateGas` transaksi sebenarnya harus tertutup fee (6 tes model gas); biaya gas vs fee dicatat di `relayer_jobs`.
+- **Belum:** pengukuran akurasi H4-TEST1 pada 20 relay nyata (perlu preview dengan relayer berdana).
 
 ### H5: Optimasi gas: **dihentikan oleh gerbang keputusan** (sesuai rencana)
 - Spike: Poseidon assembly (`poseidon-solidity`) **bit-identik tetapi tidak lebih murah**: T3 +4,5%, T4 +75% lebih mahal dibanding hasher circomlibjs saat ini. 20 hash T3 = 644k dari 930k gas deposit; klaim lama "deposit ≈ 220k" tidak terbukti.

@@ -1,115 +1,155 @@
-# MARGINALIA — Threat Model & Security Audit Packet
+# MARGINALIA: Threat Model & Security Audit Packet
 
-**Version:** 1.0.0-AUDIT-READY  
-**Status:** Audit Preparation & Formal Verification (Phase 3)  
-**Target Deployment:** Robinhood Chain (Arbitrum Orbit L2, Chain ID 46630 testnet / 4663 mainnet)  
-**Cryptographic Primitives:** Groth16 on BN254 (`alt_bn128`), Poseidon Hasher ($t=3, 4$), AES-256-GCM, X25519 ECDH  
+**Version:** 2.0 (rewritten 2026-10-09; supersedes 1.0.0 of 2026-09-26)
+**Status:** Pre-audit. Internal review complete; external audits and the public setup ceremony are **not** done (see `docs/phase4_audit_ceremony_report.md`).
+**Deployment:** Robinhood Chain (Arbitrum Orbit L2): testnet 46630 live, mainnet 4663 not deployed and technically blocked (`scripts/ceremony/mainnet-guard.js`).
+**Primitives:** Groth16 / BN254, Poseidon (t = 2, 3, 4), keccak256, AES-256-GCM + PBKDF2 (browser vault), X25519 + HKDF (disclosure letters).
+**Companion documents:** `docs/audit/README.md` (scope, hashes, findings), `docs/audit/circuit_notes.md` (circuits), `docs/audit/slither_triage.md`, `docs/ceremony_guide.md`, `docs/incident_response_runbook.md`.
 
----
-
-## 1. Executive Summary & Architecture
-
-MARGINALIA is a zero-knowledge shielded privacy pool implementing an Association Set Provider (ASP) model. It allows users to deposit ETH or ERC-20 tokens, establish an anonymity set (the **Folio**), have deposit provenance vetted by an off-chain compliance engine (the **Magistrate**), and withdraw privately to fresh addresses via zero-knowledge proofs.
-
-```
-+---------------+      Deposit ETH      +------------------------+
-|  User Alice   | --------------------> |     MarginaliaPool     |
-+---------------+                       |   - Poseidon Merkle    |
-                                        |   - Nullifier Registry |
-                                        +------------------------+
-                                                    |
-                                                    | Leaves & Labels
-                                                    v
-+---------------+   Signed Groth16 Proof+------------------------+
-| Relayer / Bob | <-------------------- |   Magistrate ASP Reg   |
-| (Clean Addr)  | --------------------> |   - 16-Root Ring Buffer|
-+---------------+   Withdraw ETH        +------------------------+
-```
+What changed from 1.0: wrong `ragequit` signature corrected; the vault and note-storage description corrected (browser vault, plaintext CLI notes, transient pending secret); the "formal invariant suite" claim replaced by what actually exists (seeded fuzzing with a shadow model, adversarial tests); new threats added for governance, the automated Magistrate, IPFS lists, the relayer, the web tier, the setup and the build.
 
 ---
 
-## 2. Core Cryptographic Invariants
+## 1. System and trust boundaries
 
-| Axiom | Invariant | Enforcement Mechanism |
+```
+ Browser (proving, vault, keys)                     Chain (source of truth)
+ ┌───────────────────────────────┐   tx           ┌───────────────────────────────┐
+ │ zk.ts: Poseidon, Merkle,      │ ─────────────► │ MarginaliaPool (immutable)    │
+ │ Groth16 prover (snarkjs)      │                │  Folio tree (20 levels)       │
+ │ vault: AES-GCM, EIP-712 key   │ ◄───────────── │  nullifierSpent, labels       │
+ └──────────────┬────────────────┘   reads        │ MagistrateRegister            │
+                │ /api/folio, /api/relay/*        │  16-root history, rootData    │
+ ┌──────────────▼────────────────┐                │ Groth16Verifier, RagequitVer. │
+ │ Web tier (Next.js / Railway)  │                └───────────────▲───────────────┘
+ │  Folio+ASP builder, Courier   │                                │ publishRoot(root, ipfs://cid)
+ └──────────────┬────────────────┘                ┌───────────────┴───────────────┐
+                │ lists (verified vs on-chain)    │ Magistrate service (worker)   │
+ ┌──────────────▼────────────────┐   pin/fetch    │  scan, screen, list, pin, pub │
+ │ IPFS (Pinata + Filebase)      │ ◄────────────► │ Safe 2-of-3 (owner/guardian)  │
+ └───────────────────────────────┘                └───────────────────────────────┘
+```
+
+**Who is trusted for what**
+
+| Actor | Trusted to | NOT able to |
 |---|---|---|
-| **Axiom I: Soundness** | A Wax Seal (nullifier $N = \text{Poseidon}(sk, \rho)$) can transition from `false` to `true` exactly once. No double-spends. | `mapping(uint256 => bool) public nullifierSpent` in smart contract + circuit check `nul.out === nullifierHash`. |
-| **Axiom II: Zero Knowledge** | Public signals disclose nothing about the private witness ($sk, \rho, \text{leafIndex}$). | Groth16 zero-knowledge property over BN254; fresh $\rho'$ generated per change note. |
-| **Axiom III: Lawful Shade** | Private withdrawals can only occur if the deposit label exists within the Magistrate's ASP root. | `MerkleInclusion(aspDepth)` circuit constraint checked on-chain against `MagistrateRegister.isValidRoot(aspRoot)`. |
-| **Solvency** | Contract Balance $\ge \sum \text{Unspent Liabilities}$. | Native conservation of value: `remaining <== value - withdrawnValue`, bounded by `Num2Bits(128)`. |
+| **Pool contract** | hold funds, enforce nullifiers and roots; immutable, no admin that touches funds | be upgraded or paused for exits |
+| **Magistrate** | decide *which deposits may withdraw privately* (screening) | move funds; stop `ragequit`; learn who owns which note |
+| **Guardian (Safe)** | pause *new deposits*, set a deposit cap, hand over the role | pause withdrawals or ragequit (impossible in code) |
+| **Register owner (Safe)** | replace the Magistrate, authorise pools | publish roots, touch funds |
+| **Relayer** | submit transactions and pay gas, repaid by a proof-bound fee | redirect funds, change the fee, learn secrets |
+| **Web server / index (Supabase)** | convenience (leaf list, label list, relay) | forge state: every root it serves is re-checked against the contracts in the browser |
+| **IPFS / gateways** | storage and transport | alter a list: integrity comes from the on-chain root |
+| **RPC provider** | answer chain reads | (a lying RPC can mislead the UI; see T16) |
+| **Setup ceremony** | produce keys with no one knowing the trapdoor | (a compromised setup breaks soundness, see T10) |
+
+Assumptions that, if false, break guarantees: Groth16 and BN254 hold; Poseidon is collision- and preimage-resistant; at least one ceremony contributor was honest (**not yet true for the committed dev keys**); the browser and wallet that hold `sk`/`rho` are not compromised.
 
 ---
 
-## 3. Threat Matrix & Vulnerability Analysis
+## 2. Invariants and the tests that defend them
 
-### Threat 1: Nullifier Double-Spending
-* **Attack Scenario:** An adversary attempts to withdraw a single note multiple times.
-* **Mitigation:**
-  1. The circuit enforces $N = \text{Poseidon}(sk, \rho) == \text{nullifierHash}$.
-  2. The contract strictly asserts `if (nullifierSpent[nullifierHash]) revert NullifierAlreadySpent()`.
-  3. The nullifier is recorded as spent *before* external token/ETH transfers occur, preventing reentrancy-assisted double-spends.
+| ID | Invariant | Enforcement | Tests |
+|---|---|---|---|
+| I1 | **Solvency/conservation:** contract balance = Σ deposits − Σ withdrawn − Σ ragequit | `value = withdrawn + remaining`, both < 2^128; commitment built by the pool from `msg.value`; transfers after effects | `invariant_fuzz` (shadow model, 3 seeds), `invariants.test.js` |
+| I2 | **Single use:** a nullifier goes false → true once | `nullifierSpent` set before any ETH is sent; `nonReentrant` | `security_onchain`, `invariant_fuzz` (replay after every withdraw) |
+| I3 | **One door:** a note leaves by withdraw XOR ragequit | both burn the same `N = Poseidon(sk, rho)` | `security_onchain`, `invariant_fuzz` |
+| I4 | **Transaction binding:** a proof cannot be reused for another recipient/relayer/fee/chain/pool | `context = keccak256(chainid, pool, recipient, relayer, fee) mod p` is a public signal | `security_onchain` (`InvalidContext`) |
+| I5 | **Lawful withdrawal:** private withdrawal needs the deposit's label in a root the register accepts | `MerkleInclusion` over the ASP tree + `register.isValidRoot` | `magistrate_service`, `security_onchain` |
+| I6 | **Exit is unconditional:** pause and Magistrate decisions never block `ragequit` | no pause or approval check in `ragequit` | `security_onchain` (paused ragequit), `scripts/test-governance.js` (real Safe) |
+| I7 | **Folio integrity:** off-chain tree = on-chain tree; `nextIndex` = deposits + withdrawals | identical hashing order | `merkle_bulk`, `browser_sdk_parity`, fuzz |
+| I8 | **Circuit soundness at the witness level:** every input except `context` is constrained | see `circuit_notes.md` | `circuit_audit` (31 tests, every input and path element mutated) |
+| I9 | **Only the Magistrate publishes roots; only owner/guardian govern** | access-control custom errors | `security_onchain`, governance script (8 admin calls revert for the old deployer) |
 
-### Threat 2: Front-Running & Calldata Malleability
-* **Attack Scenario:** An MEV bot observes a valid proof in the public mempool, copies the proof $(pA, pB, pC)$, changes `recipient` to its own address, and steals the funds.
-* **Mitigation:**
-  1. The transaction context is cryptographically bound into the Groth16 proof:
-     $$\text{context} = \text{keccak256}(\text{chainId}, \text{poolAddress}, \text{recipient}, \text{relayer}, \text{fee}) \pmod p$$
-  2. The circuit constrains `context` quadratically (`contextSquare <== context * context`).
-  3. Modifying `recipient`, `relayer`, or `fee` produces an mismatched public signal and causes `Groth16Verifier.verifyProof()` to revert.
-
-### Threat 3: Finite Field Overflow / Modulo Wrap-Around
-* **Attack Scenario:** In BN254 arithmetic, $a - b$ wraps around modulo $p$ if $b > a$. An adversary attempts an overdraft ($withdrawnValue > noteValue$), expecting negative numbers to wrap into valid field elements.
-* **Mitigation:**
-  1. In `withdraw.circom`, both `withdrawnValue` and `remaining = value - withdrawnValue` are strictly constrained by `Num2Bits(128)`.
-  2. If an overdraft occurs, `remaining` becomes $\approx p - \delta$, which requires $> 250$ bits and causes witness generation to fail immediately.
-
-### Threat 4: Stale ASP Root Race Conditions (Mitigated in Phase 2)
-* **Attack Scenario:** A user takes 3.6 seconds to synthesize a Groth16 proof against ASP Root $R_1$. Concurrently, the Magistrate publishes Root $R_2$. The user's transaction fails with `StaleAspRoot`.
-* **Mitigation:**
-  1. `MagistrateRegister.sol` maintains a 16-root ring buffer.
-  2. `MarginaliaPool.sol` verifies `register.isValidRoot(aspRoot)`, which checks the latest root plus the previous 15 roots.
-
-### Threat 5: Hostage Deposits via ASP Censorship (Mitigated in Phase 1)
-* **Attack Scenario:** The Magistrate refuses to approve a deposit from a legitimate user, permanently locking their funds.
-* **Mitigation:**
-  1. `MarginaliaPool.sol` implements `ragequit(label, nullifierHash, recipient)`.
-  2. Only the original `labelDepositor[label]` can invoke ragequit.
-  3. Reclaims deposited funds directly and burns the nullifier on-chain so the note cannot be double-spent.
-
-### Threat 6: Plaintext Note Theft from Client Disk (Mitigated in Phase 1)
-* **Attack Scenario:** Malicious software on a user's machine reads `notes/` and drains the pool.
-* **Mitigation:**
-  1. `lib/vault.js` enforces AES-256-GCM authenticated encryption.
-  2. Keys are derived deterministically on-demand via EIP-712 wallet signatures (`personal_sign`).
-
-### Threat 7: ERC-20 Fee-on-Transfer / Rebasing Griefing (Mitigated in Phase 2)
-* **Attack Scenario:** In `MarginaliaTokenPool.sol`, depositing a deflationary token causes the contract to receive less balance than the specified `amount`, leading to pool insolvency.
-* **Mitigation:**
-  1. `MarginaliaTokenPool.sol` performs a pre- and post-transfer balance check:
-     $$\text{actualAmount} = \text{balanceAfter} - \text{balanceBefore}$$
-  2. Commitments are strictly minted based on `actualAmount`.
+Honest limit: I1–I3 are checked by randomised testing (≈ 84 proof-bearing steps per run), **not** by formal verification or million-step fuzzing. Echidna/Foundry in CI is listed as open work.
 
 ---
 
-## 4. Circuit Public Signal Specification
+## 3. Threat matrix
 
-The Groth16 verifier and contracts depend strictly on this ordering:
+Status: ✅ mitigated and tested · ⚠️ partly mitigated / residual risk · ❌ open.
 
-| Index | Signal Name | Verification Rule |
-|:---:|:---:|---|
-| `[0]` | `withdrawnValue` | $0 < \text{withdrawnValue} \le 2^{128}-1$; $\ge \text{fee}$. |
-| `[1]` | `stateRoot` | Must exist in `MarginaliaPool.roots[]` (last 64 Folio roots). |
-| `[2]` | `aspRoot` | Must satisfy `MagistrateRegister.isValidRoot()` (last 16 ASP roots). |
-| `[3]` | `context` | Must strictly equal `computeContext(Withdrawal)`. |
-| `[4]` | `nullifierHash` | Must be `false` in `nullifierSpent[]` mapping. |
-| `[5]` | `newCommitment` | Re-inserted into Folio as the change note. |
+### Protocol and cryptography
+| # | Threat | Mitigation | Status |
+|---|---|---|---|
+| T1 | **Double spend** of a note | nullifier circuit-bound; `nullifierSpent` set before transfers; reentrancy guard | ✅ |
+| T2 | **Front-running / calldata malleability:** copy a proof from the mempool and redirect funds | `context` (public) binds recipient, relayer, fee, chainId, pool; `ragequit` accepted only from `labelDepositor[label]` | ✅ |
+| T3 | **Field wrap-around overdraft** | `Num2Bits(128)` on `withdrawnValue` and `remaining`; public signals checked `< p` in the contract | ✅ |
+| T4 | **Stale ASP root race** (proof built before a new root) | register keeps 16 roots; the Magistrate service publishes at most every 15 min (≥ 4 h window, tested); the server prefers the list for the latest root and flags older ones `aspStale`; the UI says "list updating" instead of "not approved" | ✅ (needs the rate limit in production) |
+| T5 | **Hostage deposit:** Magistrate refuses to approve | `ragequit(label, recipient, proof)` by the original depositor, public refund, burns the nullifier. **A change note cannot ragequit** (new `rho`); its owner must withdraw | ⚠️ change-note holders depend on approval of the original label |
+| T6 | **Precommitment/label griefing:** dust deposit under a victim's precommitment to burn their nullifier | `precommitmentUsed` allows one deposit per precommitment; labels are assigned by the pool | ✅ |
+| T7 | **Reentrancy / ETH send to a hostile contract** | `nonReentrant`, effects before `_send`, failure reverts (`TransferFailed`); a reverting recipient only reverts its own transaction | ✅ |
+| T8 | **Tree exhaustion** (2^20 leaves) | `TreeFull` revert; capacity ≈ 1.05 M notes; not an attack vector at current scale | ⚠️ capacity planning for mainnet |
+
+### Trusted setup and build
+| # | Threat | Mitigation | Status |
+|---|---|---|---|
+| T9 | **Dev trusted setup:** the committed keys come from a local, single-party Powers of Tau; whoever held the trapdoor can forge proofs and drain the pool | testnet only; mainnet deploy refused by `mainnet-guard` until valid ceremony transcripts exist (≥ 15 contributors, beacon, pinned public Phase 1, verifier = ceremony export); ceremony toolkit and rehearsal complete | ❌ **blocking for mainnet** until the real ceremony |
+| T10 | **Non-reproducible or inconsistent build:** committed `withdraw.wasm` is a `--O1` build, `ragequit.wasm` is `--O2`; compiler flags were never pinned | `--O2` pinned in `build-circuit.sh` and `compile.js`; reproducibility and provenance tests; manifest of hashes | ⚠️ artifacts must be rebuilt with native circom and re-ceremonied |
+
+### Governance and operations
+| # | Threat | Mitigation | Status |
+|---|---|---|---|
+| T11 | **Single governance key:** one EOA is register owner, Magistrate and guardian on the **live** deployment | Safe 2-of-3 v1.4.1 (exists on chain 46630); `scripts/governance/*` with dry-run and preconditions; proven on a staging deployment with a real Safe; publisher key separate and rotatable | ⚠️ **live roles not yet moved** (needs signers) |
+| T12 | **Compromised or malicious Magistrate publisher key** | cannot move funds; can censor (deny) or approve bad actors; Safe replaces it in one transaction; append-only decision log; lists are public and verifiable; ragequit always available | ⚠️ compliance harm possible until rotated |
+| T13 | **Screening failure modes** (API down, list unavailable, empty list read as "clean") | policies fail closed: any screening outage stops publication; an empty/garbage OFAC list is rejected; last good list reused only for 24 h | ✅ |
+| T14 | **Tampered or unavailable approved-label list** | document verified against the on-chain root (labels → root); two pinning providers; multi-gateway fetch; GitHub fallback | ✅ (real IPFS providers untested) |
+| T15 | **Relayer hot wallet:** drained, out of gas, or abused | holds only gas money; fee cannot exceed 50% of the withdrawn value; fee ≥ 90% of current cost; relays serialised (one nonce); Courier disabled and 503 below a balance threshold; rate-limited alerts | ⚠️ cost-based quote is empirical, not yet from `estimateGas` of the real call |
+
+### Web tier and client
+| # | Threat | Mitigation | Status |
+|---|---|---|---|
+| T16 | **Lying server, index or RPC** | browser rebuilds the Folio and ASP trees and requires `isKnownRoot` and `isValidRoot` from the contracts; leaves are indexed only from on-chain receipts (never request bodies); a server on another pool is rejected | ✅ (a fully malicious RPC could still mislead reads; wallet RPC is used when present) |
+| T17 | **Note and secret theft from the client** | browser vault: AES-256-GCM, key from an EIP-712 signature; proofs generated locally, secrets never sent. **Residual:** CLI notes in `notes/` are plaintext (dev tooling); a deposit secret sits in `localStorage` between "tx sent" and "note shown" (crash recovery) | ⚠️ |
+| T18 | **Front-end supply chain / integrity:** malicious script or proving asset served to users | dependency audit in CI; assets same-origin; **no Content-Security-Policy and no Subresource Integrity** yet; users cannot verify the served `zkey`/wasm against a published hash | ❌ add CSP, publish hashes of `public/zk/*` |
+| T19 | **Denial of service** on API routes | per-IP rate limits, body limits, JSON error handling; heavy Folio scans bounded by a time budget | ⚠️ in-memory limiter, single instance |
+
+### Privacy (what is NOT hidden)
+| # | Leak | Note |
+|---|---|---|
+| P1 | Deposit amount and depositor address are public (`Deposited` event) | by design |
+| P2 | Withdrawal recipient, amount and fee are public; only the link to the deposit is hidden | by design |
+| P3 | Timing and amount correlation, unique amounts, small anonymity set (tens of deposits on testnet) | user guidance and UX hints needed |
+| P4 | Gas payer: wallet-submitted withdrawals link the signer to the recipient; the Courier address appears in every relayed withdrawal | recommend Courier mode |
+| P5 | The Magistrate learns depositor addresses (it screens them) but cannot link them to withdrawals | by design |
 
 ---
 
-## 5. Audit Readiness Verification Checklist
+## 4. Known limitations carried from `devbrief.md` (L1–L13), current status
 
-- [x] All state-changing methods employ `nonReentrant` mutex.
-- [x] EVM target configured to `cancun` with 200 optimizer runs.
-- [x] Public signals checked strictly $< \text{SNARK\_SCALAR\_FIELD}$.
-- [x] No unconstrained signals in `withdraw.circom` or `merkle.circom`.
-- [x] Zero-knowledge properties verified with randomized $\rho'$ on change notes.
-- [x] Formal invariant test suite passing 100%.
+| L | Topic | Status |
+|---|---|---|
+| L1 | dev trusted setup | open (T9) |
+| L2 | not audited | open (external audits pending) |
+| L3 | exit for rejected deposits | closed (ragequit) |
+| L4 | single Magistrate key | partly closed (Safe + rotation built, not applied on live) |
+| L5 | ASP root race | closed (16-root history, rate limit, latest-root preference) |
+| L6 | notes in plaintext | partly closed (browser vault; CLI notes remain plaintext) |
+| L7 | metadata leaks | partly (Courier, UX); inherent limits in §3 P1–P5 |
+| L8 | gas cost | measured, no further saving found (assembly Poseidon was not cheaper) |
+| L9 | ETH only | ERC-20 pool exists but is out of audit scope |
+| L10 | no viewing keys | implemented (X25519 letter of disclosure) |
+| L11 | event scanning limits | mitigated (Supabase index + receipt-based recording; RPC with large `getLogs` recommended) |
+| L12 | upgrade/pause | decided: immutable pool, guardian can pause deposits only |
+| L13 | legal | open (review needed before mainnet) |
+
+---
+
+## 5. Audit scope summary
+In scope: `circuits/withdraw.circom`, `circuits/ragequit.circom`, `circuits/lib/merkle.circom`, `contracts/MarginaliaPool.sol`, `contracts/MagistrateRegister.sol`, plus equality of the generated verifiers with the final zkey. Informational: the browser SDK (`frontend/src/lib/zk.ts`), `lib/marginalia.js`, the Magistrate service and governance scripts. Out of scope: `MarginaliaTokenPool.sol` (unless it will be deployed), mocks. Hashes and toolchain pins: `docs/audit/manifest.json`.
+
+## 6. Internal verification status (honest checklist)
+- [x] Reentrancy guard on all state-changing user functions; effects before interactions.
+- [x] EVM `cancun`, optimizer 200 runs, solc 0.8.24 pinned; plain `solc` reproduces the Hardhat bytecode.
+- [x] Public signals are checked `< p` by the contract.
+- [x] Every circuit input except `context` is constrained (mutation-tested); `context` is bound on-chain.
+- [x] Slither on current code: 0 High, 0 Medium.
+- [x] Adversarial test suite (21 on-chain security tests, 31 circuit tests, ceremony forgery tests).
+- [ ] Million-step fuzzing / formal verification (Echidna, Foundry, Halmos).
+- [ ] External contract audit, external ZK audit.
+- [ ] Public Phase-2 ceremony and verifier regeneration.
+- [ ] Native-circom `--O2` rebuild of both circuits and real-proof rehearsal for `withdraw`.
+- [ ] Governance roles moved to the Safe on the live deployment.
+- [ ] CSP / SRI and published hashes of served proving assets.
+- [ ] Legal review.
