@@ -5,7 +5,7 @@ const fs = require("fs");
 const M = require("../lib/marginalia");
 
 const CHROME_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
-const ARTIFACTS_DIR = "C:\\Users\\bimo\\.gemini\\antigravity-ide\\brain\\b83349cd-2b43-46d7-bab7-879e21ffaf38\\nextjs_test_screenshots";
+const ARTIFACTS_DIR = process.env.SHOTS_DIR || require('os').tmpdir() + '/marginalia-shots';
 
 if (!fs.existsSync(ARTIFACTS_DIR)) {
   fs.mkdirSync(ARTIFACTS_DIR, { recursive: true });
