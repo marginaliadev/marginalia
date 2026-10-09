@@ -40,6 +40,8 @@ export interface FolioData {
   leaves: string[];
   aspRoot: string;
   aspLabels: string[];
+  /** true when the label list matches an older root than the register's latest (newest approvals may be missing) */
+  aspStale: boolean;
 }
 
 function supabaseClient(write = false) {
@@ -149,19 +151,27 @@ async function aspCandidates(): Promise<Array<{ source: string; load: () => Prom
   ];
 }
 
-/** First candidate whose Merkle root the Magistrate's register accepts. Never serves an unverified set. */
-async function loadVerifiedAsp(register: ethers.Contract): Promise<{ labels: bigint[]; root: bigint }> {
+/**
+ * Prefer the list whose root is the register's LATEST root. A list matching only an older (still valid) root is
+ * served as a fallback with stale=true: it may be missing the newest approvals (e.g. a CDN still caching the
+ * previous file), and the client must not tell users they are "unapproved" because of it.
+ */
+async function loadVerifiedAsp(register: ethers.Contract): Promise<{ labels: bigint[]; root: bigint; stale: boolean }> {
   const problems: string[] = [];
+  const latest = BigInt(await register.latestRoot());
+  let fallback: { labels: bigint[]; root: bigint } | null = null;
   for (const c of await aspCandidates()) {
     try {
       const labels = await c.load();
       const root = new MerkleTree(ASP_DEPTH, labels).root();
-      if (await register.isValidRoot(root)) return { labels, root };
-      problems.push(`${c.source}: root not published by the Magistrate`);
+      if (root === latest) return { labels, root, stale: false };
+      if (!fallback && (await register.isValidRoot(root))) fallback = { labels, root };
+      else problems.push(`${c.source}: root not published by the Magistrate`);
     } catch (e: any) {
       problems.push(`${c.source}: ${e.message}`);
     }
   }
+  if (fallback) return { ...fallback, stale: true };
   throw new Error(`No approved-label list matches the Magistrate's on-chain root (${problems.join("; ")})`);
 }
 
@@ -202,7 +212,7 @@ export async function getFolio(force = false): Promise<FolioData> {
   }
 
   // 3. ASP set (verified against the register)
-  const { labels: aspLabels, root: aspRoot } = await loadVerifiedAsp(register);
+  const { labels: aspLabels, root: aspRoot, stale: aspStale } = await loadVerifiedAsp(register);
 
   const data: FolioData = {
     pool: poolAddress(),
@@ -212,7 +222,8 @@ export async function getFolio(force = false): Promise<FolioData> {
     leaves: leaves.map((l) => l.toString()),
     aspRoot: aspRoot.toString(),
     aspLabels: aspLabels.map((l) => l.toString()),
+    aspStale,
   };
-  g.__folioCache = { at: Date.now(), data };
+  g.__folioCache = aspStale ? null : { at: Date.now(), data }; // never pin a stale list in the cache
   return data;
 }

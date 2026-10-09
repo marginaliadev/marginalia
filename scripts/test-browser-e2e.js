@@ -14,6 +14,7 @@
 //     balances to the deployer, so a hard crash is repaired by simply running the script again;
 //   - the run fails (Z1/Z2) if any ledger note is still open or if more than gas was spent.
 //   Crash drills: CRASH_AFTER_DEPOSIT=1, CRASH_AFTER_PARTIAL_WITHDRAW=1, and phase R (page killed mid-deposit).
+// ASP_PUBLISH_CMD: shell command run after approval for servers that read the label list from ASP_LABELS_URL (e.g. git add/commit/push asp).
 // Phases: 1 = vault + deposits, 2 = Magistrate approval (CLI), 3 = withdraw / courier / ragequit, R = app-level crash recovery drill, L = live-safe deposit + ragequit (no server pool needed), none = sweep only. Default: all.
 // Costs ~0.002 testnet ETH per run. Use `localhost`, not 127.0.0.1, with `next dev`.
 const os = require("os");
@@ -319,6 +320,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       });
       console.log(out.split("\n").filter((l) => /Approved|Published|SKIP|DENY/.test(l)).join("\n"));
       rec("B4 Magistrate approved new deposits", /Published ASP root/.test(out), (out.match(/Approved .*/) || [""])[0]);
+      // Deployments that read the label list from a published URL (no ../asp folder) need it published before withdrawing.
+      if (process.env.ASP_PUBLISH_CMD) {
+        console.log("-- publishing the approved-label list --");
+        try { execFileSync(process.env.ASP_PUBLISH_CMD, { shell: true, cwd: R, stdio: "inherit", timeout: 120000 }); } catch (e) { console.log("publish command failed:", e.message); }
+        let ok = false;
+        for (let i = 0; i < 120 && !ok; i++) { // up to ~10 minutes (raw.githubusercontent.com caches for ~5 min)
+          try { const r = await fetch(BASE + "/api/folio"); ok = r.ok && (await r.json()).aspStale === false; } catch (_) {}
+          if (!ok) await sleep(5000);
+        }
+        rec("B4b Approved labels visible to the server", ok, ok ? "/api/folio serves the latest ASP root" : "timed out waiting for the latest ASP list");
+      }
     }
 
     if (phase === "3" || phase === "all") {

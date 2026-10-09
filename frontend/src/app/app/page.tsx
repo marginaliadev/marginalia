@@ -390,6 +390,9 @@ Your note has been rebuilt below. SAVE IT NOW.`,
       if (!(await pool.isKnownRoot(stateTree.root()))) return fail("Folio Mismatch", "The Folio tree does not match any on-chain root. Try again in a moment.");
       if (!(await register.isValidRoot(aspTree.root()))) return fail("ASP Mismatch", "The approved-label set does not match the Magistrate's published root.");
       if (stateTree.indexOf(note.commitment) < 0) return fail("Commitment Not Found", "Note is not inscribed in the Folio tree yet.");
+      if (aspTree.indexOf(note.label) < 0 && folio.aspStale) {
+        return fail("Approved List Updating", "The Magistrate's newest approvals are still being published to this server. Please try again in a few minutes. Nothing was sent.");
+      }
       if (aspTree.indexOf(note.label) < 0) {
         return fail("Awaiting Magistrate Approval", "This deposit has not been approved by the Magistrate yet. You can wait for approval, or recover your funds via Ragequit.");
       }
