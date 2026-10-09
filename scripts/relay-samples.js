@@ -4,6 +4,7 @@
 // run:    deposits N small notes from the deployer, has the Magistrate approve them (CLI), publishes the label list
 //         (ASP_PUBLISH_CMD, e.g. git push to dev), waits until the app serves the new list, then withdraws each note
 //         through the Courier (POST /api/relay/withdraw) back to the deployer and compares quote vs. actual gas.
+// resume: relays the notes already deposited and approved (after an interrupted run).
 // sweep:  ragequits every note still open in the ledger (crash repair; also run automatically at the end).
 // report: prints the statistics of notes/relay-samples-ledger.json.
 // FUND SAFETY: every note is written to notes/relay-samples-ledger.json (gitignored) the moment it is deposited.
@@ -85,35 +86,42 @@ function report(l) {
 
 async function run() {
   const l = loadLedger();
-  await sweep(l); // always start from a clean slate
+  const resume = process.argv[2] === "resume"; // relay the notes already deposited and approved (after an interrupted run)
   const bal = await provider.getBalance(deployer.address);
-  const need = VALUE * BigInt(N) + ethers.parseEther("0.0004");
-  if (bal < need) throw new Error(`deployer has ${ethers.formatEther(bal)} ETH, needs about ${ethers.formatEther(need)} for N=${N}; lower N or VALUE_ETH`);
+  let fresh;
+  if (resume) {
+    fresh = l.notes.filter((n) => n.status === "open");
+    console.log(`-- resuming with ${fresh.length} open note(s) --`);
+  } else {
+    await sweep(l); // always start from a clean slate
+    const need = VALUE * BigInt(N) + ethers.parseEther("0.0004");
+    if (bal < need) throw new Error(`deployer has ${ethers.formatEther(bal)} ETH, needs about ${ethers.formatEther(need)} for N=${N}; lower N or VALUE_ETH`);
 
-  console.log(`-- depositing ${N} x ${ethers.formatEther(VALUE)} ETH --`);
-  const fresh = [];
-  for (let i = 0; i < N; i++) {
-    const secret = await M.newSecret();
-    const tx = await pool.deposit(secret.precommitment, { value: VALUE });
-    const rc = await tx.wait();
-    const note = M.noteFromDepositReceipt(pool, rc, secret);
-    const entry = { note: M.serializeNote(note), status: "open", depositTx: tx.hash };
-    l.notes.push(entry);
-    saveLedger(l); // written the instant the deposit exists
-    fresh.push(entry);
-  }
+    console.log(`-- depositing ${N} x ${ethers.formatEther(VALUE)} ETH --`);
+    fresh = [];
+    for (let i = 0; i < N; i++) {
+      const secret = await M.newSecret();
+      const tx = await pool.deposit(secret.precommitment, { value: VALUE });
+      const rc = await tx.wait();
+      const note = M.noteFromDepositReceipt(pool, rc, secret);
+      const entry = { note: M.serializeNote(note), status: "open", depositTx: tx.hash };
+      l.notes.push(entry);
+      saveLedger(l); // written the instant the deposit exists
+      fresh.push(entry);
+    }
 
-  console.log("-- Magistrate approval (CLI) --");
-  const out = execFileSync("node", [R + "node_modules/hardhat/internal/cli/cli.js", "run", "scripts/magistrate-approve.js", "--network", "robinhoodTestnet"], { encoding: "utf8", env: process.env, timeout: 900000 });
-  const approvedLine = (out.match(/Approved .*/) || [""])[0];
-  console.log(approvedLine);
-  const m = approvedLine.match(/Approved (\d+)\/(\d+)/);
-  if (!/Published ASP root/.test(out) || !m || Number(m[1]) < fresh.length) {
-    throw new Error("approval did not cover the new deposits (" + approvedLine + "): refusing to continue. Run 'sweep' to recover the notes.");
-  }
-  if (process.env.ASP_PUBLISH_CMD) {
-    console.log("-- publishing the label list --");
-    try { execFileSync(process.env.ASP_PUBLISH_CMD, { shell: true, cwd: R, stdio: "inherit", timeout: 120000 }); } catch (e) { console.log("publish command failed:", e.message); }
+    console.log("-- Magistrate approval (CLI) --");
+    const out = execFileSync("node", [R + "node_modules/hardhat/internal/cli/cli.js", "run", "scripts/magistrate-approve.js", "--network", "robinhoodTestnet"], { encoding: "utf8", env: process.env, timeout: 900000 });
+    const approvedLine = (out.match(/Approved .*/) || [""])[0];
+    console.log(approvedLine);
+    const m = approvedLine.match(/Approved (\d+)\/(\d+)/);
+    if (!/Published ASP root/.test(out) || !m || Number(m[1]) < fresh.length) {
+      throw new Error("approval did not cover the new deposits (" + approvedLine + "): refusing to continue. Run 'sweep' to recover the notes.");
+    }
+    if (process.env.ASP_PUBLISH_CMD) {
+      console.log("-- publishing the label list --");
+      try { execFileSync(process.env.ASP_PUBLISH_CMD, { shell: true, cwd: R, stdio: "inherit", timeout: 120000 }); } catch (e) { console.log("publish command failed:", e.message); }
+    }
   }
 
   const H = await M.hasher();
@@ -179,5 +187,5 @@ async function run() {
   const l = loadLedger();
   if (mode === "report") return report(l);
   if (mode === "sweep") { await sweep(l); return; }
-  await run();
+  await run(); // "run" or "resume"
 })().catch((e) => { console.error("ERROR:", e.message); process.exit(1); });

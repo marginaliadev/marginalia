@@ -45,7 +45,8 @@
 - Saldo/kesehatan di `/api/status`, Courier otomatis dinonaktifkan (UI + API 503) di bawah `RELAYER_MIN_BALANCE_ETH`, alarm webhook maksimal sekali per 10 menit, toleransi fee 90% dan batas fee ≤ 50% nilai, relay diserialisasi (satu nonce), biaya gas aktual vs fee dicatat.
 - Data nyata: fee 25,3 µETH vs biaya gas ≈ 10,8 µETH; saldo relayer **naik** setelah relay.
 - **Dilengkapi kemudian:** quote kini empiris (persentil ke-90 gas relay nyata + headroom; konstanta terukur sebelum ada 3 sampel) dan saat relay `eth_estimateGas` transaksi sebenarnya harus tertutup fee (6 tes model gas); biaya gas vs fee dicatat di `relayer_jobs`.
-- **Belum:** pengukuran akurasi H4-TEST1 pada 20 relay nyata (perlu preview dengan relayer berdana).
+- **H4-TEST1 diukur (2026-10-10, preview `marginalia-dev`, `scripts/relay-samples.js`):** 18 relay nyata tanpa gagal + 2 dari E2E = 20 sampel. Gas terpakai min 1.038.093 / p50 1.048.245 / p90 1.053.303 / maks 1.058.361. Quote berpindah dari konstanta 1.150.000 ke nilai empiris 1.111.292 (1,055x p90 aktual). Fee menutup biaya pada 18/18 relay (selisih bersih 1,6e12 s.d. 2,2e12 wei). Catatan: pada harga gas 0,01 gwei biaya per relay hanya ~1e13 wei, jadi akurasi pada lonjakan harga gas tetap perlu dipantau (lihat risiko 5).
+- **Trigger append-only `asp_decisions` diuji live (2026-10-10):** worker Magistrate sungguhan (deployment staging, `MAGISTRATE_STORE=supabase`) menulis 4 baris; `UPDATE` dan `DELETE` oleh service role ditolak trigger ("asp_decisions is append-only"), baris tidak berubah.
 
 ### H5: Optimasi gas: **dihentikan oleh gerbang keputusan** (sesuai rencana)
 - Spike: Poseidon assembly (`poseidon-solidity`) **bit-identik tetapi tidak lebih murah**: T3 +4,5%, T4 +75% lebih mahal dibanding hasher circomlibjs saat ini. 20 hash T3 = 644k dari 930k gas deposit; klaim lama "deposit ≈ 220k" tidak terbukti.
