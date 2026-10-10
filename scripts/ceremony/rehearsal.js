@@ -83,7 +83,8 @@ const lap = () => ((Date.now() - t0) / 1000).toFixed(0) + "s";
     const stateTree = new M.MerkleTree(M.DEPTH, H, [M.randomField(), commitment, M.randomField()]);
     const aspTree = new M.MerkleTree(M.ASP_DEPTH, H, [label, 5n, 6n]);
     const note = { sk, rho, value, label, commitment };
-    const wasm = path.join(__dirname, "..", "..", "build", "withdraw_js", "withdraw.wasm");
+    // WITHDRAW_WASM: an --O2 witness generator built with native circom (circom2 cannot emit one); default is the committed build
+    const wasm = process.env.WITHDRAW_WASM || path.join(__dirname, "..", "..", "build", "withdraw_js", "withdraw.wasm");
     let proved;
     try {
       proved = await M.proveWithdraw({ note, stateTree, aspTree, withdrawnValue: value / 2n, context: 42n, wasm, zkey: finalZkey });

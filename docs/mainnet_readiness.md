@@ -8,7 +8,7 @@ without ceremony transcripts (`scripts/ceremony/mainnet-guard.js`).
 |---|---|---|---|
 | B1 | Public Phase-2 ceremony, >= 15 independent contributors + public beacon (drand), transcript verified | not started (toolkit + rehearsal done) | project owner recruits; `docs/ceremony_guide.md` |
 | B2 | Phase-1 file pinned in `docs/ceremony/phase1.json` (blake2b), checked against independent sources | `null` | owner, from the Hermez/PSE publication |
-| B3 | Circuits rebuilt with the pinned `--O2` flag using native `circom` (the served `withdraw.wasm` is `--O1`) | blocked: needs permission to install native circom | owner approves; then rebuild + regenerate `zk-hashes` |
+| B3 | Circuits rebuilt with the pinned `--O2` flag using native `circom` | **partly done (2026-10-10):** native circom v2.2.3 (checksum verified against the release digest) builds withdraw = 11,432 and ragequit = 693 constraints; the ceremony rehearsal now proves a **real withdraw proof under the ceremony key (6/6 PASS, no SKIP)**; CI job `circuits-o2` repeats it. **Not done:** the artifacts served by the site are still the `--O1`/dev-setup files; replacing them needs a new zkey, a new verifier and a pool redeploy, which belongs to B5 (after the real ceremony) |
 | B4 | External audit of contracts and of circuits, findings fixed, re-verified | not started | owner selects auditors; send `docs/audit/` + `manifest.json` |
 | B5 | Redeploy verifiers + pool from the ceremony output; full E2E on the final zkey | after B1-B4 | engineering |
 | B6 | Freeze: tag, final `manifest.json`, `audit:check` in CI | after B4 | engineering |

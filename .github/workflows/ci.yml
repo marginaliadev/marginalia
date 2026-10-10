@@ -72,6 +72,34 @@ jobs:
       # After the audit freeze, uncomment to fail the build when anything in scope changes:
       # - run: node scripts/audit/manifest.js check
 
+  circuits-o2:
+    name: Native circom --O2 build and real-proof ceremony rehearsal
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: "npm"
+      - run: npm ci || npm install
+      - name: Install the pinned native circom (v2.2.3, checksum verified)
+        run: |
+          curl -sL -o circom https://github.com/iden3/circom/releases/download/v2.2.3/circom-linux-amd64
+          echo "85342c7ff332d948df7c0c50ecf201e6129349aef550ce873f3c811b79fe53a3  circom" | sha256sum -c -
+          chmod +x circom && sudo mv circom /usr/local/bin/circom
+          circom --version
+      - name: Build both circuits with --O2 and check the constraint counts
+        run: |
+          mkdir -p .o2
+          circom circuits/withdraw.circom --r1cs --wasm --O2 -l node_modules -o .o2
+          circom circuits/ragequit.circom --r1cs --wasm --O2 -l node_modules -o .o2
+          npx snarkjs r1cs info .o2/withdraw.r1cs | grep -q "# of Constraints: 11432"
+          npx snarkjs r1cs info .o2/ragequit.r1cs | grep -q "# of Constraints: 693"
+      - name: Ceremony rehearsal on withdraw with a real proof (no SKIP)
+        env:
+          WITHDRAW_WASM: .o2/withdraw_js/withdraw.wasm
+        run: node scripts/ceremony/rehearsal.js withdraw 3 | tee rehearsal.log && ! grep -q SKIP rehearsal.log
+
   frontend:
     name: Frontend type-check, build and audit
     runs-on: ubuntu-latest
