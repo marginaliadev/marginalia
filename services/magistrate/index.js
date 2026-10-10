@@ -86,7 +86,9 @@ async function build() {
   if (env.MAGISTRATE_STORE === "supabase") {
     if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error("MAGISTRATE_STORE=supabase needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY");
     const { createClient } = require("@supabase/supabase-js");
-    store = new SupabaseStore(createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false }, realtime: { transport: require("ws") } }) // ws: Node 20 has no native WebSocket (the worker never uses realtime), { poolAddress: d.pool, log });
+    // ws transport: Node 20 has no native WebSocket (the worker never uses realtime)
+    const client = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false }, realtime: { transport: require("ws") } });
+    store = new SupabaseStore(client, { poolAddress: d.pool, log });
     await store.load();
     log(`state restored from Supabase: cursor ${store.state.cursor}, ${Object.keys(store.state.deposits).length} deposits${store.errors ? ", WITH ERRORS: " + store.lastError : ""}`);
   } else {
