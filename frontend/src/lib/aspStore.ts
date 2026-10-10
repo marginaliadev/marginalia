@@ -2,7 +2,7 @@
 // Integrity never depends on a gateway: the caller recomputes the Merkle root of the labels and compares it with the root
 // the Magistrate published on-chain (see loadVerifiedAsp in folio.ts).
 
-export const DEFAULT_GATEWAYS = ["https://ipfs.io/ipfs/", "https://dweb.link/ipfs/", "https://cloudflare-ipfs.com/ipfs/"];
+export const DEFAULT_GATEWAYS = ["https://gateway.pinata.cloud/ipfs/", "https://ipfs.io/ipfs/", "https://dweb.link/ipfs/"];
 const MAX_BYTES = 25 * 1024 * 1024;
 
 export function gatewaysFromEnv(): string[] {
@@ -32,7 +32,7 @@ export function cidFromUri(uri: string): string {
 }
 
 /** Fetch a document by CID, trying each gateway in turn. The result is NOT yet verified against the chain. */
-export async function fetchAspDocument(uri: string, gateways = gatewaysFromEnv(), timeoutMs = 8000): Promise<any> {
+export async function fetchAspDocument(uri: string, gateways = gatewaysFromEnv(), timeoutMs = 12000): Promise<any> {
   const cid = cidFromUri(uri);
   const errors: string[] = [];
   for (const g of gateways) {
