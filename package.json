@@ -38,7 +38,7 @@
     "solc": "^0.8.24"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.1",
