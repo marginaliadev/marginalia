@@ -32,6 +32,7 @@ const puppeteer = require(R + "node_modules/puppeteer-core");
 const { ethers } = require(R + "node_modules/ethers");
 
 const BASE = process.env.APP_URL || "http://localhost:3000";
+const LAMT = process.env.E2E_L_DEPOSIT || "0.0003"; // deposit size of phase L
 const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 // Everything that can hold funds lives under notes/ (gitignored, NOT the OS temp dir) so a crash never loses it.
 const KEY_FILE = R + "notes/e2e-testwallet.key";
@@ -166,8 +167,9 @@ async function deltaSince(provider, addr, before, atLeast = 1n) {
   console.log("test wallet", wallet.address, "balance", ethers.formatEther(await provider.getBalance(wallet.address)));
 
   await sweep("recover leftovers from previous runs");
-  if ((await provider.getBalance(wallet.address)) < ethers.parseEther("0.0010")) {
-    const tx = await deployer.sendTransaction({ to: wallet.address, value: ethers.parseEther("0.0012") });
+  const FUND = process.env.E2E_FUND_ETH || "0.0012"; // test wallet funding (lower it together with E2E_L_DEPOSIT when the deployer is low)
+  if ((await provider.getBalance(wallet.address)) < ethers.parseEther(FUND) * 5n / 6n) {
+    const tx = await deployer.sendTransaction({ to: wallet.address, value: ethers.parseEther(FUND) });
     await tx.wait();
     console.log("funded test wallet", tx.hash);
   }
@@ -177,7 +179,8 @@ async function deltaSince(provider, addr, before, atLeast = 1n) {
   const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new", args: ["--no-sandbox", "--window-size=1500,1000"], defaultViewport: { width: 1500, height: 1000 } });
   const page = await browser.newPage();
   page.on("pageerror", (e) => console.log("  [pageerror]", e.message.slice(0, 200)));
-  page.on("console", (m) => { if (m.type() === "error" || process.env.DEBUG_E2E) console.log("  [console.error]", m.text().slice(0, 200)); });
+  const cspViolations = [];
+  page.on("console", (m) => { if (/Content Security Policy|violates the following/i.test(m.text())) cspViolations.push(m.text().slice(0, 240)); if (m.type() === "error" || process.env.DEBUG_E2E) console.log("  [console.error]", m.text().slice(0, 200)); });
 
   // ---- wallet shim
   let sentTx = false;
@@ -247,12 +250,12 @@ async function deltaSince(provider, addr, before, atLeast = 1n) {
       await page.evaluate(() => document.getElementById("unlockVaultBtn").click());
       let lm = await modal(); rec("L1 Vault unlock (live bundle)", lm.t === "Vault Unlocked", lm.t); await closeModal();
       await tab("deposit");
-      await set("#depositAmount", "0.0003");
+      await set("#depositAmount", LAMT);
       await page.evaluate(() => document.getElementById("submitDepositBtn").click());
       lm = await modal();
       const lnote = await page.$eval("#generatedNote", (e) => e.value).catch(() => null);
       ledgerAdd("live-deposit", lnote);
-      rec("L2 Deposit 0.0003 ETH on the live site", lm.t === "Deposit Inscribed" && !!lnote, lm.t);
+      rec(`L2 Deposit ${LAMT} ETH on the live site`, lm.t === "Deposit Inscribed" && !!lnote, lm.t);
       await closeModal();
       if (lnote) {
         await tab("ragequit");
@@ -261,8 +264,8 @@ async function deltaSince(provider, addr, before, atLeast = 1n) {
         const b0 = await provider.getBalance(sink.address);
         await page.evaluate(() => document.getElementById("submitRagequitBtn").click());
         lm = await modal();
-        const d = await deltaSince(provider, sink.address, b0, ethers.parseEther("0.0003"));
-        rec("L3 Ragequit through the live UI refunds 0.0003", lm.t === "Ragequit Complete" && d === ethers.parseEther("0.0003"), `${lm.t}; +${ethers.formatEther(d)}`);
+        const d = await deltaSince(provider, sink.address, b0, ethers.parseEther(LAMT));
+        rec(`L3 Ragequit through the live UI refunds ${LAMT}`, lm.t === "Ragequit Complete" && d === ethers.parseEther(LAMT), `${lm.t}; +${ethers.formatEther(d)}`);
         await closeModal();
         await page.evaluate(() => document.getElementById("submitRagequitBtn").click());
         lm = await modal(); rec("L4 Second ragequit rejected", lm.t === "Ragequit Failed", lm.t + " / " + lm.b.slice(0, 50));
@@ -452,6 +455,7 @@ async function deltaSince(provider, addr, before, atLeast = 1n) {
   const fundsAtEnd = await totalFunds();
   const cost = fundsAtStart - fundsAtEnd;
   console.log(`funds at end: ${ethers.formatEther(fundsAtEnd)} ETH  (gas + fees spent this run: ${ethers.formatEther(cost)} ETH)`);
+  rec("S1 No Content-Security-Policy violations in the browser", cspViolations.length === 0, cspViolations.length ? cspViolations[0] : "none");
   rec("Z1 No test ETH stranded (all ledger notes spent)", openLeft === 0, `${openLeft} open note(s)`);
   rec("Z2 Run cost is only gas (< 0.0002 ETH)", cost < ethers.parseEther("0.0002"), ethers.formatEther(cost) + " ETH");
   const pass = results.filter((r) => r.ok).length;
