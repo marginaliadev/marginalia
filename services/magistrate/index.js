@@ -73,7 +73,8 @@ async function build() {
   const provider = rpcProvider(env.RH_TESTNET_RPC_URL, d.chainId || 46630);
   const logsProvider = env.RH_LOGS_RPC_URL ? rpcProvider(env.RH_LOGS_RPC_URL, d.chainId || 46630) : provider;
   const wallet = new ethers.Wallet(env.MAGISTRATE_PUBLISHER_KEY, provider);
-  const abi = (n) => JSON.parse(fs.readFileSync(path.join(__dirname, "../../artifacts/contracts", `${n}.sol`, `${n}.json`))).abi;
+  // ABIs are committed (services/magistrate/abi): the worker image does not compile the contracts, so build artifacts do not exist there.
+  const abi = (n) => JSON.parse(fs.readFileSync(path.join(__dirname, "abi", `${n}.json`), "utf8"));
   const register = new ethers.Contract(d.register, abi("MagistrateRegister"), wallet);
   const pool = new ethers.Contract(d.pool, abi("MarginaliaPool"), logsProvider);
 
