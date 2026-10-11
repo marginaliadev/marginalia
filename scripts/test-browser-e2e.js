@@ -33,6 +33,8 @@ const { ethers } = require(R + "node_modules/ethers");
 
 const BASE = process.env.APP_URL || "http://localhost:3000";
 const LAMT = process.env.E2E_L_DEPOSIT || "0.0003"; // deposit size of phase L
+// Amounts of the full flow (phases 1-3). Keep E2E_A - E2E_PART >= 0.00005: the UI asks the Courier for about twice the quoted minimum fee (about 0.0000243), which must stay under 50% of the change note (the fee-share guard rejects it otherwise).
+const AMT_A = process.env.E2E_A || "0.0004", AMT_B = process.env.E2E_B || "0.0003", AMT_PART = process.env.E2E_PART || "0.0002";
 const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 // Everything that can hold funds lives under notes/ (gitignored, NOT the OS temp dir) so a crash never loses it.
 const KEY_FILE = R + "notes/e2e-testwallet.key";
@@ -301,7 +303,7 @@ async function deltaSince(provider, addr, before, atLeast = 1n) {
       rec("B1 Vault unlock via EIP-712 signature", m.t === "Vault Unlocked", m.t + " / " + m.b.slice(0, 60));
       await closeModal();
       // 2. deposit A (to be withdrawn) and B (to be ragequit)
-      for (const [name, amt] of [["A", "0.0004"], ["B", "0.0003"]]) {
+      for (const [name, amt] of [["A", AMT_A], ["B", AMT_B]]) {
         await tab("deposit");
         await set("#depositAmount", amt);
         await page.evaluate(() => document.getElementById("submitDepositBtn").click());
@@ -381,17 +383,17 @@ async function deltaSince(provider, addr, before, atLeast = 1n) {
       await tab("withdraw");
       await set("#withdrawNote", st.A);
       await set("#withdrawRecipient", recipient);
-      await set("#withdrawAmount", "0.0002");
+      await set("#withdrawAmount", AMT_PART);
       await page.select("#withdrawMode", "wallet");
       const t0 = Date.now();
       const sinkBefore1 = await provider.getBalance(recipient);
       await page.evaluate(() => document.getElementById("submitWithdrawBtn").click());
       let m = await modal();
-      const bal1 = await deltaSince(provider, recipient, sinkBefore1, ethers.parseEther("0.0002"));
+      const bal1 = await deltaSince(provider, recipient, sinkBefore1, ethers.parseEther(AMT_PART));
       const change = await page.$eval("#changeNote", (e) => e.value).catch(() => null);
       if (change) { st.Achange = change; ledgerAdd("change-A", change); fs.writeFileSync(stateFile, JSON.stringify(st)); }
       if (process.env.CRASH_AFTER_PARTIAL_WITHDRAW) { console.log("!! simulated hard crash right after the partial withdraw"); process.exit(98); }
-      rec("B5 Partial withdraw 0.0002 ETH via wallet (in-browser proof)", m.t === "Withdrawal Confirmed" && bal1 === ethers.parseEther("0.0002") && !!change, `${m.t}; recipient +${ethers.formatEther(bal1)}; proof+tx ${((Date.now() - t0) / 1000).toFixed(0)}s`);
+      rec(`B5 Partial withdraw ${AMT_PART} ETH via wallet (in-browser proof)`, m.t === "Withdrawal Confirmed" && bal1 === ethers.parseEther(AMT_PART) && !!change, `${m.t}; recipient +${ethers.formatEther(bal1)}; proof+tx ${((Date.now() - t0) / 1000).toFixed(0)}s`);
       if (m.t !== "Withdrawal Confirmed") console.log("   modal:", m.b);
       st.Achange = change;
       await closeModal();
@@ -430,8 +432,8 @@ async function deltaSince(provider, addr, before, atLeast = 1n) {
       const before = await provider.getBalance(recipient);
       await page.evaluate(() => document.getElementById("submitRagequitBtn").click());
       m = await modal();
-      const after = before + (await deltaSince(provider, recipient, before, ethers.parseEther("0.0003")));
-      rec("B8 Ragequit from browser refunds the deposit", m.t === "Ragequit Complete" && after - before === ethers.parseEther("0.0003"), `${m.t}; +${ethers.formatEther(after - before)}`);
+      const after = before + (await deltaSince(provider, recipient, before, ethers.parseEther(AMT_B)));
+      rec("B8 Ragequit from browser refunds the deposit", m.t === "Ragequit Complete" && after - before === ethers.parseEther(AMT_B), `${m.t}; +${ethers.formatEther(after - before)}`);
       if (m.t !== "Ragequit Complete") console.log("   modal:", m.b);
       await closeModal();
       // 7. ragequit again must fail
