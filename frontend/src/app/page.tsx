@@ -90,9 +90,9 @@ export default function HomePage() {
       {/* ========================================================================= */}
       <section className="relative overflow-clip bg-[#0B0907] pb-12 pt-8 text-white md:pb-16 lg:pb-20 w-full">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col gap-x-8 gap-y-8 md:flex-row items-stretch">
+          <div className="flex flex-col gap-x-8 gap-y-8 lg:flex-row items-stretch">
             {/* Left Column: Headline & Value Proposition in Noirpay Brackets */}
-            <div className="relative flex flex-col justify-between flex-1">
+            <div className="relative flex flex-col justify-between flex-1 min-w-0">
               <div className="bracket-x h-3 md:h-4 text-stroke-3 border-t"></div>
 
               <div className="flex flex-col justify-center py-6 sm:py-8 lg:py-10">
@@ -720,7 +720,7 @@ export default function HomePage() {
                   <span className="size-1.5 rounded-full bg-sun"></span>
                   <span>Cryptographic Guarantees</span>
                 </div>
-                <h2 className="text-heading-48 text-dust font-light leading-tight sm:whitespace-nowrap">
+                <h2 className="text-heading-48 text-dust font-light leading-tight lg:whitespace-nowrap">
                   What The Proof Guarantees
                 </h2>
               </div>
@@ -1061,7 +1061,7 @@ export default function HomePage() {
           <RevealMotion delay={0.3} className="text-left">
             <Link
               href="/codex"
-              className="inline-flex cursor-pointer items-center justify-center rounded-xs border px-6 py-3 text-center whitespace-nowrap transition-colors select-none bg-midnight border-dusk text-white hover:bg-night font-medium text-xs tracking-wider uppercase font-mono"
+              className="inline-flex max-w-full cursor-pointer items-center justify-center rounded-xs border px-6 py-3 text-center whitespace-normal sm:whitespace-nowrap transition-colors select-none bg-midnight border-dusk text-white hover:bg-night font-medium text-xs tracking-wider uppercase font-mono"
             >
               <span>Explore Architecture & Public Signals</span>
               <ArrowRight className="size-3.5 ml-2 text-sun" />

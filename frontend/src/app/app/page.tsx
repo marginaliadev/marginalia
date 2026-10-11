@@ -651,11 +651,11 @@ Your note has been rebuilt below. SAVE IT NOW.`,
       {/* MAIN dAPP CONTAINER */}
       <main className="max-w-[80rem] mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         {/* TABS NAVIGATION */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap lg:items-center gap-2 pb-4 mb-6 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
           <button
             data-tab="deposit"
             onClick={() => setActiveTab("deposit")}
-            className={`cursor-pointer rounded-xs border px-4 py-2.5 text-xs font-mono transition-colors select-none flex items-center gap-2 whitespace-nowrap ${
+            className={`cursor-pointer rounded-xs border px-4 py-2.5 text-xs font-mono transition-colors select-none flex items-center gap-2 justify-center text-center leading-tight lg:justify-start lg:text-left lg:whitespace-nowrap ${
               activeTab === "deposit"
                 ? "bg-dust border-dust text-night font-semibold shadow-sm"
                 : "bg-midnight border-dusk text-white hover:bg-night"
@@ -668,7 +668,7 @@ Your note has been rebuilt below. SAVE IT NOW.`,
           <button
             data-tab="withdraw"
             onClick={() => setActiveTab("withdraw")}
-            className={`cursor-pointer rounded-xs border px-4 py-2.5 text-xs font-mono transition-colors select-none flex items-center gap-2 whitespace-nowrap ${
+            className={`cursor-pointer rounded-xs border px-4 py-2.5 text-xs font-mono transition-colors select-none flex items-center gap-2 justify-center text-center leading-tight lg:justify-start lg:text-left lg:whitespace-nowrap ${
               activeTab === "withdraw"
                 ? "bg-dust border-dust text-night font-semibold shadow-sm"
                 : "bg-midnight border-dusk text-white hover:bg-night"
@@ -681,7 +681,7 @@ Your note has been rebuilt below. SAVE IT NOW.`,
           <button
             data-tab="courier"
             onClick={() => setActiveTab("courier")}
-            className={`cursor-pointer rounded-xs border px-4 py-2.5 text-xs font-mono transition-colors select-none flex items-center gap-2 whitespace-nowrap ${
+            className={`cursor-pointer rounded-xs border px-4 py-2.5 text-xs font-mono transition-colors select-none flex items-center gap-2 justify-center text-center leading-tight lg:justify-start lg:text-left lg:whitespace-nowrap ${
               activeTab === "courier"
                 ? "bg-dust border-dust text-night font-semibold shadow-sm"
                 : "bg-midnight border-dusk text-white hover:bg-night"
@@ -694,7 +694,7 @@ Your note has been rebuilt below. SAVE IT NOW.`,
           <button
             data-tab="ragequit"
             onClick={() => setActiveTab("ragequit")}
-            className={`cursor-pointer rounded-xs border px-4 py-2.5 text-xs font-mono transition-colors select-none flex items-center gap-2 whitespace-nowrap ${
+            className={`cursor-pointer rounded-xs border px-4 py-2.5 text-xs font-mono transition-colors select-none flex items-center gap-2 justify-center text-center leading-tight lg:justify-start lg:text-left lg:whitespace-nowrap ${
               activeTab === "ragequit"
                 ? "bg-rose-900 border-rose-500 text-rose-100 font-semibold"
                 : "bg-midnight border-dusk text-white hover:bg-night"
@@ -707,7 +707,7 @@ Your note has been rebuilt below. SAVE IT NOW.`,
           <button
             data-tab="vault"
             onClick={() => setActiveTab("vault")}
-            className={`cursor-pointer rounded-xs border px-4 py-2.5 text-xs font-mono transition-colors select-none flex items-center gap-2 whitespace-nowrap ${
+            className={`cursor-pointer rounded-xs border px-4 py-2.5 text-xs font-mono transition-colors select-none flex items-center gap-2 justify-center text-center leading-tight lg:justify-start lg:text-left lg:whitespace-nowrap ${
               activeTab === "vault"
                 ? "bg-dust border-dust text-night font-semibold shadow-sm"
                 : "bg-midnight border-dusk text-white hover:bg-night"

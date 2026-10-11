@@ -3,11 +3,21 @@
 import { useState, useEffect } from "react";
 import { Compass, ShieldCheck, ShieldAlert, Search, RefreshCw, ExternalLink, Activity } from "lucide-react";
 
+// 18-decimal strings are unreadable and wider than a phone screen: show at most 6 decimals (the exact value stays in the tooltip)
+const shortEth = (v: string | number) => {
+  const s = String(v);
+  if (!s.includes(".")) return s;
+  const [i, d] = s.split(".");
+  const t = d.slice(0, 6).replace(/0+$/, "");
+  return t ? `${i}.${t}` : i;
+};
+
 export default function ExplorerPage() {
   const [telemetry, setTelemetry] = useState<{
     folioNotesCount: number | string;
     aspApprovedCount: string;
     poolBalance: string;
+    poolBalanceExact?: string;
     blockNumber: number | string;
   }>({
     folioNotesCount: "--",
@@ -37,7 +47,8 @@ export default function ExplorerPage() {
       setTelemetry({
         folioNotesCount: data.database.leavesCount,
         aspApprovedCount: String(data.database.aspCount), // published roots recorded by the Magistrate (the register keeps the latest 16)
-        poolBalance: `${data.telemetry.poolBalanceEth}`,
+        poolBalance: shortEth(data.telemetry.poolBalanceEth),
+        poolBalanceExact: `${data.telemetry.poolBalanceEth}`,
         blockNumber: data.telemetry.blockNumber ?? "Live",
       });
     } catch (_) {}
@@ -168,7 +179,7 @@ export default function ExplorerPage() {
               Pool Balance (TVL)
             </div>
             <div className="font-heading text-4xl text-dust font-light">
-              <span id="poolBalance">{telemetry.poolBalance}</span> ETH
+              <span id="poolBalance" title={telemetry.poolBalanceExact} className="break-all">{telemetry.poolBalance}</span> ETH
             </div>
             <div className="text-[11px] font-mono text-sun mt-2 flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-sun"></span>

@@ -54,7 +54,7 @@ export default function NoirpayCircuitCard() {
 
 
   return (
-    <div className="flex w-full shrink-0 flex-col gap-y-5 sm:gap-y-8 md:min-h-[33.75rem] md:w-5/12 md:max-w-[34.125rem] lg:min-h-[39.125rem]">
+    <div className="flex w-full shrink-0 flex-col gap-y-5 sm:gap-y-8 lg:min-h-[39.125rem] lg:w-5/12 lg:max-w-[34.125rem]">
       {/* Top Bar with Progress Gauge */}
       <div className="relative flex flex-col justify-between">
         <div className="bracket-x h-3 md:h-4 text-stroke-3 border-t"></div>
