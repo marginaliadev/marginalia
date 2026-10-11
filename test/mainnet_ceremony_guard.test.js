@@ -66,7 +66,16 @@ describe("Mainnet deploy guard: ceremony required", function () {
     expect(has(ceremonyProblems({ withdraw: ok().withdraw }, opts()), /ragequit: no ceremony transcript/)).to.equal(true);
   });
 
-  it("the committed phase1.json is unpinned until the owner fills it (so mainnet stays blocked by default)", function () {
-    expect(require("../docs/ceremony/phase1.json").blake2b).to.equal(null);
+  it("the committed phase1.json pins the Hermez 2^15 file (blake2b-512) and says how far it was checked", function () {
+    const p1 = require("../docs/ceremony/phase1.json");
+    expect(p1.blake2b).to.match(/^[0-9a-f]{128}$/);
+    expect(p1.file).to.equal("powersOfTau28_hez_final_15.ptau");
+    expect(p1.status).to.match(/PROVISIONAL|VERIFIED/);
+  });
+
+  it("with the pin in place mainnet is STILL blocked: no ceremony transcripts means refusal", function () {
+    const p1 = require("../docs/ceremony/phase1.json");
+    const problems = ceremonyProblems({}, opts({ phase1: p1 }));
+    expect(has(problems, /ceremony transcript/)).to.equal(true);
   });
 });
