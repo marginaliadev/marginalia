@@ -23,6 +23,7 @@ export default function ExplorerPage() {
     nullifier: string;
     checkedAt: string;
   } | null>(null);
+  const [sealError, setSealError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
@@ -35,7 +36,7 @@ export default function ExplorerPage() {
       const data = await res.json();
       setTelemetry({
         folioNotesCount: data.database.leavesCount,
-        aspApprovedCount: `${data.database.aspCount} / 2`,
+        aspApprovedCount: String(data.database.aspCount), // published roots recorded by the Magistrate (the register keeps the latest 16)
         poolBalance: `${data.telemetry.poolBalanceEth}`,
         blockNumber: data.telemetry.blockNumber ?? "Live",
       });
@@ -55,6 +56,19 @@ export default function ExplorerPage() {
       });
       const data = await res.json();
 
+      // Only an explicit on-chain answer may produce a status. An error response, an invalid input or an unreachable chain
+      // must never be shown as "unspent": that would be false reassurance.
+      if (!res.ok || typeof data.isSpent !== "boolean" || data.onChainChecked === false) {
+        setSealResult(null);
+        setSealError(
+          typeof data.error === "string" && data.error
+            ? data.error
+            : "The seal could not be verified on-chain right now. Try again later."
+        );
+        return;
+      }
+
+      setSealError(null);
       setSealResult({
         nullifier: nullifierInput.trim(),
         isSpent: data.isSpent,
@@ -62,6 +76,8 @@ export default function ExplorerPage() {
         checkedAt: new Date().toLocaleTimeString(),
       });
     } catch (_) {
+      setSealResult(null);
+      setSealError("Could not reach the server. The seal was not verified.");
     } finally {
       setIsVerifying(false);
     }
@@ -202,6 +218,12 @@ export default function ExplorerPage() {
               </div>
             </div>
           </form>
+
+          {sealError && (
+            <div id="sealError" role="alert" className="mt-8 p-4 rounded-xs bg-[#14100e] border border-amber-500/40 max-w-[48rem] text-xs font-mono text-amber-300">
+              {sealError}
+            </div>
+          )}
 
           {/* Verification Result Badge & Card */}
           {sealResult && (

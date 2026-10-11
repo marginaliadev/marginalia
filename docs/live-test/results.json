@@ -1,296 +1,331 @@
 [
  {
-  "id": "API-01",
-  "name": "GET /api/status",
-  "ok": true,
-  "detail": "chain 46630, pool 0x340E20C7CBe7eA83d463432ac8FA1e891bdca948, db true, leaves 110, asp 2, relayer active",
-  "at": "2026-10-10T17:24:30.789Z"
- },
- {
-  "id": "API-02",
-  "name": "Status does not leak the RPC key",
-  "ok": true,
-  "detail": "https://robinhood-testnet.g.alchemy.com/v2/alch_***",
-  "at": "2026-10-10T17:24:30.791Z"
- },
- {
-  "id": "API-03",
-  "name": "Pool balance in /api/status equals on-chain balance",
-  "ok": true,
-  "detail": "api 0.002900000000000001 vs chain 0.002900000000000001",
-  "at": "2026-10-10T17:24:30.940Z"
- },
- {
-  "id": "API-04",
-  "name": "GET /api/folio returns tree + ASP",
-  "ok": true,
-  "detail": "leaves 110, nextIndex 110, aspLabels 17, aspStale true",
-  "at": "2026-10-10T17:24:32.133Z"
- },
- {
-  "id": "API-05",
-  "name": "Folio root recomputed locally equals served root",
-  "ok": true,
-  "detail": "served 11751085813385… local 11751085813385…",
-  "at": "2026-10-10T17:24:32.884Z"
- },
- {
-  "id": "API-06",
-  "name": "Served ASP root equals on-chain MagistrateRegister root",
-  "ok": false,
-  "detail": "served 20325139020029… chain 53849076756821… aspStale=true",
-  "at": "2026-10-10T17:24:33.039Z"
- },
- {
-  "id": "API-07",
-  "name": "GET /api/relay/quote",
-  "ok": true,
-  "detail": "available true, minFee 0.00001265 ETH, gas 1150000, gwei 0.01, relayer 0x31C17bbddF3409bD27B35F0b3dE7E990230655e5",
-  "at": "2026-10-10T17:24:33.337Z"
- },
- {
-  "id": "API-08",
-  "name": "POST /api/relay/quote",
-  "ok": true,
-  "detail": "status 200",
-  "at": "2026-10-10T17:24:33.700Z"
- },
- {
-  "id": "API-09",
-  "name": "nullifier/check unspent value",
-  "ok": true,
-  "detail": "{\"nullifier\":\"111222333444555666777\",\"isSpent\":false,\"checkedAt\":\"2026-10-10T17:24:33.849Z\",\"onChainChecked\":true,\"pool\":\"0x340E20C7CBe7eA83d463432ac8FA1e891bdc",
-  "at": "2026-10-10T17:24:33.963Z"
- },
- {
-  "id": "API-10",
-  "name": "nullifier/check spent value (from ledger)",
-  "ok": true,
-  "detail": "isSpent true",
-  "at": "2026-10-10T17:24:34.358Z"
- },
- {
-  "id": "API-11",
-  "name": "nullifier/check rejects hex",
-  "ok": true,
-  "detail": "status 400 Nullifier must be a decimal integer",
-  "at": "2026-10-10T17:24:34.579Z"
- },
- {
-  "id": "API-12",
-  "name": "nullifier/check rejects empty",
-  "ok": true,
-  "detail": "status 400 Missing nullifier parameter",
-  "at": "2026-10-10T17:24:34.788Z"
- },
- {
-  "id": "API-13",
-  "name": "nullifier/check rejects 79-digit number",
-  "ok": true,
-  "detail": "status 400 Nullifier must be a decimal integer",
-  "at": "2026-10-10T17:24:35.004Z"
- },
- {
-  "id": "API-14",
-  "name": "nullifier/check rejects SQL-ish string",
-  "ok": true,
-  "detail": "status 400 Nullifier must be a decimal integer",
-  "at": "2026-10-10T17:24:35.220Z"
- },
- {
-  "id": "API-15",
-  "name": "note/validate rejects malformed note",
-  "ok": true,
-  "detail": "status 400 Malformed Note JSON: The note payload is not valid JSON.",
-  "at": "2026-10-10T17:24:35.436Z"
- },
- {
-  "id": "API-16",
-  "name": "note/validate rejects empty note",
-  "ok": true,
-  "detail": "status 400",
-  "at": "2026-10-10T17:24:35.657Z"
- },
- {
-  "id": "API-17",
-  "name": "disclosure/generate rejects missing note",
-  "ok": true,
-  "detail": "status 400 Missing marginal note parameter",
-  "at": "2026-10-10T17:24:35.904Z"
- },
- {
-  "id": "API-18",
-  "name": "disclosure/generate rejects garbage note",
-  "ok": true,
-  "detail": "status 400 Invalid Note Prefix: Expected 'marginalia-note-v1-' prefix.",
-  "at": "2026-10-10T17:24:36.107Z"
- },
- {
-  "id": "API-19",
-  "name": "relay/withdraw rejects an invalid request (no tx sent)",
-  "ok": true,
-  "detail": "status 400 Malformed withdrawal or proof payload",
-  "at": "2026-10-10T17:24:36.317Z"
- },
- {
-  "id": "API-20",
-  "name": "Unknown API route is 404",
-  "ok": true,
-  "detail": "status 404",
-  "at": "2026-10-10T17:24:36.537Z"
- },
- {
-  "id": "API-21",
-  "name": "folio/record does not accept GET",
-  "ok": true,
-  "detail": "status 405",
-  "at": "2026-10-10T17:24:36.755Z"
- },
- {
-  "id": "API-22",
-  "name": "Security headers on /",
-  "ok": false,
-  "detail": "content-security-policy=NO, x-content-type-options=yes, strict-transport-security=NO",
-  "at": "2026-10-10T17:24:36.989Z"
- },
- {
-  "id": "API-23",
-  "name": "Other headers",
-  "ok": null,
-  "detail": "x-frame-options=DENY, referrer-policy=no-referrer, permissions-policy=set",
-  "at": "2026-10-10T17:24:36.990Z"
- },
- {
-  "id": "API-24",
-  "name": "Rate limiter engages on /api/relay/withdraw (10/min)",
-  "ok": true,
-  "detail": "5 of 14 rapid requests answered 429",
-  "at": "2026-10-10T17:24:40.011Z"
- },
- {
   "id": "PG-01",
   "name": "Landing page loads (/)",
   "ok": true,
-  "detail": "HTTP 200, title \"MARGINALIA: Compliant Shielded Pool on Robinhood Chain\", 10562 chars of text",
-  "at": "2026-10-10T17:24:48.171Z"
+  "detail": "HTTP 200, title \"MARGINALIA: Compliant Shielded Pool on Robinhood Chain\", 10691 chars of text",
+  "at": "2026-10-11T12:33:03.199Z"
  },
  {
   "id": "PG-01b",
   "name": "Landing: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-10T17:24:48.171Z"
+  "at": "2026-10-11T12:33:03.201Z"
  },
  {
   "id": "PG-01c",
   "name": "Landing: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-10T17:24:54.506Z"
+  "at": "2026-10-11T12:33:09.043Z"
  },
  {
   "id": "PG-02",
   "name": "App page loads (/app)",
   "ok": true,
-  "detail": "HTTP 200, title \"MARGINALIA: Compliant Shielded Pool on Robinhood Chain\", 1660 chars of text",
-  "at": "2026-10-10T17:25:00.586Z"
+  "detail": "HTTP 200, title \"Shielded App | MARGINALIA\", 1660 chars of text",
+  "at": "2026-10-11T12:33:14.979Z"
  },
  {
   "id": "PG-02b",
   "name": "App: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-10T17:25:00.586Z"
+  "at": "2026-10-11T12:33:14.979Z"
  },
  {
   "id": "PG-02c",
   "name": "App: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-10T17:25:06.556Z"
+  "at": "2026-10-11T12:33:20.649Z"
  },
  {
   "id": "PG-03",
   "name": "Explorer page loads (/explorer)",
   "ok": true,
-  "detail": "HTTP 200, title \"MARGINALIA: Compliant Shielded Pool on Robinhood Chain\", 1715 chars of text",
-  "at": "2026-10-10T17:25:12.500Z"
+  "detail": "HTTP 200, title \"Explorer | MARGINALIA\", 1715 chars of text",
+  "at": "2026-10-11T12:33:26.427Z"
  },
  {
   "id": "PG-03b",
   "name": "Explorer: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-10T17:25:12.500Z"
+  "at": "2026-10-11T12:33:26.427Z"
  },
  {
   "id": "PG-03c",
   "name": "Explorer: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-10T17:25:18.566Z"
+  "at": "2026-10-11T12:33:31.905Z"
  },
  {
   "id": "PG-04",
   "name": "Compliance page loads (/compliance)",
   "ok": true,
-  "detail": "HTTP 200, title \"MARGINALIA: Compliant Shielded Pool on Robinhood Chain\", 4891 chars of text",
-  "at": "2026-10-10T17:25:24.737Z"
+  "detail": "HTTP 200, title \"Compliance | MARGINALIA\", 6101 chars of text",
+  "at": "2026-10-11T12:33:37.751Z"
  },
  {
   "id": "PG-04b",
   "name": "Compliance: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-10T17:25:24.738Z"
+  "at": "2026-10-11T12:33:37.752Z"
  },
  {
   "id": "PG-04c",
   "name": "Compliance: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-10T17:25:30.677Z"
+  "at": "2026-10-11T12:33:43.266Z"
  },
  {
   "id": "PG-05",
   "name": "Codex page loads (/codex)",
   "ok": true,
   "detail": "HTTP 200, title \"The Codex: MARGINALIA\", 3858 chars of text",
-  "at": "2026-10-10T17:25:36.809Z"
+  "at": "2026-10-11T12:33:49.037Z"
  },
  {
   "id": "PG-05b",
   "name": "Codex: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-10T17:25:36.809Z"
+  "at": "2026-10-11T12:33:49.038Z"
  },
  {
   "id": "PG-05c",
   "name": "Codex: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-10T17:25:43.251Z"
+  "at": "2026-10-11T12:33:54.596Z"
  },
  {
   "id": "PG-06",
   "name": "404 page page loads (/zzz-not-found)",
   "ok": true,
   "detail": "HTTP 404, title \"404: Page Not Found | MARGINALIA\", 1296 chars of text",
-  "at": "2026-10-10T17:25:49.486Z"
+  "at": "2026-10-11T12:34:00.419Z"
  },
  {
   "id": "PG-06b",
   "name": "404 page: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-10T17:25:49.487Z"
+  "at": "2026-10-11T12:34:00.419Z"
  },
  {
   "id": "PG-06c",
   "name": "404 page: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-10T17:25:55.467Z"
+  "at": "2026-10-11T12:34:05.870Z"
+ },
+ {
+  "id": "PG-07",
+  "name": "Every internal link on the landing page resolves",
+  "ok": true,
+  "detail": "5 internal routes OK",
+  "at": "2026-10-11T12:34:11.146Z"
+ },
+ {
+  "id": "PG-08",
+  "name": "External links on landing",
+  "ok": null,
+  "detail": "https://x.com/MarginaliaZK",
+  "at": "2026-10-11T12:34:11.148Z"
+ },
+ {
+  "id": "APP-00",
+  "name": "App header stats",
+  "ok": null,
+  "detail": "Leaves On-Chain 01 SHIELD / DEPOSIT 02 PRIVATE WITHDRAW",
+  "at": "2026-10-11T12:34:16.989Z"
+ },
+ {
+  "id": "APP-01",
+  "name": "Deposit without wallet -> Wallet Required",
+  "ok": true,
+  "detail": "Wallet Required",
+  "at": "2026-10-11T12:34:17.534Z"
+ },
+ {
+  "id": "APP-02",
+  "name": "Withdraw with empty fields rejected",
+  "ok": true,
+  "detail": "Missing Information",
+  "at": "2026-10-11T12:34:18.769Z"
+ },
+ {
+  "id": "APP-03",
+  "name": "Withdraw with invalid recipient rejected",
+  "ok": true,
+  "detail": "Invalid Recipient Address / Please enter a valid, non-zero Ethereum address for the priv",
+  "at": "2026-10-11T12:34:19.546Z"
+ },
+ {
+  "id": "APP-04",
+  "name": "Withdraw with tampered note rejected",
+  "ok": true,
+  "detail": "Invalid Secret Marginal Note / Malformed Note: payload is not valid base64url JSON.",
+  "at": "2026-10-11T12:34:20.012Z"
+ },
+ {
+  "id": "APP-05",
+  "name": "Well-formed note that was never deposited rejected (not in Folio)",
+  "ok": true,
+  "detail": "Note Validation Failed / Commitment Not Found: Note is not inscribed in the Folio tree on Robinhood Chain",
+  "at": "2026-10-11T12:34:22.888Z"
+ },
+ {
+  "id": "APP-06",
+  "name": "Courier quote shows gas, min fee and relayer address",
+  "ok": false,
+  "detail": "{\"gas\":\"0.01 Gwei\",\"fee\":\"0.000012165659 ETH\",\"addr\":\"No relayer configured\"}",
+  "at": "2026-10-11T12:34:24.705Z"
+ },
+ {
+  "id": "APP-07",
+  "name": "Ragequit with invalid note rejected",
+  "ok": true,
+  "detail": "Invalid Secret Note / Malformed Note: payload is not valid base64url JSON.",
+  "at": "2026-10-11T12:34:25.320Z"
+ },
+ {
+  "id": "APP-08",
+  "name": "Vault unlock without wallet -> Wallet Required",
+  "ok": true,
+  "detail": "Wallet Required",
+  "at": "2026-10-11T12:34:26.571Z"
+ },
+ {
+  "id": "APP-09",
+  "name": "No console/page errors during app guard tests",
+  "ok": true,
+  "detail": "http 404: http://localhost:3000/api/note/validate | console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
+  "at": "2026-10-11T12:34:27.252Z"
+ },
+ {
+  "id": "EX-01",
+  "name": "Explorer telemetry matches /api/status",
+  "ok": true,
+  "detail": "{\"leaves\":\"111\",\"asp\":\"2 / 2\",\"bal\":\"0.002900000000000001\"} vs api leaves 111, bal 0.002900000000000001",
+  "at": "2026-10-11T12:34:34.558Z"
+ },
+ {
+  "id": "EX-01b",
+  "name": "Explorer ASP counter text",
+  "ok": null,
+  "detail": "UI shows \"2 / 2\" while the ASP list has 38 labels and /api/status aspCount=2",
+  "at": "2026-10-11T12:34:42.253Z"
+ },
+ {
+  "id": "EX-02",
+  "name": "Wax Seal: unknown nullifier -> INTACT (UNSPENT)",
+  "ok": true,
+  "detail": "WAX SEAL INTACT (UNSPENT)",
+  "at": "2026-10-11T12:34:44.714Z"
+ },
+ {
+  "id": "EX-03",
+  "name": "Wax Seal: spent nullifier -> BROKEN (SPENT)",
+  "ok": true,
+  "detail": "WAX SEAL BROKEN (SPENT)",
+  "at": "2026-10-11T12:34:46.303Z"
+ },
+ {
+  "id": "EX-04",
+  "name": "Wax Seal: hex input must NOT be reported as a valid UNSPENT seal",
+  "ok": true,
+  "detail": "badge after invalid input: null",
+  "at": "2026-10-11T12:34:48.902Z"
+ },
+ {
+  "id": "EX-05",
+  "name": "Explorer: no console/page errors (400s from the deliberate invalid input excluded)",
+  "ok": true,
+  "detail": "http 400: http://localhost:3000/api/nullifier/check | console.error: Failed to load resource: the server responded with a status of 400 (Bad Request)",
+  "at": "2026-10-11T12:34:48.988Z"
+ },
+ {
+  "id": "CO-01",
+  "name": "Compliance sections present (screening, viewing keys, generator, appeals) as in the repo source",
+  "ok": true,
+  "detail": "[[\"screening\",true],[\"viewing-keys\",true],[\"generator\",true],[\"appeals\",true]]",
+  "at": "2026-10-11T12:34:54.809Z"
+ },
+ {
+  "id": "CO-02",
+  "name": "Generate with empty note shows validation error",
+  "ok": true,
+  "detail": "error shown",
+  "at": "2026-10-11T12:34:56.112Z"
+ },
+ {
+  "id": "CO-03",
+  "name": "Garbage note rejected with error message",
+  "ok": true,
+  "detail": "Malformed Note JSON: The note payload is not valid JSON.",
+  "at": "2026-10-11T12:34:58.219Z"
+ },
+ {
+  "id": "CO-04",
+  "name": "Generate Letter of Disclosure (auto keypair)",
+  "ok": true,
+  "detail": "standard LETTER_OF_DISCLOSURE_V1, keys: protocol,standard,chain,timestamp,auditorPublicKey,memoDetails,viewingKeyProof,generatedViewingKeypair",
+  "at": "2026-10-11T12:34:59.063Z"
+ },
+ {
+  "id": "CO-05",
+  "name": "Disclosure package does not leak the note secrets (sk / rho)",
+  "ok": true,
+  "detail": "no sk/rho in package",
+  "at": "2026-10-11T12:34:59.149Z"
+ },
+ {
+  "id": "CO-06",
+  "name": "Auditor can decrypt the memo with the generated viewing key and it matches the note",
+  "ok": true,
+  "detail": "decrypted: 0.0004 ETH, label 218856156557…, chain 46630",
+  "at": "2026-10-11T12:34:59.153Z"
+ },
+ {
+  "id": "CO-06b",
+  "name": "A different key cannot decrypt the memo (GCM auth fails)",
+  "ok": true,
+  "detail": "decryption rejected",
+  "at": "2026-10-11T12:34:59.154Z"
+ },
+ {
+  "id": "CO-07",
+  "name": "Invalid auditor PEM rejected",
+  "ok": true,
+  "detail": "auditorPublicKeyPem is not a valid X25519 public key (PEM).",
+  "at": "2026-10-11T12:35:01.685Z"
+ },
+ {
+  "id": "CO-08",
+  "name": "Letter of Disclosure with a caller-supplied auditor key (no server-generated keypair returned)",
+  "ok": true,
+  "detail": "generatedViewingKeypair=null",
+  "at": "2026-10-11T12:35:04.200Z"
+ },
+ {
+  "id": "CO-09",
+  "name": "Compliance: no console/page errors",
+  "ok": true,
+  "detail": "http 400: http://localhost:3000/api/disclosure/generate | console.error: Failed to load resource: the server responded with a status of 400 (Bad Request) | http 400: http://localhost:3000/api/disclosure/generate",
+  "at": "2026-10-11T12:35:04.989Z"
+ },
+ {
+  "id": "SEC-01",
+  "name": "No Content-Security-Policy violations in any page",
+  "ok": true,
+  "detail": "none",
+  "at": "2026-10-11T12:35:05.215Z"
  }
 ]
