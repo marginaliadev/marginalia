@@ -1,97 +1,92 @@
-# MARGINALIA: Laporan Eksekusi Fase 03 "Hardening"
+# MARGINALIA: Phase 03 "Hardening" Execution Report
 
-**Tanggal:** 2026-10-09 · **Rujukan:** `docs/phase3_hardening_plan.md`
-**Ringkasan:** semua pekerjaan *kode dan tes* untuk H1–H4 dan H6 selesai dan lulus; H5 dihentikan secara sah oleh gerbang keputusan. **Belum selesai:** soak 48/72 jam, penyedia IPFS nyata, transfer peran Safe pada deployment live, dan deploy ke situs produksi (tidak ada yang di-push/di-deploy dalam sesi ini).
+**Date:** 2026-10-09 (updated 2026-10-11) · **Reference:** `docs/phase3_hardening_plan.md`
+**Summary:** all *code and test* work for H1–H4 and H6 is done and passing; H5 was legitimately stopped by the decision gate. **Status update 2026-10-11:** the automated Magistrate, IPFS lists (Pinata), fee quote model, Safe guardian/owner roles and the 24 h soak gate are done and live on testnet (see `docs/mainnet_readiness.md`). Still open: a second IPFS provider and paid screening verified with real credentials, the pause *resume* transaction, and the decisions listed in section 4.
 
-## 1. Hasil tes
+## 1. Test results
 
-| Suite | Cara menjalankan | Hasil |
+| Suite | How to run | Result |
 |---|---|---|
-| Seluruh tes hardhat (tanpa `.env`, seperti CI) | `npx hardhat test` | **141 lulus** (sebelumnya 78) |
-| Keamanan kontrak (21 tes, error spesifik) | `test/security_onchain.test.js` | 21/21 |
-| Penjaga regresi gas | `test/gas_benchmark.test.js` | lulus (baseline 944.941 / 1.067.838 / 321.308) |
-| Layanan Magistrate (14 tes) | `test/magistrate_service.test.js` | 14/14 |
-| Penyimpanan IPFS (10 tes) | `test/asp_store.test.js` | 10/10 |
-| Pohon Merkle massal = insert satu per satu | `test/merkle_bulk.test.js` | 13/13 |
-| Paritas SDK browser (TypeScript) vs SDK Node | `test/browser_sdk_parity.test.js` | 4/4 |
-| Kesehatan relayer, kebijakan fee, webhook | `scripts/test-relayer-health.js` | 13/13 |
-| Tata kelola dengan **Safe v1.4.1 asli** di testnet | `scripts/test-governance.js` | 15/15 |
-| E2E browser penuh, **Magistrate otomatis**, deployment staging di testnet | `AUTO_MAGISTRATE=1 DEPLOYMENT_FILE=notes/staging-deployment.json node scripts/test-browser-e2e.js` | 15/15 (dua run; biaya ≈ 0,00006 ETH gas) |
+| Whole hardhat suite (without `.env`, as in CI) | `npx hardhat test` | **141 passing** (previously 78); 249/250 on 2026-10-11, see `docs/test_report_2026-10-11.md` |
+| Contract security (21 tests, specific errors) | `test/security_onchain.test.js` | 21/21 |
+| Gas regression guard | `test/gas_benchmark.test.js` | passing (baseline 944,941 / 1,067,838 / 321,308) |
+| Magistrate service (14 tests) | `test/magistrate_service.test.js` | 14/14 |
+| IPFS storage (10 tests) | `test/asp_store.test.js` | 10/10 |
+| Bulk Merkle tree = one-by-one insert | `test/merkle_bulk.test.js` | 13/13 |
+| Browser SDK (TypeScript) parity with the Node SDK | `test/browser_sdk_parity.test.js` | 4/4 |
+| Relayer health, fee policy, webhook | `scripts/test-relayer-health.js` | 14/14 |
+| Governance with a **real Safe v1.4.1** on testnet | `scripts/test-governance.js` | 15/15 |
+| Full browser E2E, **automated Magistrate**, staging deployment on testnet | `AUTO_MAGISTRATE=1 DEPLOYMENT_FILE=notes/staging-deployment.json node scripts/test-browser-e2e.js` | 15/15 (two runs; cost ≈ 0.00006 ETH gas) |
 
 ## 2. Per workstream
 
-### H1: Magistrate otomatis ✔ (kode + tes), ✖ soak
-- `services/magistrate/` (kebijakan denylist, store atomik + log audit append-only, layanan, CLI dengan health endpoint, kunci instance tunggal, alarm webhook).
-- Terbukti: idempoten, dibatasi laju (3 jam simulasi → 12 publikasi, root tertua tetap valid), kontrol negatif (tanpa batas, 18 publikasi menghabiskan jendela 16 root), crash antara pin dan publish menghasilkan CID yang sama, kehilangan state tidak mengubah apa pun, deposit ragequit dan alamat denylist yang ditambahkan belakangan keluar dari daftar berikutnya, hanya kunci Magistrate yang bisa menerbitkan.
-- Di testnet: deposit dari UI → daftar terbit otomatis dalam **22–67 detik** tanpa langkah manual.
-- **Soak (H1-TEST9) lulus pada gerbang 24 jam (keputusan pemilik 2026-10-11, 11/11 pemeriksaan, 25,2 jam), worker berjalan di Railway.** Lalu lintas rendah (5 deposit, 2 root dalam jendela), jadi perilaku jangka panjang baru diuji ringan.
-- **Dilengkapi kemudian:** `SupabaseStore` (state, verdict, log *append-only*, indeks `asp_roots`) + migrasi `supabase/migrations/20261009000000_phase3_magistrate.sql` + `scripts/supabase-check.js` (8 tes). **Migrasi sudah diterapkan** pada proyek Supabase (2026-10-09): `node scripts/supabase-check.js` melaporkan "Schema is complete"; round trip `SupabaseStore`, kolom provenance `asp_roots`, dan RLS (anon ditolak pada tabel layanan) diverifikasi langsung.
+### H1: Automated Magistrate ✔ (code + tests + live)
+- `services/magistrate/` (denylist policy, atomic store + append-only audit log, service, CLI with health endpoint, single-instance lock, webhook alarms).
+- Proven: idempotent, rate limited (3 simulated hours → 12 publications, the oldest root stays valid), negative control (without the limit, 18 publications exhaust the 16-root window), a crash between pin and publish yields the same CID, losing the state changes nothing, ragequit deposits and later-added denylist addresses drop out of the next list, only the Magistrate key can publish.
+- On testnet: a deposit from the UI → the list is published automatically in **22–67 seconds** with no manual step (7 s and 41 s on production runs of 2026-10-11).
+- **Soak (H1-TEST9) passed at the 24 h gate (owner's decision 2026-10-11, 11/11 checks, 25.2 h); the worker runs on Railway.** Traffic was low (5 deposits, 2 roots in the window), so long-run behaviour has been exercised only lightly.
+- **Added later:** `SupabaseStore` (state, verdicts, *append-only* log, `asp_roots` index) + migration `supabase/migrations/20261009000000_phase3_magistrate.sql` + `scripts/supabase-check.js` (8 tests). **The migration has been applied** to the Supabase project (2026-10-09): `node scripts/supabase-check.js` reports "Schema is complete"; the `SupabaseStore` round trip, the `asp_roots` provenance columns and RLS (anon rejected on the service tables) were verified live.
 
-### H2: IPFS ✔ (kode + tes), ✖ penyedia nyata
-- `lib/aspStore.js` (pin ke beberapa penyedia, fetch dengan fallback multi-gateway, verifikasi root on-chain), pembaca sisi server `frontend/src/lib/aspStore.ts`, dan `folio.ts` memakai CID dari `rootData(latestRoot)` sebagai sumber pertama.
-- Tidak perlu perubahan kontrak (string `data` sudah ada).
-- Integritas tidak bergantung pada gateway: dokumen dengan label tambahan, himpunan lain yang konsisten, versi salah, duplikat, angka non-desimal, dan CID traversal semuanya ditolak.
-- **Temuan skala:** membangun pohon 10.000 label memakan **21 detik** → diganti pembangunan massal per level: **1,3 detik** (Node), identik bit-per-bit dengan insert (12 kasus, termasuk path).
-- **Target tidak tercapai:** SDK browser (JS murni) membutuhkan **4,6 detik** untuk 10.000 daun, target rencana 3 detik. Tidak relevan pada skala sekarang (puluhan daun); jalur perbaikan bila daftar > ±5.000: cache layer di IndexedDB dan insert hanya daun baru.
-- **Belum diuji:** Pinata/Filebase sungguhan (tidak ada kredensial); diuji dengan server tiruan dan `services/magistrate/dev-ipfs.js`.
+### H2: IPFS ✔ (code + tests), partly verified with real providers
+- `lib/aspStore.js` (pin to several providers, fetch with multi-gateway fallback, on-chain root verification), the server-side reader `frontend/src/lib/aspStore.ts`, and `folio.ts` uses the CID from `rootData(latestRoot)` as its first source.
+- No contract change needed (the `data` string already exists).
+- Integrity does not depend on any gateway: documents with extra labels, another consistent set, a wrong version, duplicates, non-decimal numbers and CID traversal are all rejected.
+- **Scale finding:** building a 10,000-label tree took **21 seconds** → replaced by level-by-level bulk construction: **1.3 seconds** (Node), bit-for-bit identical to inserting one by one (12 cases, including paths).
+- **Target missed:** the browser SDK (plain JS) needs **4.6 seconds** for 10,000 leaves against a plan target of 3 seconds. Irrelevant at the current scale (tens of leaves); fix path if the list grows beyond ±5,000: an IndexedDB layer cache and inserting only the new leaves.
+- **Verified with real credentials:** Pinata (the worker pinned and the list was fetched back from the Pinata gateway; the root matched). **Not yet verified:** Filebase (second provider). Public gateways (`ipfs.io`, `dweb.link`) rate-limit freshly pinned CIDs, so the default gateway list now starts with the Pinata gateway.
 
-### H3: Multisig ✔ di staging, ✖ di deployment live
-- Safe v1.4.1 **sudah ter-deploy** di Robinhood Testnet (spike H3-T0: risiko terbesar hilang).
-- `scripts/governance/` (`transfer-roles.js` dengan dry-run bawaan dan pemeriksaan prasyarat, `rotate-magistrate.js`, `pause-deposits.js`).
-- Terbukti dengan Safe 2-of-3 nyata: deployer kehilangan semua 8 fungsi admin dengan error spesifik (`NotOwner` / `NotMagistrate` / `NotGuardian`); satu tanda tangan ditolak; rotasi 1,6 detik; publisher lama `NotMagistrate`; pause 1,4 detik, deposit ditolak sementara **ragequit tetap berjalan**; skrip menolak publisher=deployer, Safe ber-threshold 1, dan Safe yang memuat deployer.
-- **Belum:** pemindahan peran pada deployment live. Menunggu keputusan tiga penandatangan (bagian 4).
+### H3: Multisig ✔ on staging and on live testnet (roles)
+- Safe v1.4.1 is **deployed** on Robinhood Testnet (spike H3-T0: the biggest risk is gone).
+- `scripts/governance/` (`transfer-roles.js` with a built-in dry run and precondition checks, `rotate-magistrate.js`, `pause-deposits.js`).
+- Proven with a real 2-of-3 Safe: the deployer loses all 8 admin functions with specific errors (`NotOwner` / `NotMagistrate` / `NotGuardian`); one signature is rejected; rotation takes 1.6 s; the old publisher gets `NotMagistrate`; pause takes 1.4 s, deposits are rejected while **ragequit keeps working**; the script refuses publisher = deployer, a threshold-1 Safe, and a Safe that contains the deployer.
+- **Live (2026-10-11):** Safe `0xE4F1CE7C30753a9aF8125d53A1c35DE172635765` (3 owners, threshold 2) is the pool guardian and the register owner; a pause was executed through the Safe and deposits were refused with `DepositsPaused`. The *resume* transaction is pending.
 
-### H4: Relayer sehat ✔
-- Saldo/kesehatan di `/api/status`, Courier otomatis dinonaktifkan (UI + API 503) di bawah `RELAYER_MIN_BALANCE_ETH`, alarm webhook maksimal sekali per 10 menit, toleransi fee 90% dan batas fee ≤ 50% nilai, relay diserialisasi (satu nonce), biaya gas aktual vs fee dicatat.
-- Data nyata: fee 25,3 µETH vs biaya gas ≈ 10,8 µETH; saldo relayer **naik** setelah relay.
-- **Dilengkapi kemudian:** quote kini empiris (persentil ke-90 gas relay nyata + headroom; konstanta terukur sebelum ada 3 sampel) dan saat relay `eth_estimateGas` transaksi sebenarnya harus tertutup fee (6 tes model gas); biaya gas vs fee dicatat di `relayer_jobs`.
-- **H4-TEST1 diukur (2026-10-10, preview `marginalia-dev`, `scripts/relay-samples.js`):** 18 relay nyata tanpa gagal + 2 dari E2E = 20 sampel. Gas terpakai min 1.038.093 / p50 1.048.245 / p90 1.053.303 / maks 1.058.361. Quote berpindah dari konstanta 1.150.000 ke nilai empiris 1.111.292 (1,055x p90 aktual). Fee menutup biaya pada 18/18 relay (selisih bersih 1,6e12 s.d. 2,2e12 wei). Catatan: pada harga gas 0,01 gwei biaya per relay hanya ~1e13 wei, jadi akurasi pada lonjakan harga gas tetap perlu dipantau (lihat risiko 5).
-- **Trigger append-only `asp_decisions` diuji live (2026-10-10):** worker Magistrate sungguhan (deployment staging, `MAGISTRATE_STORE=supabase`) menulis 4 baris; `UPDATE` dan `DELETE` oleh service role ditolak trigger ("asp_decisions is append-only"), baris tidak berubah.
+### H4: Healthy relayer ✔
+- Balance/health in `/api/status`, the Courier is switched off automatically (UI + API 503) below `RELAYER_MIN_BALANCE_ETH`, webhook alarm at most once per 10 minutes, 90% fee tolerance and a fee cap of 50% of the value, relays are serialised (one nonce), actual gas cost vs fee is recorded.
+- Real data: fee 25.3 µETH vs gas cost ≈ 10.8 µETH; the relayer balance **rose** after relaying.
+- **Added later:** the quote is now empirical (90th percentile of real relay gas + headroom; a measured constant until 3 samples exist) and at relay time `eth_estimateGas` of the actual transaction must be covered by the fee (6 gas-model tests); gas cost vs fee is recorded in `relayer_jobs`.
+- **H4-TEST1 measured (2026-10-10, preview `marginalia-dev`, `scripts/relay-samples.js`):** 18 real relays without failure + 2 from E2E = 20 samples. Gas used min 1,038,093 / p50 1,048,245 / p90 1,053,303 / max 1,058,361. The quote moved from the 1,150,000 constant to the empirical 1,111,292 (1.055× the actual p90). The fee covered the cost in 18/18 relays (net margin 1.6e12 to 2.2e12 wei). Note: at a gas price of 0.01 gwei the cost per relay is only ~1e13 wei, so accuracy under gas-price spikes still has to be monitored (see risk 5).
+- **The `asp_decisions` append-only trigger was tested live (2026-10-10):** a real Magistrate worker (staging deployment, `MAGISTRATE_STORE=supabase`) wrote 4 rows; `UPDATE` and `DELETE` by the service role were rejected by the trigger ("asp_decisions is append-only") and the row was unchanged.
 
-### H5: Optimasi gas: **dihentikan oleh gerbang keputusan** (sesuai rencana)
-- Spike: Poseidon assembly (`poseidon-solidity`) **bit-identik tetapi tidak lebih murah**: T3 +4,5%, T4 +75% lebih mahal dibanding hasher circomlibjs saat ini. 20 hash T3 = 644k dari 930k gas deposit; klaim lama "deposit ≈ 220k" tidak terbukti.
-- Tidak ada perubahan kontrak, jadi **tidak ada redeploy dan tidak ada ceremony ulang**. Artefak spike dihapus dari repo agar permukaan audit tidak bertambah; yang dipertahankan adalah penjaga regresi gas.
-- Peluang kecil yang tidak dikerjakan (≈ 4%): `zeros` sebagai konstanta kode, bukan `SLOAD`. Di rantai ini biaya gas sangat murah (0,01 gwei), jadi tidak dikejar.
+### H5: Gas optimisation: **stopped by the decision gate** (as planned)
+- Spike: assembly Poseidon (`poseidon-solidity`) is **bit-identical but not cheaper**: T3 +4.5%, T4 +75% more expensive than the current circomlibjs hasher. 20 T3 hashes = 644k of the 930k deposit gas; the old claim "deposit ≈ 220k" was not substantiated.
+- No contract change, so **no redeploy and no new ceremony**. The spike artefacts were removed from the repo so the audit surface does not grow; the gas regression guard was kept.
+- A small opportunity that was not pursued (≈ 4%): `zeros` as code constants instead of `SLOAD`. On this chain gas is very cheap (0.01 gwei), so it was not chased.
 
-### H6: Integrasi ✔ (kecuali soak)
-- Tes keamanan kontrak dipindah ke CI (21 tes, error spesifik), CI diperbarui (Node 22, job frontend, audit produksi, pemindaian rahasia), E2E mendukung Magistrate otomatis dan deployment alternatif, runbook insiden diperbarui (model tata kelola, rotasi, pause).
-- **Belum:** soak 72 jam, tag `v0.3.0-rc1`.
+### H6: Integration ✔
+- Contract security tests moved into CI (21 tests, specific errors), CI updated (Node 22, frontend job, production audit, secret scan), E2E supports the automated Magistrate and alternative deployments, the incident runbook was updated (governance model, rotation, pause).
+- Soak passed at the 24 h gate; tag `v0.3.0-rc1` created (2026-10-11).
 
-## 3. Temuan dan koreksi di sepanjang jalan
-1. Keputusan D6 terbukti benar: gerbang H5 menghemat ±1 minggu kerja.
-2. Pembangunan pohon `O(20n)` adalah bottleneck nyata, sekarang `O(2n)`.
-3. Tes saya sendiri ada yang terlalu longgar (hanya memeriksa "revert"); sudah diperketat ke error spesifik.
-4. RPC publik membaca saldo satu blok terlambat; tes E2E sekarang mem-polling selisih saldo, bukan menganggap Courier rusak (Courier terbukti berjalan di chain).
-5. Fee relayer belum tentu menutup biaya bila harga gas melonjak >10% antara quote dan relay (diterima toleransi 90%); pada skala ini aman, perlu dipantau lewat log `[relay] ... net=`.
+## 3. Findings and corrections along the way
+1. Decision D6 proved right: the H5 gate saved about 1 week of work.
+2. Building the tree in `O(20n)` was a real bottleneck, now `O(2n)`.
+3. Some of my own tests were too loose (they only checked "revert"); tightened to specific errors.
+4. The public RPC reads a balance one block late; the E2E test now polls the balance delta instead of assuming the Courier is broken (the Courier was shown to work on chain).
+5. The relayer fee does not necessarily cover the cost if the gas price jumps by more than 10% between quote and relay (the 90% tolerance is accepted); safe at this scale, to be monitored through the `[relay] ... net=` log.
 
-## 3b. Keputusan pemilik (diterima 2026-10-09) dan tindak lanjutnya
+## 3b. Owner decisions (accepted 2026-10-09) and their follow-up
 
-| Keputusan | Tindak lanjut di kode/dokumen |
+| Decision | Follow-up in code/docs |
 |---|---|
-| Safe **2-of-3**, tiga kunci di hardware wallet berbeda; kunci publisher terpisah dan hanya boleh publish | Sudah sesuai rancangan dan teruji (15/15). Safe v1.4.1 resmi tersedia di chain 46630 (dicek di H3-T0). |
-| IPFS: **Pinata + Filebase** | Konfigurasi didokumentasikan (`PINATA_JWT`, `IPFS_RPC_URL`+`IPFS_RPC_AUTH`); keduanya memakai kode pinner yang sama dengan tes. Belum diuji dengan kredensial sungguhan. |
-| Denylist: sumber publik dulu, berbayar menjelang mainnet | Dibangun: kebijakan OFAC (daftar nyata 120 alamat termuat), Chainalysis free API, daftar manual; komposisi fail-closed; 10 tes baru. |
-| Peninjau harian; override lewat Safe; proses banding di halaman Compliance | Bagian "Screening policy & appeals" ditambahkan ke `/compliance`. Override lewat Safe adalah kebijakan, belum ditegakkan secara teknis. |
-| Worker di Railway, restart otomatis, RPC berbayar + cadangan | `services/magistrate/railway.json` (restart ALWAYS); `RH_LOGS_RPC_URL` menerima beberapa URL dengan failover otomatis. |
-| Deploy ke produksi lewat staging dulu | Urutan di bagian 5. Staging di testnet sudah dijalankan penuh (15/15); preview Railway tinggal dibuat. |
-| Metadata `canonical` / `og:url` salah | Diperbaiki (lihat 3c). |
+| Safe **2-of-3**, three keys on different hardware wallets; a separate publisher key that may only publish | Implemented as designed and tested (15/15). The official Safe v1.4.1 is available on chain 46630 (checked in H3-T0). |
+| IPFS: **Pinata + Filebase** | Configuration documented (`PINATA_JWT`, `IPFS_RPC_URL`+`IPFS_RPC_AUTH`); both use the same pinner code as the tests. Pinata verified with real credentials; Filebase not yet. |
+| Denylist: public sources first, paid ones before mainnet | Built: OFAC policy (the real 120-address list loaded), Chainalysis free API, manual list; fail-closed composition; 10 new tests. |
+| Daily reviewer; override through the Safe; appeals process on the Compliance page | A "Screening policy & appeals" section was added to `/compliance`. An override through the Safe is a policy, not yet enforced technically. |
+| Worker on Railway, automatic restart, paid RPC + backup | `services/magistrate/railway.json` (restart ALWAYS); `RH_LOGS_RPC_URL` accepts several URLs with automatic failover. |
+| Deploy to production through staging first | Done: preview (`dev`) then production (`main`). |
+| Wrong `canonical` / `og:url` metadata | Fixed (see 3c). |
 
-## 3c. Temuan SEO / link-preview dari pemeriksaan situs
-- `canonical` dan `og:url` mengarah ke domain Railway lama; sekarang `https://marginaliazk.tech` (bisa diganti dengan `NEXT_PUBLIC_SITE_URL`).
-- **Bug yang lebih besar:** semua halaman ber-`canonical` ke `/` (menyuruh mesin pencari menganggap `/app`, `/explorer`, dst. sebagai duplikat beranda). Sekarang canonical per halaman.
-- **Gambar OG tidak pernah ada:** `/images/marginalia-hero.webp` mengembalikan 404 di situs live, jadi pratinjau tautan di X tanpa gambar. Diganti gambar yang dibangkitkan (`opengraph-image` / `twitter-image`, PNG 1200x630) dan dipasang di tiap halaman.
-- Judul halaman memakai template `"%s | MARGINALIA"`; halaman 404 diberi `noindex`.
+## 3c. SEO / link-preview findings from the site check
+- `canonical` and `og:url` pointed to the old Railway domain; they now use `https://marginaliazk.tech` (overridable with `NEXT_PUBLIC_SITE_URL`).
+- **A bigger bug:** every page had `canonical` set to `/` (telling search engines to treat `/app`, `/explorer`, and so on as duplicates of the home page). Canonicals are now per page.
+- **The OG image never existed:** `/images/marginalia-hero.webp` returned 404 on the live site, so link previews on X had no image. Replaced by generated images (`opengraph-image` / `twitter-image`, PNG 1200x630) attached to every page.
+- Page titles use the template `"%s | MARGINALIA"`; the 404 page is `noindex`.
 
-## 4. Keputusan yang masih diperlukan dari pemilik proyek
-1. **Nama tiga penandatangan Safe** dan alamat hardware wallet mereka (untuk `transfer-roles.js`).
-2. **Kredensial**: Pinata JWT, kunci IPFS RPC Filebase, kunci Chainalysis free API, dan RPC berbayar + cadangan.
-3. **Nama peninjau harian** untuk keputusan screening.
-4. Membuat layanan Railway kedua (worker) dan environment **preview/staging**; saya tidak punya akses Railway.
+## 4. Decisions still needed from the project owner
+1. A second IPFS provider (Filebase) and the Chainalysis key verified with real credentials, and a paid RPC with a backup.
+2. The name of the **daily reviewer** for screening decisions.
+3. The alert webhook URL.
+4. Execute the pending *resume* transaction on the Safe so deposits reopen.
 
-## 5. Langkah berikutnya (urutan aman, sesuai keputusan "lewat staging dulu")
-1. Commit + push ke cabang/preview; **deploy web ke preview Railway** (tanpa perubahan kontrak). Perbaikan stale-ASP adalah yang paling penting.
-2. Di preview jalankan alur penuh: deposit, persetujuan otomatis, withdraw lewat relayer (`APP_URL=<preview> node scripts/test-browser-e2e.js`; di preview pakai `ASP_PUBLISH_CMD` atau worker bila sudah ada). Simpan deployment lama untuk rollback.
-3. Deploy worker Magistrate (Railway terpisah) dengan kunci publisher baru + dua pinner; `setMagistrate(publisher)` oleh deployer.
-4. Promosikan web ke produksi. Soak 48 jam di testnet live, lalu 72 jam untuk sistem utuh.
-5. Setelah soak hijau: `transfer-roles.js` (dry-run dulu) ke Safe 2-of-3.
-6. Tag `v0.3.0-rc1` dan serahkan ke Fase 04.
+## 5. Next steps
+See `docs/mainnet_readiness.md` and `docs/mainnet_launch_checklist.md`. The remaining gates (external audit, public ceremony, redeploy) are tracked there; Phase 03 itself has no further code work.

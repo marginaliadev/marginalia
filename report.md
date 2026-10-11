@@ -1,100 +1,97 @@
-# Laporan Ringkasan: Marginalia
+# Summary Report: Marginalia
 
 > *"Proven. Not revealed."*
 
-## 1. Gambaran Umum
+## 1. Overview
 
-**Marginalia** adalah *shielded asset pool* berbasis zero-knowledge yang dibangun untuk **Robinhood Chain** (Orbit L2). Tujuannya: menjaga kerahasiaan transaksi tanpa mengorbankan kepatuhan (compliance), lewat **Association Set Provider (ASP)** dan **Provable Exclusion Proofs**. Nama dan narasinya terinspirasi catatan pinggir Pierre de Fermat.
+**Marginalia** is a zero-knowledge *shielded asset pool* built for **Robinhood Chain** (an Orbit L2). Its goal: keep transactions confidential without sacrificing compliance, through an **Association Set Provider (ASP)** and **Provable Exclusion Proofs**. The name and narrative are inspired by Pierre de Fermat's marginal notes.
 
-> **Status: hanya testnet, belum diaudit.** Jangan deposit dana yang tidak siap hilang.
+> **Status: testnet only, not audited.** Do not deposit funds you cannot afford to lose.
 
-## 2. Tiga Aksioma
+## 2. The Three Axioms
 
-| Aksioma | Nama | Fungsi |
+| Axiom | Name | Function |
 |---|---|---|
-| I | Wax Seal | Nullifier `Poseidon2(sk, ρ)` mencegah double-spend; setiap note hanya bisa dibelanjakan sekali. |
-| II | Folio Tree | Commitment `Poseidon3(value, label, precommitment)` masuk ke Merkle tree kedalaman 20 (±1,05 juta note), bukti sublinear O(log N). |
-| III | The Magistrate | Penarikan harus membuktikan keanggotaan dalam root ASP yang disetujui, sehingga dana "kotor" terpisah dari dana "bersih". |
+| I | Wax Seal | The nullifier `Poseidon2(sk, ρ)` prevents double-spending; each note can be spent only once. |
+| II | Folio Tree | The commitment `Poseidon3(value, label, precommitment)` enters a depth-20 Merkle tree (±1.05 million notes), with sublinear O(log N) proofs. |
+| III | The Magistrate | A withdrawal must prove membership in an approved ASP root, so "dirty" funds stay separate from "clean" funds. |
 
-## 3. Arsitektur & Alur
+## 3. Architecture and Flow
 
-1. **Deposit** – pengguna mengirim 1 ETH ke `MarginaliaPool.sol` dengan commitment + label.
-2. **Screening** – Magistrate menyaring label dan menambahkannya ke buffer root ASP (`MagistrateRegister.sol`).
-3. **Proving** – pengguna membuat bukti Groth16 (BN254) di browser (snarkjs): Merkle proof + inklusi ASP + Wax Seal.
-4. **Withdraw** – bukti dikirim langsung atau lewat **Mersenne Courier** (relayer gasless); kontrak memverifikasi pairing, menandai nullifier terpakai, lalu membayar penerima (jumlah − fee) dan relayer.
+1. **Deposit**: the user sends ETH to `MarginaliaPool.sol` with a commitment + label.
+2. **Screening**: the Magistrate screens the label and adds it to the ASP root buffer (`MagistrateRegister.sol`).
+3. **Proving**: the user builds a Groth16 (BN254) proof in the browser (snarkjs): a Merkle proof + ASP inclusion + the Wax Seal.
+4. **Withdraw**: the proof is sent directly or through the **Mersenne Courier** (a gasless relayer); the contract verifies the pairing, marks the nullifier as spent, then pays the recipient (amount − fee) and the relayer.
 
-## 4. Primitif Kriptografi
+## 4. Cryptographic Primitives
 
-- Kurva **alt_bn128 (BN254)**
-- Hash **Poseidon** (circomlib)
-- Sistem bukti **Groth16** (verifikasi 3 elemen)
-- Merkle tree 20 level dengan zero-hash precomputed (gas insert ±950k)
+- Curve **alt_bn128 (BN254)**
+- **Poseidon** hash (circomlib)
+- **Groth16** proof system (3-element verification)
+- A 20-level Merkle tree with precomputed zero hashes (insert gas ±950k)
 
-## 5. Kepatuhan (ASP)
+## 5. Compliance (ASP)
 
-- **Buffer root bergulir**: 16 root ASP terakhir tetap valid, sehingga bukti tidak batal saat registry diperbarui.
-- **Letter of Disclosure**: kunci pengungkapan selektif dari viewing key untuk auditor, tanpa hak membelanjakan.
-- **Magistrate otomatis** (`services/magistrate/`): menyaring deposit (daftar OFAC, API sanksi Chainalysis, daftar alamat exploit), mem-pin daftar disetujui ke IPFS, dan mempublikasikan root.
-- **Tata kelola Safe 2-of-3**: guardian hanya bisa menjeda *deposit baru*; penarikan dan ragequit tetap berjalan.
-- **Ragequit**: penyetor asli dapat menarik kembali depositnya dengan bukti Groth16 kecil.
+- **Rolling root buffer**: the last 16 ASP roots stay valid, so proofs do not break when the registry is updated.
+- **Letter of Disclosure**: a selective-disclosure key derived from the viewing key for auditors, with no spending rights.
+- **Automated Magistrate** (`services/magistrate/`): screens deposits (the OFAC list, the Chainalysis sanctions API, a list of exploit addresses), pins the approved list to IPFS, and publishes the root.
+- **2-of-3 Safe governance**: the guardian can only pause *new deposits*; withdrawals and ragequit keep working.
+- **Ragequit**: the original depositor can take their deposit back with a small Groth16 proof.
 
 ## 6. Mersenne Courier (Relayer)
 
-- Penerima baru tidak perlu punya ETH untuk gas.
-- `recipient` dan `fee` adalah input publik sirkuit, jadi relayer tidak bisa membajak transaksi.
-- Fee dikutip dari persentil ke-90 gas relay terbaru (+ headroom); Courier hanya ditawarkan saat saldo wallet cukup (jika tidak, API menjawab 503).
+- A new recipient does not need ETH for gas.
+- `recipient` and `fee` are public circuit inputs, so the relayer cannot hijack the transaction.
+- The fee is quoted from the 90th percentile of recent relay gas (+ headroom); the Courier is offered only when the wallet balance is sufficient (otherwise the API answers 503).
 
-## 7. Aplikasi Web (frontend Next.js, desain "Noirpay")
+## 7. Web Application (Next.js front end, "Noirpay" design)
 
-| Halaman | Route | Isi |
+| Page | Route | Content |
 |---|---|---|
-| Landing | `/` | Tiga aksioma, narasi Fermat, diagram pipeline, telemetri jaringan. |
-| Shielded Cockpit | `/app` | Deposit, proving di browser, withdraw (wallet/Courier), ragequit, vault note terenkripsi, pemulihan crash. |
-| Codex | `/codex` | Dokumentasi kriptografi: aljabar BN254, matriks R1CS, invarian kontrak. |
-| Folio Explorer | `/explorer` | Inspektor leaf Merkle, registry nullifier, analitik gas. |
-| Compliance Desk | `/compliance` | Kebijakan screening, proses banding, generator Letter of Disclosure. |
+| Landing | `/` | The three axioms, the Fermat narrative, a pipeline diagram, network telemetry. |
+| Shielded Cockpit | `/app` | Deposit, in-browser proving, withdraw (wallet/Courier), ragequit, an encrypted note vault, crash recovery. |
+| Codex | `/codex` | Cryptography documentation: BN254 algebra, the R1CS matrix, contract invariants. |
+| Folio Explorer | `/explorer` | A Merkle leaf inspector, the nullifier registry, gas analytics. |
+| Compliance Desk | `/compliance` | Screening policy, the appeals process, the Letter of Disclosure generator. |
+| Ceremony | `/ceremony` | Public status of the Phase-2 trusted-setup ceremony. |
 
-Hardening terbaru: CSP, hash aset zk yang dipin dan diverifikasi di browser.
+Latest hardening: a CSP, and pinned proving-asset hashes verified in the browser.
 
 ## 8. Tech Stack
 
-Solidity 0.8.24 · Circom 2.1.8 · Groth16/BN254 · Hardhat · Next.js (frontend) · Supabase (state Magistrate) · IPFS (Pinata + gateway publik) · Node.js ≥ 22.
+Solidity 0.8.24 · Circom 2.1.x · Groth16/BN254 · Hardhat · Next.js (front end) · Supabase (Magistrate state) · IPFS (Pinata + public gateways) · Node.js ≥ 22.
 
-## 9. Pengujian
+## 9. Testing
 
-- **232 test** lulus (`npx hardhat test`, tanpa jaringan eksternal, ±5–6 menit).
-- Mencakup: protokol, keamanan adversarial, audit sirkuit (mutasi tiap input), *stateful fuzz*, layanan Magistrate, paritas SDK browser vs Node, rehearsal ceremony, dan regression guard gas (deposit ≈945k, withdraw ≈1,07M, ragequit ≈321k).
-- Suite on-chain/browser (perlu key testnet): governance Safe v1.4.1, relayer health, e2e headless Chrome.
+- **250 tests** (`npx hardhat test`, no external network, ±5–6 minutes; 249 passing on 2026-10-11, one load-sensitive timing test passes in isolation).
+- Coverage: the protocol, adversarial security, circuit audit (mutation of every input), *stateful fuzz*, the Magistrate service, browser vs Node SDK parity, the ceremony rehearsal, and the gas regression guard (deposit ≈945k, withdraw ≈1.07M, ragequit ≈321k).
+- On-chain/browser suites (need a testnet key): Safe v1.4.1 governance, relayer health, headless-Chrome E2E. See `docs/test_report_2026-10-11.md`.
 
-## 10. Struktur Repositori
+## 10. Repository Structure
 
-| Direktori | Isi |
+| Directory | Content |
 |---|---|
-| `contracts/` | Kontrak Solidity (pool, register, verifier) |
-| `circuits/` | Sirkuit Circom (withdraw, ragequit) |
-| `frontend/` | Aplikasi web Next.js |
-| `services/magistrate/` | Worker Magistrate otomatis |
-| `asp/`, `lib/` | Logika ASP dan SDK |
+| `contracts/` | Solidity contracts (pool, register, verifiers) |
+| `circuits/` | Circom circuits (withdraw, ragequit) |
+| `frontend/` | The Next.js web application |
+| `services/magistrate/` | The automated Magistrate worker |
+| `asp/`, `lib/` | ASP logic and the SDK |
 | `scripts/` | Deploy, governance, ceremony, audit |
-| `supabase/` | Skema dan migrasi |
-| `docs/` | Threat model, runbook, laporan fase, mainnet readiness |
+| `supabase/` | Schema and migrations |
+| `docs/` | Threat model, runbooks, phase reports, mainnet readiness |
 
 ## 11. Roadmap
 
-| Fase | Status |
+| Phase | Status |
 |---|---|
-| 01 Prototype | Selesai |
-| 02 Testnet Alpha | Selesai (deposit, proving, withdraw, ragequit, vault; terverifikasi di testnet) |
-| 03 Hardening | **Aktif** – Magistrate otomatis, IPFS, Safe, relayer health sudah dibangun; tinggal rollout dan soak |
-| 04 Audit & Ceremony | Akan datang – toolkit dan rehearsal siap; audit eksternal dan ceremony publik belum |
-| 05 Mainnet | Belum mulai – **terblokir secara teknis** |
+| 01 Prototype | Completed |
+| 02 Testnet Alpha | Completed (deposit, proving, withdraw, ragequit, vault; verified on testnet) |
+| 03 Hardening | **Active**: the automated Magistrate, IPFS, the Safe and relayer health are built and live on testnet; the soak gate (24 h) passed |
+| 04 Audit & Ceremony | Upcoming: the toolkit and rehearsal are ready; the external audit and the public ceremony are not done |
+| 05 Mainnet | Not started: **technically blocked** (`node scripts/mainnet-preflight.js`) |
 
-## 12. Risiko & Catatan Penting
+## 12. Risks and Important Notes
 
-- **Proving key masih setup satu pihak (dev)**; `scripts/deploy.js` menolak chain mainnet (4663) tanpa transkrip ceremony.
-- Belum ada audit eksternal.
-- Magistrate adalah hot key terpisah yang dapat diganti oleh Safe; ketergantungan pada sumber screening eksternal (fail-closed).
-
-## Catatan
-
-Laporan ini disusun dari `README.md` dan struktur repositori proyek. Anda tidak menyertakan URL, jadi saya menganggap "web ini" adalah aplikasi Marginalia di repo ini. Jika yang Anda maksud situs lain, kirim URL-nya dan saya perbarui.
+- **The proving key is still a single-party (dev) setup**; `scripts/deploy.js` refuses the mainnet chain (4663) without ceremony transcripts.
+- There is no external audit yet.
+- The Magistrate is a separate hot key that the Safe can replace; it depends on external screening sources (fail-closed).

@@ -1,236 +1,236 @@
-# MARGINALIA: Rencana Fase 03 "Hardening"
+# MARGINALIA: Phase 03 "Hardening" Plan
 
-**Status:** Dikerjakan sebagian, lihat `docs/phase3_hardening_report.md` (kode + tes H1–H4, H6 selesai; H5 dihentikan oleh gerbang keputusan; soak dan deploy produksi belum) · **Durasi:** 3–4 minggu (2 developer) atau 5–6 minggu (1 developer) · **Total:** ±28 hari-orang
-**Pendahulu:** Testnet Alpha (aplikasi browser nyata, relayer, vault, E2E, keamanan dasar) · **Penerus:** Fase 04 "Audit & Ceremony"
+**Status:** Mostly executed, see `docs/phase3_hardening_report.md` (code + tests for H1–H4 and H6 done; H5 stopped by the decision gate; the soak gate passed at 24 h and production deployment is live) · **Duration:** 3–4 weeks (2 developers) or 5–6 weeks (1 developer) · **Total:** ±28 person-days
+**Predecessor:** Testnet Alpha (real browser app, relayer, vault, E2E, baseline security) · **Successor:** Phase 04 "Audit & Ceremony"
 
-> Penomoran: roadmap di web menyebut "03 Hardening"; dokumen lama (`engineering_master_plan.md`, `tasks_and_test_matrix.md`) menyebutnya "Phase 2". Isinya sama. Dokumen ini adalah rincian eksekusinya.
+> Numbering: the roadmap on the web calls it "03 Hardening"; the older documents (`engineering_master_plan.md`, `tasks_and_test_matrix.md`) call it "Phase 2". The content is the same. This document is the detailed execution plan.
 
 ---
 
-## 1. Tujuan, ruang lingkup, dan di luar lingkup
+## 1. Goal, scope and out of scope
 
-**Tujuan:** menghapus semua langkah manual dan titik kegagalan tunggal yang tersisa sebelum kode dibekukan untuk audit.
+**Goal:** remove every remaining manual step and single point of failure before the code is frozen for audit.
 
-| Masalah di Alpha (terbukti saat uji live) | Diselesaikan oleh |
+| Problem in the Alpha (proven during live testing) | Solved by |
 |---|---|
-| Approval Magistrate = skrip manual + `git push` + tunggu cache GitHub (daftar basi membuat withdraw gagal) | H1 + H2 |
-| Daftar label bergantung pada GitHub | H2 (IPFS) |
-| Satu kunci (deployer) memegang Magistrate + guardian + owner | H3 (multisig) |
-| Saldo relayer 0 → Courier gagal diam-diam; quote fee tidak akurat | H4 |
-| Deposit ≈ 930k gas, withdraw ≈ 1,10 juta gas | H5 |
-| Tes keamanan kontrak hanya ada di scratchpad, tidak ada CI | H6 |
+| Magistrate approval = a manual script + `git push` + waiting for the GitHub cache (a stale list makes withdrawals fail) | H1 + H2 |
+| The label list depends on GitHub | H2 (IPFS) |
+| One key (the deployer) holds Magistrate + guardian + owner | H3 (multisig) |
+| Relayer balance 0 → the Courier fails silently; the fee quote is inaccurate | H4 |
+| Deposit ≈ 930k gas, withdraw ≈ 1.10 million gas | H5 |
+| Contract security tests exist only in a scratchpad, no CI | H6 |
 
-**Di luar lingkup:** audit eksternal dan ceremony (Fase 04), ERC-20/multi-aset (`MarginaliaTokenPool`), mainnet, perubahan circuit (jangan ubah circuit: `zkey` dan verifier harus tetap sama, sehingga **tidak perlu ceremony ulang**).
+**Out of scope:** the external audit and the ceremony (Phase 04), ERC-20/multi-asset (`MarginaliaTokenPool`), mainnet, circuit changes (do not change the circuit: the `zkey` and verifier must stay the same, so **no new ceremony is needed**).
 
-## 2. Keputusan arsitektur
+## 2. Architecture decisions
 
-| # | Keputusan | Alasan |
+| # | Decision | Reason |
 |---|---|---|
-| D1 | **Tidak ada perubahan kontrak untuk IPFS.** `publishRoot(root, data)` sudah menerima string; isi dengan `ipfs://<cid>`. Tabel Supabase `asp_roots.ipfs_cid` sudah ada | Mengurangi permukaan audit |
-| D2 | **Magistrate = kunci "publisher" panas yang bisa dirotasi; Owner register = Safe multisig.** `setMagistrate()` oleh owner sudah ada | Multisig murni tidak cocok untuk penerbitan root otomatis tiap beberapa menit |
-| D3 | **Urutan: H5 (redeploy pool) sebelum H3 (transfer peran).** Peran dipindah ke kontrak final, sekali saja | Menghindari dua kali transfer dan celah di antaranya |
-| D4 | **Penerbitan root hanya saat ada perubahan, jarak minimal 15 menit.** Register hanya menyimpan 16 root terakhir (`ROOT_HISTORY_SIZE=16`); jarak 15 menit → jendela ≥ 4 jam. Penerbitan per 5 menit hanya memberi jendela 80 menit dan membuat proof pengguna kadaluarsa (`StaleAspRoot`) | Sliding window sudah ada di kontrak |
-| D5 | **Top-up relayer tetap manual**, dengan alarm. Tidak ada kunci bernilai tinggi di server web | Prinsip hak minimum |
-| D6 | **Target gas ditetapkan setelah spike.** Rencana lama menyebut deposit ≈ 220k, tetapi itu belum terukur | Lihat H5 (gerbang keputusan) |
-| D7 | **Circuit dan verifier tidak disentuh** | Tidak perlu ceremony ulang; fokus audit tetap sempit |
+| D1 | **No contract change for IPFS.** `publishRoot(root, data)` already accepts a string; fill it with `ipfs://<cid>`. The Supabase table `asp_roots.ipfs_cid` already exists | Reduces the audit surface |
+| D2 | **Magistrate = a hot, rotatable "publisher" key; register Owner = a Safe multisig.** `setMagistrate()` by the owner already exists | A pure multisig does not suit automatic root publication every few minutes |
+| D3 | **Order: H5 (pool redeploy) before H3 (role transfer).** Roles move to the final contract, once | Avoids two transfers and a gap in between |
+| D4 | **Publish a root only when something changed, at least 15 minutes apart.** The register keeps only the last 16 roots (`ROOT_HISTORY_SIZE=16`); a 15-minute spacing → a window of ≥ 4 hours. Publishing every 5 minutes gives only an 80-minute window and expires users' proofs (`StaleAspRoot`) | The sliding window already exists in the contract |
+| D5 | **Relayer top-up stays manual**, with an alarm. No high-value key on the web server | Principle of least privilege |
+| D6 | **The gas target is set after a spike.** The old plan said deposit ≈ 220k, but that was never measured | See H5 (decision gate) |
+| D7 | **The circuit and verifier are not touched** | No new ceremony; the audit focus stays narrow |
 
-## 3. Baseline terukur (testnet, per 2026-10-09)
+## 3. Measured baseline (testnet, as of 2026-10-09)
 
-| Operasi | Gas |
+| Operation | Gas |
 |---|---|
-| deposit | 929.767 |
-| withdraw (wallet) | 1.100.473 |
-| ragequit | 348.556 |
-| Biaya satu run E2E penuh | ≈ 0,000045 ETH |
-| Tes | 78 unit lulus, E2E browser 14/14 |
+| deposit | 929,767 |
+| withdraw (wallet) | 1,100,473 |
+| ragequit | 348,556 |
+| Cost of one full E2E run | ≈ 0.000045 ETH |
+| Tests | 78 unit passing, browser E2E 14/14 |
 
-## 4. Workstream, tugas, dan tes
+## 4. Workstreams, tasks and tests
 
-Estimasi dalam hari-orang (hO). Setiap tugas punya acceptance criteria; tes diberi ID agar bisa dilacak di matriks (bagian 6).
+Estimates are in person-days (pd). Every task has acceptance criteria; tests have IDs so they can be traced in the matrix (section 6).
 
-### H1: Magistrate otomatis (6 hO)
-Layanan terpisah `services/magistrate/` (worker Railway), **bukan** bagian server web.
+### H1: Automated Magistrate (6 pd)
+A separate service `services/magistrate/` (a Railway worker), **not** part of the web server.
 
-| ID | Tugas | Detail | hO |
+| ID | Task | Detail | pd |
 |---|---|---|---|
-| H1-T1 | Modul kebijakan | `policy.js`: denylist (file/URL), antarmuka plugin untuk API screening eksternal. Default: denylist saja. Semua keputusan ditulis append-only ke tabel `asp_decisions` | 1 |
-| H1-T2 | Indexer deposit | Baca event `Deposited` secara inkremental dengan kursor blok di tabel `magistrate_state` (migrasi SQL baru). Pakai `RH_LOGS_RPC_URL` (RPC gratis hanya 10 blok) | 1 |
-| H1-T3 | Penyusun daftar | Label disetujui = deposit lolos kebijakan, **kecuali** yang sudah ragequit. Bangun pohon ASP dan bandingkan dengan `register.latestRoot()` | 0,5 |
-| H1-T4 | Publisher | Pin ke IPFS (H2) → `publishRoot(root, "ipfs://cid")`. Idempoten, menangani nonce, kenaikan gas, dan retry. Hanya menerbitkan saat root berubah dan ≥ 15 menit sejak terbitan terakhir | 1,5 |
-| H1-T5 | Penjadwal | Loop `--loop` tiap 60 detik (kerja nyata dibatasi D4). Mode `--once` untuk CI | 0,5 |
-| H1-T6 | Manajemen kunci | `MAGISTRATE_PUBLISHER_KEY` baru (bukan deployer), saldo kecil. Didaftarkan lewat `setMagistrate` (sebelum H3: oleh deployer; sesudah H3: oleh Safe) | 0,5 |
-| H1-T7 | Observabilitas | `/health`, metrik lag, webhook alarm: lag > 30 menit, saldo publisher < ambang, 3 kegagalan berturut-turut | 1 |
+| H1-T1 | Policy module | `policy.js`: denylist (file/URL), a plugin interface for external screening APIs. Default: denylist only. Every decision is written append-only to the `asp_decisions` table | 1 |
+| H1-T2 | Deposit indexer | Read the `Deposited` event incrementally with a block cursor in the `magistrate_state` table (a new SQL migration). Use `RH_LOGS_RPC_URL` (a free RPC only allows 10 blocks) | 1 |
+| H1-T3 | List builder | Approved labels = deposits that pass the policy, **except** those already ragequit. Build the ASP tree and compare it with `register.latestRoot()` | 0.5 |
+| H1-T4 | Publisher | Pin to IPFS (H2) → `publishRoot(root, "ipfs://cid")`. Idempotent, handles nonce, gas bumps and retries. Publishes only when the root changed and ≥ 15 minutes since the last publication | 1.5 |
+| H1-T5 | Scheduler | A `--loop` every 60 seconds (real work is limited by D4). A `--once` mode for CI | 0.5 |
+| H1-T6 | Key management | A new `MAGISTRATE_PUBLISHER_KEY` (not the deployer), small balance. Registered through `setMagistrate` (before H3: by the deployer; after H3: by the Safe) | 0.5 |
+| H1-T7 | Observability | `/health`, lag metrics, webhook alarms: lag > 30 minutes, publisher balance < threshold, 3 consecutive failures | 1 |
 
-**Acceptance:** deposit baru muncul di daftar dan root terbit ≤ 20 menit tanpa tindakan manusia; tidak ada `git push`; menghentikan proses di tengah penerbitan lalu menyalakannya lagi tidak membuat duplikat maupun kehilangan label.
+**Acceptance:** a new deposit appears in the list and the root is published ≤ 20 minutes later with no human action; no `git push`; stopping the process in the middle of a publication and starting it again creates neither a duplicate nor a lost label.
 
-**Tes:**
+**Tests:**
 
-| ID | Jenis | Skenario | Hasil yang diharapkan |
+| ID | Type | Scenario | Expected result |
 |---|---|---|---|
-| H1-TEST1 | Unit | Kebijakan: alamat denylist → DENY; lainnya → APPROVE; keputusan tercatat | Log keputusan lengkap |
-| H1-TEST2 | Unit | Pohon ASP dari layanan = root yang diterima kontrak (bandingkan dengan `lib/marginalia.js`) | Root identik |
-| H1-TEST3 | Integrasi (hardhat) | Deposit → `--once` → root terbit → klien membuat proof withdraw dan berhasil | Lulus tanpa langkah manual |
-| H1-TEST4 | Idempotensi | Jalankan `--once` dua kali berturut-turut | Hanya satu tx |
-| H1-TEST5 | Kebijakan | Deposit dari alamat denylist | Labelnya tidak ada di pohon; withdraw ditolak; ragequit tetap bisa |
-| H1-TEST6 | Ragequit | Deposit yang di-ragequit dikeluarkan dari terbitan berikutnya | Label tidak ada lagi |
-| H1-TEST7 | Jendela root | Terbitkan 17 root berturut-turut (bypass cadence di tes) | Proof dari root ke-1 ditolak (`StaleAspRoot`); dengan cadence normal tidak terjadi |
-| H1-TEST8 | Crash | `kill -9` di tengah penerbitan (setelah pin, sebelum tx), lalu restart | Tepat satu root terbit, tidak ada yang hilang |
-| H1-TEST9 | Testnet soak | 48 jam, deposit sintetik tiap 30 menit | 100% deposit disetujui dalam ≤ 20 menit, 0 alarm palsu |
+| H1-TEST1 | Unit | Policy: denylist address → DENY; others → APPROVE; decisions recorded | Complete decision log |
+| H1-TEST2 | Unit | The ASP tree from the service = the root accepted by the contract (compare with `lib/marginalia.js`) | Identical root |
+| H1-TEST3 | Integration (hardhat) | Deposit → `--once` → root published → the client builds a withdraw proof and succeeds | Passes with no manual step |
+| H1-TEST4 | Idempotency | Run `--once` twice in a row | Only one tx |
+| H1-TEST5 | Policy | A deposit from a denylist address | Its label is not in the tree; withdraw is rejected; ragequit still works |
+| H1-TEST6 | Ragequit | A ragequit deposit is removed from the next publication | The label is gone |
+| H1-TEST7 | Root window | Publish 17 roots in a row (bypassing the cadence in the test) | A proof from the 1st root is rejected (`StaleAspRoot`); with the normal cadence it does not happen |
+| H1-TEST8 | Crash | `kill -9` in the middle of a publication (after pin, before tx), then restart | Exactly one root published, nothing lost |
+| H1-TEST9 | Testnet soak | 48 hours, a synthetic deposit every 30 minutes | 100% of deposits approved within ≤ 20 minutes, 0 false alarms |
 
-### H2: Daftar label di IPFS (4 hO)
+### H2: Label list on IPFS (4 pd)
 
-| ID | Tugas | Detail | hO |
+| ID | Task | Detail | pd |
 |---|---|---|---|
-| H2-T1 | Format dokumen | JSON `{version, chainId, register, root, depth, labels[], generatedAt, prevCid}` | 0,5 |
-| H2-T2 | Pustaka `lib/aspStore.js` | `pin()`, `fetch(cid)` dengan fallback multi-gateway, dan **verifikasi**: hitung ulang root dari `labels` = `root` pada dokumen = root on-chain | 1,5 |
-| H2-T3 | Pin redundan | Dua penyedia (misalnya Pinata + web3.storage/Filebase); sukses jika ≥ 1, alarm jika hanya 1 | 0,5 |
-| H2-T4 | Integrasi server | `frontend/src/lib/folio.ts`: urutan sumber = IPFS (CID dari `rootData(latestRoot)`) → cache Supabase → GitHub (cadangan). Logika "mengutamakan root terbaru" tetap | 1 |
-| H2-T5 | Indeks | Isi `asp_roots` (root, ipfs_cid, jumlah label, tx) | 0,5 |
+| H2-T1 | Document format | JSON `{version, chainId, register, root, depth, labels[], generatedAt, prevCid}` | 0.5 |
+| H2-T2 | Library `lib/aspStore.js` | `pin()`, `fetch(cid)` with multi-gateway fallback, and **verification**: recompute the root from `labels` = `root` in the document = the on-chain root | 1.5 |
+| H2-T3 | Redundant pinning | Two providers (for example Pinata + web3.storage/Filebase); success if ≥ 1, alarm if only 1 | 0.5 |
+| H2-T4 | Server integration | `frontend/src/lib/folio.ts`: source order = IPFS (CID from `rootData(latestRoot)`) → Supabase cache → GitHub (backup). The "prefer the latest root" logic stays | 1 |
+| H2-T5 | Index | Fill `asp_roots` (root, ipfs_cid, label count, tx) | 0.5 |
 
-**Acceptance:** root baru terlihat di `/api/folio` ≤ 60 detik setelah terbit, tanpa git; isi yang dimanipulasi ditolak.
+**Acceptance:** a new root is visible in `/api/folio` ≤ 60 seconds after publication, without git; tampered content is rejected.
 
-| ID | Jenis | Skenario | Hasil |
+| ID | Type | Scenario | Result |
 |---|---|---|---|
-| H2-TEST1 | Integrasi | pin → fetch → verifikasi root | Cocok |
-| H2-TEST2 | Keamanan | Dokumen dengan label ditambah/dikurangi, atau root salah | Ditolak, tidak pernah disajikan |
-| H2-TEST3 | Ketahanan | Matikan satu gateway/penyedia | Tetap tersaji; alarm menyala |
-| H2-TEST4 | Skala | 10.000 label: ukuran dokumen, waktu bangun pohon di browser (target < 3 detik), waktu fetch | Dalam anggaran |
-| H2-TEST5 | E2E | Deposit di UI → otomatis disetujui → withdraw dari UI berhasil tanpa langkah manual | Lulus |
+| H2-TEST1 | Integration | pin → fetch → verify the root | Matches |
+| H2-TEST2 | Security | A document with labels added/removed, or a wrong root | Rejected, never served |
+| H2-TEST3 | Resilience | Turn off one gateway/provider | Still served; the alarm fires |
+| H2-TEST4 | Scale | 10,000 labels: document size, tree build time in the browser (target < 3 seconds), fetch time | Within budget |
+| H2-TEST5 | E2E | Deposit in the UI → approved automatically → withdraw from the UI succeeds with no manual step | Passes |
 
-### H3: Multisig dan pemisahan peran (4 hO + spike 0,5)
+### H3: Multisig and role separation (4 pd + 0.5 spike)
 
-| ID | Tugas | Detail | hO |
+| ID | Task | Detail | pd |
 |---|---|---|---|
-| H3-T0 | **Spike: ketersediaan Safe di Robinhood Chain** | Jika Safe belum ter-deploy, fallback: deploy Safe singleton sendiri, atau multisig 2-of-3 sederhana yang dipakai di Fase 04 | 0,5 |
-| H3-T1 | Desain peran | Owner register → Safe; Magistrate → kunci publisher (H1); guardian pool → Safe (`transferGuardian` + `acceptGuardian`); deployer tidak memegang apa pun | 0,5 |
-| H3-T2 | Skrip tata kelola | `scripts/governance/`: `transfer-roles.js`, `rotate-magistrate.js`, `pause-deposits.js`. Menghasilkan transaksi Safe, bukan mengirim dari EOA | 1,5 |
-| H3-T3 | Eksekusi di testnet | Hanya **setelah H5 redeploy** (D3). Dokumentasikan alamat Safe dan penandatangan | 0,5 |
-| H3-T4 | Runbook | Perbarui `docs/incident_response_runbook.md`: prosedur pause, kunci publisher bocor (Safe memanggil `setMagistrate`), kehilangan satu penandatangan | 1 |
+| H3-T0 | **Spike: Safe availability on Robinhood Chain** | If the Safe is not deployed, fallback: deploy the Safe singleton ourselves, or a simple 2-of-3 multisig used in Phase 04 | 0.5 |
+| H3-T1 | Role design | Register owner → Safe; Magistrate → the publisher key (H1); pool guardian → Safe (`transferGuardian` + `acceptGuardian`); the deployer holds nothing | 0.5 |
+| H3-T2 | Governance scripts | `scripts/governance/`: `transfer-roles.js`, `rotate-magistrate.js`, `pause-deposits.js`. They produce Safe transactions, not send from an EOA | 1.5 |
+| H3-T3 | Execution on testnet | Only **after the H5 redeploy** (D3). Document the Safe address and the signers | 0.5 |
+| H3-T4 | Runbook | Update `docs/incident_response_runbook.md`: pause procedure, a leaked publisher key (the Safe calls `setMagistrate`), losing one signer | 1 |
 
-**Acceptance:** tidak ada fungsi admin yang bisa dipanggil oleh satu EOA; rotasi publisher dari Safe berjalan saat layanan H1 aktif tanpa mengganggu deposit/withdraw.
+**Acceptance:** no admin function can be called by a single EOA; publisher rotation from the Safe works while the H1 service is running, without disturbing deposits/withdrawals.
 
-| ID | Jenis | Skenario | Hasil |
+| ID | Type | Scenario | Result |
 |---|---|---|---|
-| H3-TEST1 | Kontrak | Setelah transfer: deployer memanggil `setMagistrate`, `setPool`, `transferOwnership`, `setDepositsPaused`, `setMaxDepositAmount` | Semua revert |
-| H3-TEST2 | Kontrak | Safe memanggil fungsi yang sama | Berhasil |
-| H3-TEST3 | Kontrak | Publisher lama setelah rotasi mencoba `publishRoot` | Revert `NotMagistrate` |
-| H3-TEST4 | Kontrak | Guardian (Safe) memanggil pause: deposit gagal, **withdraw dan ragequit tetap jalan** | Sesuai invarian |
-| H3-TEST5 | Integrasi | Rotasi publisher di tengah layanan H1 yang berjalan | Layanan pulih dengan kunci baru ≤ 1 siklus |
-| H3-TEST6 | Dry-run | Latihan insiden di testnet mengikuti runbook, dicatat waktunya | Tuntas ≤ 30 menit |
+| H3-TEST1 | Contract | After the transfer: the deployer calls `setMagistrate`, `setPool`, `transferOwnership`, `setDepositsPaused`, `setMaxDepositAmount` | All revert |
+| H3-TEST2 | Contract | The Safe calls the same functions | Succeeds |
+| H3-TEST3 | Contract | The old publisher tries `publishRoot` after rotation | Reverts `NotMagistrate` |
+| H3-TEST4 | Contract | The guardian (Safe) calls pause: deposits fail, **withdraw and ragequit keep working** | Matches the invariant |
+| H3-TEST5 | Integration | Rotate the publisher in the middle of a running H1 service | The service recovers with the new key within ≤ 1 cycle |
+| H3-TEST6 | Dry run | An incident exercise on testnet following the runbook, timed | Done in ≤ 30 minutes |
 
-### H4: Relayer yang sehat dan quote akurat (3 hO)
+### H4: A healthy relayer and an accurate quote (3 pd)
 
-| ID | Tugas | Detail | hO |
+| ID | Task | Detail | pd |
 |---|---|---|---|
-| H4-T1 | Quote akurat | Ganti 1.150.000 gas tetap dengan `estimateGas` dari withdraw contoh (di-cache), ditambah margin. Quote berlaku 120 detik; relay menerima fee ≥ 90% dari minimum saat ini (toleransi pergerakan harga gas) | 1 |
-| H4-T2 | Kesehatan saldo | `/api/status` menampilkan `relayer.balanceEth` dan `healthy`. Env `RELAYER_MIN_BALANCE_ETH`. `/api/relay/quote` mengembalikan `relayerAvailable=false` saat rendah; UI menonaktifkan Courier dengan penjelasan | 0,75 |
-| H4-T3 | Alarm | Webhook saat saldo rendah dan saat rasio gagal tinggi | 0,25 |
-| H4-T4 | Kendali penyalahgunaan | Penguncian nonce/antrian untuk relay bersamaan, batas fee wajar, batas laju per IP | 0,5 |
-| H4-T5 | Pelacakan profitabilitas | Catat biaya gas aktual vs fee per relay di `relayer_jobs` | 0,5 |
+| H4-T1 | Accurate quote | Replace the fixed 1,150,000 gas with `estimateGas` of a sample withdraw (cached), plus a margin. A quote is valid for 120 seconds; a relay accepts a fee ≥ 90% of the current minimum (tolerance for gas-price movement) | 1 |
+| H4-T2 | Balance health | `/api/status` shows `relayer.balanceEth` and `healthy`. Env `RELAYER_MIN_BALANCE_ETH`. `/api/relay/quote` returns `relayerAvailable=false` when low; the UI disables the Courier with an explanation | 0.75 |
+| H4-T3 | Alarm | A webhook when the balance is low and when the failure ratio is high | 0.25 |
+| H4-T4 | Abuse control | Nonce lock/queue for concurrent relays, a reasonable fee cap, a per-IP rate limit | 0.5 |
+| H4-T5 | Profitability tracking | Record actual gas cost vs fee per relay in `relayer_jobs` | 0.5 |
 
-| ID | Jenis | Skenario | Hasil |
+| ID | Type | Scenario | Result |
 |---|---|---|---|
-| H4-TEST1 | Akurasi | 20 relay di testnet: biaya aktual vs fee | Fee ≥ biaya pada ≥ 95% relay, rata-rata margin ≤ 25% |
-| H4-TEST2 | Fungsional | Saldo di bawah ambang | Courier dinonaktifkan di UI; mode dompet tetap jalan |
-| H4-TEST3 | Konkurensi | 5 relay serentak | Tidak ada konflik nonce, semua sukses atau ditolak jelas |
-| H4-TEST4 | Negatif | Fee di bawah minimum / harga gas ×3 setelah quote | Penolakan dengan pesan jelas; saldo relayer tak berkurang |
-| H4-TEST5 | UI | Tes browser: Courier tersedia vs nonaktif | Sesuai |
+| H4-TEST1 | Accuracy | 20 relays on testnet: actual cost vs fee | Fee ≥ cost on ≥ 95% of relays, average margin ≤ 25% |
+| H4-TEST2 | Functional | Balance below the threshold | The Courier is disabled in the UI; wallet mode still works |
+| H4-TEST3 | Concurrency | 5 simultaneous relays | No nonce conflict, all succeed or are rejected clearly |
+| H4-TEST4 | Negative | A fee below the minimum / gas price ×3 after the quote | Rejected with a clear message; the relayer balance does not decrease |
+| H4-TEST5 | UI | Browser test: Courier available vs disabled | As expected |
 
-### H5: Optimasi gas (6 hO, dengan gerbang keputusan)
+### H5: Gas optimisation (6 pd, with a decision gate)
 
-| ID | Tugas | Detail | hO |
+| ID | Task | Detail | pd |
 |---|---|---|---|
-| H5-T1 | Harness benchmark | `test/gas_benchmark.test.js` mencetak tabel deposit/withdraw/ragequit; simpan baseline di repo | 0,5 |
-| H5-T2 | **Spike (2 hari, gerbang)** | `PoseidonYul.sol` (T3 dan T4) inline. Ukur penghematan di `_insert` dan deposit. **Jika penghematan < 25%, berhenti** dan catat hasilnya (D6) | 2 |
-| H5-T3 | Fuzz diferensial | 10.000 vektor acak: Yul = `circomlibjs` = hasher on-chain lama | 0,5 |
-| H5-T4 | Pool v2 | Ganti panggilan eksternal hasher di `_insert` dan komputasi commitment. Tetap kompatibel dengan circuit/verifier (tidak berubah). Tinjau juga penulisan storage per level | 2 |
-| H5-T5 | Redeploy testnet | Pool baru, register tetap (`setPool`). Perbarui `deployments/*.json`, default frontend, env Railway, dan migrasi Supabase. Dokumentasikan jalur migrasi pengguna pool lama (ragequit/withdraw) | 1 |
+| H5-T1 | Benchmark harness | `test/gas_benchmark.test.js` prints a deposit/withdraw/ragequit table; keep the baseline in the repo | 0.5 |
+| H5-T2 | **Spike (2 days, gate)** | Inline `PoseidonYul.sol` (T3 and T4). Measure the saving in `_insert` and the deposit. **If the saving is < 25%, stop** and record the result (D6) | 2 |
+| H5-T3 | Differential fuzz | 10,000 random vectors: Yul = `circomlibjs` = the old on-chain hasher | 0.5 |
+| H5-T4 | Pool v2 | Replace the external hasher calls in `_insert` and the commitment computation. Stays compatible with the circuit/verifier (unchanged). Also review storage writes per level | 2 |
+| H5-T5 | Testnet redeploy | A new pool, the register stays (`setPool`). Update `deployments/*.json`, the frontend defaults, the Railway env and the Supabase migrations. Document the migration path for users of the old pool (ragequit/withdraw) | 1 |
 
-**Target (ditetapkan ulang setelah spike):** deposit ≤ 450k (−50%), withdraw ≤ 650k (−40%). Asumsi, belum terbukti.
+**Target (re-set after the spike):** deposit ≤ 450k (−50%), withdraw ≤ 650k (−40%). An assumption, not proven.
 
-| ID | Jenis | Skenario | Hasil |
+| ID | Type | Scenario | Result |
 |---|---|---|---|
-| H5-TEST1 | Fuzz | Poseidon Yul vs referensi, 10.000 vektor | 100% identik |
-| H5-TEST2 | Paritas | Setelah N=1..200 insert, root pohon `lib/marginalia.js` = root on-chain | Identik |
-| H5-TEST3 | Regresi | Seluruh 78 tes + invarian + `mainnet_guard` pada pool v2 | Hijau |
-| H5-TEST4 | Benchmark | Tabel gas v1 vs v2 | Memenuhi target atau keputusan "berhenti" terdokumentasi |
-| H5-TEST5 | Penjaga CI | Gagalkan build bila gas > baseline + 2% | Aktif |
-| H5-TEST6 | E2E | Seluruh E2E browser pada pool v2 di testnet | 14/14 |
+| H5-TEST1 | Fuzz | Poseidon Yul vs the reference, 10,000 vectors | 100% identical |
+| H5-TEST2 | Parity | After N=1..200 inserts, the `lib/marginalia.js` tree root = the on-chain root | Identical |
+| H5-TEST3 | Regression | The whole 78 tests + invariants + `mainnet_guard` on pool v2 | Green |
+| H5-TEST4 | Benchmark | A gas table v1 vs v2 | Meets the target, or a documented "stop" decision |
+| H5-TEST5 | CI guard | Fail the build if gas > baseline + 2% | Active |
+| H5-TEST6 | E2E | The whole browser E2E on pool v2 on testnet | 14/14 |
 
-### H6: Integrasi, keamanan, dan rilis kandidat (5 hO)
+### H6: Integration, security and a release candidate (5 pd)
 
-| ID | Tugas | Detail | hO |
+| ID | Task | Detail | pd |
 |---|---|---|---|
-| H6-T1 | Promosikan tes keamanan | Pindahkan tes kontrol akses dan manipulasi proof (saat ini di scratchpad) ke `scripts/test-security-onchain.js` | 1 |
-| H6-T2 | Perbarui E2E | Hapus langkah approval manual (kini otomatis dari H1); sweeper dan ledger tetap | 1 |
-| H6-T3 | CI | GitHub Actions: hardhat test, `tsc`, lint, `npm audit --omit=dev`, penjaga gas, pemindaian rahasia | 1 |
-| H6-T4 | Soak 72 jam | Lalu lintas sintetik 15 menit sekali terhadap seluruh sistem | 0,5 (+ waktu tunggu) |
-| H6-T5 | Dokumen + freeze | Perbarui README, roadmap web, runbook, `threat_model_and_audit_pack.md`. Tag `v0.3.0-rc1` | 1,5 |
+| H6-T1 | Promote the security tests | Move the access-control and proof-manipulation tests (currently in a scratchpad) to `scripts/test-security-onchain.js` | 1 |
+| H6-T2 | Update the E2E | Remove the manual approval step (now automatic from H1); the sweeper and ledger stay | 1 |
+| H6-T3 | CI | GitHub Actions: hardhat test, `tsc`, lint, `npm audit --omit=dev`, the gas guard, secret scan | 1 |
+| H6-T4 | 72-hour soak | Synthetic traffic every 15 minutes against the whole system | 0.5 (+ waiting time) |
+| H6-T5 | Documents + freeze | Update the README, the web roadmap, the runbook, `threat_model_and_audit_pack.md`. Tag `v0.3.0-rc1` | 1.5 |
 
-| ID | Jenis | Skenario | Hasil |
+| ID | Type | Scenario | Result |
 |---|---|---|---|
-| H6-TEST1 | Keamanan | 37 pemeriksaan kontrol akses/proof pada kontrak final | 100% lulus |
-| H6-TEST2 | Soak | 72 jam, tidak ada ETH tertinggal (ledger), biaya hanya gas | Z1/Z2 lulus, 0 alarm kritis |
-| H6-TEST3 | Pemulihan | Drill crash (setelah deposit, setelah withdraw parsial, reload halaman) di sistem final | Seluruh dana pulih otomatis |
-| H6-TEST4 | Produksi | `scripts/test-browser-e2e.js` terhadap https://marginaliazk.tech | Seluruh langkah lulus, termasuk Courier |
+| H6-TEST1 | Security | 37 access-control/proof checks on the final contracts | 100% pass |
+| H6-TEST2 | Soak | 72 hours, no ETH left behind (ledger), cost only gas | Z1/Z2 pass, 0 critical alarms |
+| H6-TEST3 | Recovery | A crash drill (after deposit, after a partial withdraw, page reload) on the final system | All funds recover automatically |
+| H6-TEST4 | Production | `scripts/test-browser-e2e.js` against https://marginaliazk.tech | Every step passes, including the Courier |
 
-## 5. Jadwal (2 developer; 1 developer ≈ 1,5×)
+## 5. Schedule (2 developers; 1 developer ≈ 1.5×)
 
-| Minggu | Pekerjaan | Gerbang akhir minggu |
+| Week | Work | End-of-week gate |
 |---|---|---|
-| **1** | H5-T1/T2/T3 (benchmark + spike) · H2-T1/T2/T3 · H3-T0 (spike Safe) · H4-T1/T2 | Keputusan go/no-go gas (D6); Safe tersedia atau fallback dipilih |
-| **2** | H1-T1…T5 · H5-T4 (pool v2) · H2-T4/T5 · H4-T3/T4/T5 | Magistrate otomatis lulus H1-TEST1…8 di hardhat |
-| **3** | H5-T5 (redeploy) → **lalu** H3-T1…T4 · H1-T6/T7 di pool baru · H1-TEST9 (soak 48 jam dimulai) | Peran berada di Safe; layanan berjalan di pool v2 |
-| **4** | H6 seluruhnya · soak 72 jam · dokumen dan freeze | **Rilis kandidat `v0.3.0-rc1`** siap diserahkan ke audit |
+| **1** | H5-T1/T2/T3 (benchmark + spike) · H2-T1/T2/T3 · H3-T0 (Safe spike) · H4-T1/T2 | Gas go/no-go decision (D6); the Safe is available or a fallback is chosen |
+| **2** | H1-T1…T5 · H5-T4 (pool v2) · H2-T4/T5 · H4-T3/T4/T5 | The automated Magistrate passes H1-TEST1…8 in hardhat |
+| **3** | H5-T5 (redeploy) → **then** H3-T1…T4 · H1-T6/T7 on the new pool · H1-TEST9 (the 48-hour soak starts) | Roles are in the Safe; the service runs on pool v2 |
+| **4** | All of H6 · the 72-hour soak · documents and freeze | **Release candidate `v0.3.0-rc1`** ready to hand to the audit |
 
-**Jalur kritis:** H5 spike → H5 redeploy → H3 transfer peran → soak → freeze. H1/H2/H4 bisa paralel dengan H5.
+**Critical path:** H5 spike → H5 redeploy → H3 role transfer → soak → freeze. H1/H2/H4 can run in parallel with H5.
 
-## 6. Matriks gerbang kualitas (harus hijau sebelum freeze)
+## 6. Quality-gate matrix (must be green before the freeze)
 
-| Gerbang | Kriteria |
+| Gate | Criterion |
 |---|---|
-| Unit/kontrak | Seluruh tes hardhat (≥ 78 + tes baru) hijau |
-| Keamanan on-chain | H6-TEST1 100% |
-| E2E | Browser E2E 14/14 di testnet **dan** produksi |
-| Otomasi | Tidak ada langkah manual: deposit → disetujui → withdraw, diverifikasi H1-TEST9 + H2-TEST5 |
-| Tata kelola | H3-TEST1…4 hijau; tidak ada admin EOA tunggal |
-| Gas | Tidak melewati baseline v2 (+2%) |
-| Dependensi | `npm audit --omit=dev` = 0 di root dan frontend |
-| Dana | Z1/Z2 lulus di setiap run E2E dan soak |
+| Unit/contract | The whole hardhat suite (≥ 78 + new tests) green |
+| On-chain security | H6-TEST1 100% |
+| E2E | Browser E2E 14/14 on testnet **and** production |
+| Automation | No manual step: deposit → approved → withdraw, verified by H1-TEST9 + H2-TEST5 |
+| Governance | H3-TEST1…4 green; no single admin EOA |
+| Gas | Does not exceed the v2 baseline (+2%) |
+| Dependencies | `npm audit --omit=dev` = 0 in the root and the frontend |
+| Funds | Z1/Z2 pass in every E2E run and the soak |
 
-## 7. Risiko dan mitigasi
+## 7. Risks and mitigations
 
-| Risiko | Dampak | Mitigasi |
+| Risk | Impact | Mitigation |
 |---|---|---|
-| Safe belum ada di Robinhood Chain | H3 terblokir | Spike H3-T0 di minggu 1; fallback multisig sendiri |
-| Penghematan gas jauh di bawah 40% | Target meleset | Gerbang di H5-T2; hentikan bila < 25%, dokumentasikan |
-| Daftar label basi atau jendela root habis | Withdraw ditolak | D4 (cadence), "root terbaru diutamakan" (sudah ada), alarm lag |
-| Penyedia IPFS mati | Daftar tak terbaca | Pin redundan + fallback multi-gateway + cadangan Supabase |
-| Kunci publisher bocor | Daftar disalahgunakan | Hak minimum, saldo kecil, Safe bisa merotasi (`setMagistrate`) kapan saja |
-| RPC gratis membatasi `getLogs` 10 blok | Indexer lambat | Kursor inkremental + `RH_LOGS_RPC_URL`; pertimbangkan RPC berbayar |
-| Redeploy pool memecah alamat di berbagai tempat | Server/klien tak sinkron | Daftar periksa deploy; klien sudah menolak server dengan pool berbeda ("Server Misconfigured") |
-| Kebijakan screening tidak memadai untuk mainnet | Risiko kepatuhan | Antarmuka plugin sekarang; pilih penyedia sebelum mainnet (di luar Fase 03) |
+| The Safe does not exist on Robinhood Chain | H3 is blocked | The H3-T0 spike in week 1; fall back to our own multisig |
+| The gas saving is far below 40% | The target is missed | The gate in H5-T2; stop if < 25%, document it |
+| A stale label list or an exhausted root window | Withdrawals are rejected | D4 (cadence), "latest root preferred" (exists), a lag alarm |
+| The IPFS provider is down | The list is unreadable | Redundant pins + multi-gateway fallback + a Supabase backup |
+| The publisher key leaks | The list is misused | Least privilege, small balance, the Safe can rotate (`setMagistrate`) at any time |
+| A free RPC limits `getLogs` to 10 blocks | A slow indexer | An incremental cursor + `RH_LOGS_RPC_URL`; consider a paid RPC |
+| A pool redeploy splits addresses across places | Server/client out of sync | A deploy checklist; the client already refuses a server with a different pool ("Server Misconfigured") |
+| The screening policy is inadequate for mainnet | Compliance risk | A plugin interface now; choose a provider before mainnet (outside Phase 03) |
 
-## 8. Rilis dan rollback
+## 8. Release and rollback
 
-- Urutan rilis: H4 (aman, tanpa kontrak) → H2+H1 (layanan, flag `MAGISTRATE_AUTO=on`) → H5 (pool v2) → H3 (peran).
-- **Rollback layanan:** matikan worker H1; skrip manual lama tetap berfungsi; server tetap punya cadangan GitHub.
-- **Rollback pool v2:** alamat pool lama tetap tercatat; frontend mendukung ganti alamat lewat env; pengguna pool lama keluar lewat ragequit/withdraw.
-- Tidak ada langkah yang tidak bisa dibalik kecuali transfer peran ke Safe, jadi lakukan terakhir dan hanya setelah soak hijau.
+- Release order: H4 (safe, no contract) → H2+H1 (services, flag `MAGISTRATE_AUTO=on`) → H5 (pool v2) → H3 (roles).
+- **Service rollback:** turn off the H1 worker; the old manual script still works; the server still has the GitHub backup.
+- **Pool v2 rollback:** the old pool address stays recorded; the frontend supports changing the address through env; users of the old pool exit through ragequit/withdraw.
+- No step is irreversible except the role transfer to the Safe, so do it last and only after the soak is green.
 
-## 9. Definisi selesai (DoD)
+## 9. Definition of done (DoD)
 
-1. Semua gerbang di bagian 6 hijau.
-2. Tag `v0.3.0-rc1` dan paket audit (`threat_model_and_audit_pack.md`) diperbarui.
-3. Runbook insiden sudah dilatih (H3-TEST6).
-4. README dan roadmap web menyatakan Fase 03 selesai, dengan angka gas hasil ukur.
-5. Tidak ada kunci admin tunggal, tidak ada langkah manual dalam alur pengguna.
+1. Every gate in section 6 is green.
+2. Tag `v0.3.0-rc1` and the audit pack (`threat_model_and_audit_pack.md`) updated.
+3. The incident runbook has been rehearsed (H3-TEST6).
+4. The README and the web roadmap state that Phase 03 is complete, with measured gas figures.
+5. No single admin key, no manual step in the user flow.
 
-## 10. Keputusan yang diperlukan dari pemilik proyek
+## 10. Decisions needed from the project owner
 
-1. **Penyedia IPFS** (Pinata / web3.storage / Filebase) dan anggaran.
-2. **Tiga penandatangan Safe** dan siapa yang menyimpan kunci masing-masing.
-3. **Sumber denylist** (daftar sanksi publik atau penyedia berbayar).
-4. **Siapa yang menjalankan worker Magistrate** dan di mana (Railway terpisah dari server web).
-5. **Persetujuan target gas** setelah spike minggu 1.
-6. **RPC berbayar** untuk indexer, atau menerima ketergantungan pada RPC publik.
+1. **The IPFS provider** (Pinata / web3.storage / Filebase) and the budget.
+2. **The three Safe signers** and who stores each key.
+3. **The denylist source** (a public sanctions list or a paid provider).
+4. **Who runs the Magistrate worker** and where (a Railway service separate from the web server).
+5. **Approval of the gas target** after the week-1 spike.
+6. **A paid RPC** for the indexer, or accepting the dependence on a public RPC.

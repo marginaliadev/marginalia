@@ -1,12 +1,12 @@
-# Slither triage (kode saat ini, 2026-10-09)
+# Slither triage (current code, 2026-10-09)
 
-Perintah: `slither . --hardhat-ignore-compile --filter-paths "node_modules|Groth16Verifier|RagequitVerifier|mocks|TokenPool"` (setelah `npx hardhat clean && npx hardhat compile`; hasil dari artefak basi tidak dipakai). Dianalisis: 12 kontrak, 102 detektor, **9 hasil, 0 Tinggi, 0 Sedang**.
+Command: `slither . --hardhat-ignore-compile --filter-paths "node_modules|Groth16Verifier|RagequitVerifier|mocks|TokenPool"` (after `npx hardhat clean && npx hardhat compile`; results from stale artefacts are not used). Analysed: 12 contracts, 102 detectors, **9 results, 0 High, 0 Medium**.
 
-| Detektor | Dampak | Lokasi | Keputusan |
+| Detector | Impact | Location | Decision |
 |---|---|---|---|
-| calls-loop (3 instance) | Low | `MarginaliaPool._h2` dipanggil dari `_insert` (pohon 20 level) | **Diterima.** Panggilan ke kontrak Poseidon `immutable` yang tepercaya dan tanpa state; loop terbatas 20 iterasi. Menggantinya dengan Poseidon inline diukur tidak lebih murah (spike H5: +4,5% gas) |
-| cyclomatic-complexity | Info | `MarginaliaPool.withdraw` (13) | Diterima. Seluruh cek harus berurutan sebelum efek; dipecah akan menyulitkan audit urutan cek-efek-interaksi |
-| low-level-calls | Info | `MarginaliaPool._send` | Diterima. Pengiriman ETH memang memakai `call`; dilindungi `nonReentrant`, efek ditulis sebelum interaksi, hasil dicek (`TransferFailed`) |
-| naming-convention (4) | Info | parameter dengan awalan `_` | Diterima (gaya) |
+| calls-loop (3 instances) | Low | `MarginaliaPool._h2` called from `_insert` (20-level tree) | **Accepted.** The call goes to a trusted, stateless `immutable` Poseidon contract; the loop is bounded to 20 iterations. Replacing it with inline Poseidon was measured to be no cheaper (spike H5: +4.5% gas) |
+| cyclomatic-complexity | Info | `MarginaliaPool.withdraw` (13) | Accepted. All checks must run in sequence before the effects; splitting the function would make the checks-effects-interactions order harder to audit |
+| low-level-calls | Info | `MarginaliaPool._send` | Accepted. ETH is sent with `call` by design; protected by `nonReentrant`, effects are written before the interaction, and the result is checked (`TransferFailed`) |
+| naming-convention (4) | Info | parameters with a `_` prefix | Accepted (style) |
 
-Catatan: laporan lama yang memuat `arbitrary-send-eth` (High) dan `missing-zero-check` berasal dari artefak build lama; pada kode saat ini kedua hal itu tidak ada (konstruktor dan setter memeriksa alamat nol, dan pengiriman ETH hanya ke penerima yang terikat proof).
+Note: the older report that listed `arbitrary-send-eth` (High) and `missing-zero-check` came from stale build artefacts; neither exists in the current code (the constructor and setters check for the zero address, and ETH is only sent to recipients bound to the proof).

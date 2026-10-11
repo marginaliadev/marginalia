@@ -4,328 +4,216 @@
   "name": "Landing page loads (/)",
   "ok": true,
   "detail": "HTTP 200, title \"MARGINALIA: Compliant Shielded Pool on Robinhood Chain\", 10691 chars of text",
-  "at": "2026-10-11T12:33:03.199Z"
+  "at": "2026-10-11T13:29:40.301Z"
  },
  {
   "id": "PG-01b",
   "name": "Landing: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-11T12:33:03.201Z"
+  "at": "2026-10-11T13:29:40.302Z"
  },
  {
   "id": "PG-01c",
   "name": "Landing: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-11T12:33:09.043Z"
+  "at": "2026-10-11T13:29:46.698Z"
  },
  {
   "id": "PG-02",
   "name": "App page loads (/app)",
   "ok": true,
   "detail": "HTTP 200, title \"Shielded App | MARGINALIA\", 1660 chars of text",
-  "at": "2026-10-11T12:33:14.979Z"
+  "at": "2026-10-11T13:29:52.886Z"
  },
  {
   "id": "PG-02b",
   "name": "App: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-11T12:33:14.979Z"
+  "at": "2026-10-11T13:29:52.888Z"
  },
  {
   "id": "PG-02c",
   "name": "App: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-11T12:33:20.649Z"
+  "at": "2026-10-11T13:29:58.989Z"
  },
  {
   "id": "PG-03",
   "name": "Explorer page loads (/explorer)",
   "ok": true,
-  "detail": "HTTP 200, title \"Explorer | MARGINALIA\", 1715 chars of text",
-  "at": "2026-10-11T12:33:26.427Z"
+  "detail": "HTTP 200, title \"Explorer | MARGINALIA\", 1711 chars of text",
+  "at": "2026-10-11T13:30:05.027Z"
  },
  {
   "id": "PG-03b",
   "name": "Explorer: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-11T12:33:26.427Z"
+  "at": "2026-10-11T13:30:05.028Z"
  },
  {
   "id": "PG-03c",
   "name": "Explorer: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-11T12:33:31.905Z"
+  "at": "2026-10-11T13:30:10.936Z"
  },
  {
   "id": "PG-04",
   "name": "Compliance page loads (/compliance)",
   "ok": true,
   "detail": "HTTP 200, title \"Compliance | MARGINALIA\", 6101 chars of text",
-  "at": "2026-10-11T12:33:37.751Z"
+  "at": "2026-10-11T13:30:16.965Z"
  },
  {
   "id": "PG-04b",
   "name": "Compliance: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-11T12:33:37.752Z"
+  "at": "2026-10-11T13:30:16.966Z"
  },
  {
   "id": "PG-04c",
   "name": "Compliance: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-11T12:33:43.266Z"
+  "at": "2026-10-11T13:30:22.878Z"
  },
  {
   "id": "PG-05",
   "name": "Codex page loads (/codex)",
   "ok": true,
   "detail": "HTTP 200, title \"The Codex: MARGINALIA\", 3858 chars of text",
-  "at": "2026-10-11T12:33:49.037Z"
+  "at": "2026-10-11T13:30:28.912Z"
  },
  {
   "id": "PG-05b",
   "name": "Codex: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-11T12:33:49.038Z"
+  "at": "2026-10-11T13:30:28.913Z"
  },
  {
   "id": "PG-05c",
   "name": "Codex: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-11T12:33:54.596Z"
+  "at": "2026-10-11T13:30:35.080Z"
  },
  {
   "id": "PG-06",
   "name": "404 page page loads (/zzz-not-found)",
   "ok": true,
   "detail": "HTTP 404, title \"404: Page Not Found | MARGINALIA\", 1296 chars of text",
-  "at": "2026-10-11T12:34:00.419Z"
+  "at": "2026-10-11T13:30:41.128Z"
  },
  {
   "id": "PG-06b",
   "name": "404 page: no console/page/network errors",
   "ok": true,
   "detail": "clean",
-  "at": "2026-10-11T12:34:00.419Z"
+  "at": "2026-10-11T13:30:41.128Z"
  },
  {
   "id": "PG-06c",
   "name": "404 page: mobile 390px has no horizontal overflow",
   "ok": true,
   "detail": "scrollWidth - viewport = 0px",
-  "at": "2026-10-11T12:34:05.870Z"
+  "at": "2026-10-11T13:30:47.012Z"
  },
  {
   "id": "PG-07",
   "name": "Every internal link on the landing page resolves",
   "ok": true,
   "detail": "5 internal routes OK",
-  "at": "2026-10-11T12:34:11.146Z"
+  "at": "2026-10-11T13:30:53.679Z"
  },
  {
   "id": "PG-08",
   "name": "External links on landing",
   "ok": null,
   "detail": "https://x.com/MarginaliaZK",
-  "at": "2026-10-11T12:34:11.148Z"
+  "at": "2026-10-11T13:30:53.680Z"
  },
  {
   "id": "APP-00",
   "name": "App header stats",
   "ok": null,
   "detail": "Leaves On-Chain 01 SHIELD / DEPOSIT 02 PRIVATE WITHDRAW",
-  "at": "2026-10-11T12:34:16.989Z"
+  "at": "2026-10-11T13:30:59.639Z"
  },
  {
   "id": "APP-01",
   "name": "Deposit without wallet -> Wallet Required",
   "ok": true,
   "detail": "Wallet Required",
-  "at": "2026-10-11T12:34:17.534Z"
+  "at": "2026-10-11T13:31:00.202Z"
  },
  {
   "id": "APP-02",
   "name": "Withdraw with empty fields rejected",
   "ok": true,
   "detail": "Missing Information",
-  "at": "2026-10-11T12:34:18.769Z"
+  "at": "2026-10-11T13:31:01.520Z"
  },
  {
   "id": "APP-03",
   "name": "Withdraw with invalid recipient rejected",
   "ok": true,
   "detail": "Invalid Recipient Address / Please enter a valid, non-zero Ethereum address for the priv",
-  "at": "2026-10-11T12:34:19.546Z"
+  "at": "2026-10-11T13:31:02.314Z"
  },
  {
   "id": "APP-04",
   "name": "Withdraw with tampered note rejected",
   "ok": true,
   "detail": "Invalid Secret Marginal Note / Malformed Note: payload is not valid base64url JSON.",
-  "at": "2026-10-11T12:34:20.012Z"
+  "at": "2026-10-11T13:31:02.823Z"
  },
  {
   "id": "APP-05",
   "name": "Well-formed note that was never deposited rejected (not in Folio)",
   "ok": true,
   "detail": "Note Validation Failed / Commitment Not Found: Note is not inscribed in the Folio tree on Robinhood Chain",
-  "at": "2026-10-11T12:34:22.888Z"
+  "at": "2026-10-11T13:31:04.651Z"
  },
  {
   "id": "APP-06",
   "name": "Courier quote shows gas, min fee and relayer address",
-  "ok": false,
-  "detail": "{\"gas\":\"0.01 Gwei\",\"fee\":\"0.000012165659 ETH\",\"addr\":\"No relayer configured\"}",
-  "at": "2026-10-11T12:34:24.705Z"
+  "ok": true,
+  "detail": "{\"gas\":\"0.01 Gwei\",\"fee\":\"0.000012165516 ETH\",\"addr\":\"0x31C1...55e5 (Active)\"}",
+  "at": "2026-10-11T13:31:06.173Z"
  },
  {
   "id": "APP-07",
   "name": "Ragequit with invalid note rejected",
   "ok": true,
   "detail": "Invalid Secret Note / Malformed Note: payload is not valid base64url JSON.",
-  "at": "2026-10-11T12:34:25.320Z"
+  "at": "2026-10-11T13:31:06.796Z"
  },
  {
   "id": "APP-08",
   "name": "Vault unlock without wallet -> Wallet Required",
   "ok": true,
   "detail": "Wallet Required",
-  "at": "2026-10-11T12:34:26.571Z"
+  "at": "2026-10-11T13:31:07.998Z"
  },
  {
   "id": "APP-09",
   "name": "No console/page errors during app guard tests",
   "ok": true,
-  "detail": "http 404: http://localhost:3000/api/note/validate | console.error: Failed to load resource: the server responded with a status of 404 (Not Found)",
-  "at": "2026-10-11T12:34:27.252Z"
+  "detail": "http 404: https://marginaliazk.tech/api/note/validate | console.error: Failed to load resource: the server responded with a status of 404 ()",
+  "at": "2026-10-11T13:31:08.670Z"
  },
  {
   "id": "EX-01",
   "name": "Explorer telemetry matches /api/status",
   "ok": true,
-  "detail": "{\"leaves\":\"111\",\"asp\":\"2 / 2\",\"bal\":\"0.002900000000000001\"} vs api leaves 111, bal 0.002900000000000001",
-  "at": "2026-10-11T12:34:34.558Z"
- },
- {
-  "id": "EX-01b",
-  "name": "Explorer ASP counter text",
-  "ok": null,
-  "detail": "UI shows \"2 / 2\" while the ASP list has 38 labels and /api/status aspCount=2",
-  "at": "2026-10-11T12:34:42.253Z"
- },
- {
-  "id": "EX-02",
-  "name": "Wax Seal: unknown nullifier -> INTACT (UNSPENT)",
-  "ok": true,
-  "detail": "WAX SEAL INTACT (UNSPENT)",
-  "at": "2026-10-11T12:34:44.714Z"
- },
- {
-  "id": "EX-03",
-  "name": "Wax Seal: spent nullifier -> BROKEN (SPENT)",
-  "ok": true,
-  "detail": "WAX SEAL BROKEN (SPENT)",
-  "at": "2026-10-11T12:34:46.303Z"
- },
- {
-  "id": "EX-04",
-  "name": "Wax Seal: hex input must NOT be reported as a valid UNSPENT seal",
-  "ok": true,
-  "detail": "badge after invalid input: null",
-  "at": "2026-10-11T12:34:48.902Z"
- },
- {
-  "id": "EX-05",
-  "name": "Explorer: no console/page errors (400s from the deliberate invalid input excluded)",
-  "ok": true,
-  "detail": "http 400: http://localhost:3000/api/nullifier/check | console.error: Failed to load resource: the server responded with a status of 400 (Bad Request)",
-  "at": "2026-10-11T12:34:48.988Z"
- },
- {
-  "id": "CO-01",
-  "name": "Compliance sections present (screening, viewing keys, generator, appeals) as in the repo source",
-  "ok": true,
-  "detail": "[[\"screening\",true],[\"viewing-keys\",true],[\"generator\",true],[\"appeals\",true]]",
-  "at": "2026-10-11T12:34:54.809Z"
- },
- {
-  "id": "CO-02",
-  "name": "Generate with empty note shows validation error",
-  "ok": true,
-  "detail": "error shown",
-  "at": "2026-10-11T12:34:56.112Z"
- },
- {
-  "id": "CO-03",
-  "name": "Garbage note rejected with error message",
-  "ok": true,
-  "detail": "Malformed Note JSON: The note payload is not valid JSON.",
-  "at": "2026-10-11T12:34:58.219Z"
- },
- {
-  "id": "CO-04",
-  "name": "Generate Letter of Disclosure (auto keypair)",
-  "ok": true,
-  "detail": "standard LETTER_OF_DISCLOSURE_V1, keys: protocol,standard,chain,timestamp,auditorPublicKey,memoDetails,viewingKeyProof,generatedViewingKeypair",
-  "at": "2026-10-11T12:34:59.063Z"
- },
- {
-  "id": "CO-05",
-  "name": "Disclosure package does not leak the note secrets (sk / rho)",
-  "ok": true,
-  "detail": "no sk/rho in package",
-  "at": "2026-10-11T12:34:59.149Z"
- },
- {
-  "id": "CO-06",
-  "name": "Auditor can decrypt the memo with the generated viewing key and it matches the note",
-  "ok": true,
-  "detail": "decrypted: 0.0004 ETH, label 218856156557…, chain 46630",
-  "at": "2026-10-11T12:34:59.153Z"
- },
- {
-  "id": "CO-06b",
-  "name": "A different key cannot decrypt the memo (GCM auth fails)",
-  "ok": true,
-  "detail": "decryption rejected",
-  "at": "2026-10-11T12:34:59.154Z"
- },
- {
-  "id": "CO-07",
-  "name": "Invalid auditor PEM rejected",
-  "ok": true,
-  "detail": "auditorPublicKeyPem is not a valid X25519 public key (PEM).",
-  "at": "2026-10-11T12:35:01.685Z"
- },
- {
-  "id": "CO-08",
-  "name": "Letter of Disclosure with a caller-supplied auditor key (no server-generated keypair returned)",
-  "ok": true,
-  "detail": "generatedViewingKeypair=null",
-  "at": "2026-10-11T12:35:04.200Z"
- },
- {
-  "id": "CO-09",
-  "name": "Compliance: no console/page errors",
-  "ok": true,
-  "detail": "http 400: http://localhost:3000/api/disclosure/generate | console.error: Failed to load resource: the server responded with a status of 400 (Bad Request) | http 400: http://localhost:3000/api/disclosure/generate",
-  "at": "2026-10-11T12:35:04.989Z"
- },
- {
-  "id": "SEC-01",
-  "name": "No Content-Security-Policy violations in any page",
-  "ok": true,
-  "detail": "none",
-  "at": "2026-10-11T12:35:05.215Z"
+  "detail": "{\"leaves\":\"120\",\"asp\":\"5\",\"bal\":\"0.002900000000000001\"} vs api leaves 120, bal 0.002900000000000001",
+  "at": "2026-10-11T13:31:15.974Z"
  }
 ]

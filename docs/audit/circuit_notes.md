@@ -1,99 +1,99 @@
-# MARGINALIA: Catatan Sirkuit untuk Auditor
+# MARGINALIA: Circuit Notes for Auditors
 
-Sumber: `circuits/withdraw.circom` (112 baris), `circuits/ragequit.circom` (49), `circuits/lib/merkle.circom` (37). Bahasa: circom 2.1.9, kurva BN254, bukti Groth16. Primitif dari `circomlib` 2.0.5 (`Poseidon`, `Num2Bits`). Seluruh angka di bawah diukur dengan kompilasi `--O2` (`scripts/ceremony/compile.js`) dan dapat direproduksi.
+Sources: `circuits/withdraw.circom` (112 lines), `circuits/ragequit.circom` (49), `circuits/lib/merkle.circom` (37). Language: circom 2.1.9, BN254 curve, Groth16 proofs. Primitives from `circomlib` 2.0.5 (`Poseidon`, `Num2Bits`). Every number below was measured with a `--O2` compilation (`scripts/ceremony/compile.js`) and can be reproduced.
 
-## 1. Notasi
-| Simbol | Arti |
+## 1. Notation
+| Symbol | Meaning |
 |---|---|
-| `sk`, `rho` | rahasia note (acak, < p). `sk` kunci pemilik, `rho` keacakan per-note |
-| `P = Poseidon(sk)` | kunci publik pemilik |
-| `pre = Poseidon(P, rho)` | *precommitment* (diumumkan saat deposit) |
-| `C = Poseidon(value, label, pre)` | *commitment*, daun pohon Folio |
-| `N = Poseidon(sk, rho)` | nullifier ("Wax Seal"), dibakar saat note keluar |
-| `label` | label deposit yang dibuat kontrak: `keccak256(chainId, pool, nonce) mod p` |
+| `sk`, `rho` | note secrets (random, < p). `sk` is the owner key, `rho` is per-note randomness |
+| `P = Poseidon(sk)` | the owner's public key |
+| `pre = Poseidon(P, rho)` | *precommitment* (published at deposit time) |
+| `C = Poseidon(value, label, pre)` | *commitment*, a leaf of the Folio tree |
+| `N = Poseidon(sk, rho)` | nullifier ("Wax Seal"), burned when the note exits |
+| `label` | deposit label created by the contract: `keccak256(chainId, pool, nonce) mod p` |
 
-## 2. Sirkuit `Withdraw(20, 20)`
+## 2. The `Withdraw(20, 20)` circuit
 
-### 2.1 Sinyal
-| Sinyal | Jenis | Makna | Dicek on-chain oleh |
+### 2.1 Signals
+| Signal | Kind | Meaning | Checked on-chain by |
 |---|---|---|---|
-| `withdrawnValue` | publik [0] | nilai yang keluar (wei) | `> 0`, `fee <= withdrawnValue`; dikirim `withdrawnValue - fee` |
-| `stateRoot` | publik [1] | root pohon Folio (kedalaman 20) | `isKnownRoot` (64 root terakhir) |
-| `aspRoot` | publik [2] | root pohon label yang disetujui (kedalaman 20) | `register.isValidRoot` (16 root terakhir) |
-| `context` | publik [3] | ikatan ke transaksi | `== computeContext(recipient, relayer, fee)` |
-| `nullifierHash` | publik [4] | `N` | belum pernah dipakai; lalu ditandai terpakai |
-| `newCommitment` | publik [5] | commitment note kembalian | disisipkan ke Folio (selalu, bahkan bernilai 0) |
-| `sk, value, label, rho` | privat | rahasia dan isi note | |
-| `statePathElements/Indices[20]` | privat | jalur Merkle di Folio | |
-| `aspPathElements/Indices[20]` | privat | jalur Merkle di pohon ASP | |
-| `newRho` | privat | `rho` baru untuk note kembalian | |
+| `withdrawnValue` | public [0] | value leaving the pool (wei) | `> 0`, `fee <= withdrawnValue`; `withdrawnValue - fee` is sent |
+| `stateRoot` | public [1] | root of the Folio tree (depth 20) | `isKnownRoot` (last 64 roots) |
+| `aspRoot` | public [2] | root of the approved-label tree (depth 20) | `register.isValidRoot` (last 16 roots) |
+| `context` | public [3] | binding to the transaction | `== computeContext(recipient, relayer, fee)` |
+| `nullifierHash` | public [4] | `N` | never used before; then marked as spent |
+| `newCommitment` | public [5] | commitment of the change note | inserted into the Folio (always, even with value 0) |
+| `sk, value, label, rho` | private | secrets and contents of the note | |
+| `statePathElements/Indices[20]` | private | Merkle path in the Folio | |
+| `aspPathElements/Indices[20]` | private | Merkle path in the ASP tree | |
+| `newRho` | private | new `rho` for the change note | |
 
-### 2.2 Constraint (urut seperti di sumber) dan biayanya
-| # | Pernyataan yang dibuktikan | Komponen | Constraint |
+### 2.2 Constraints (in source order) and their cost
+| # | Statement proven | Component | Constraints |
 |---|---|---|---|
-| 1 | `P = Poseidon(sk)` (kepemilikan) | `Poseidon(1)` | 213 |
+| 1 | `P = Poseidon(sk)` (ownership) | `Poseidon(1)` | 213 |
 | 2 | `pre = Poseidon(P, rho)` | `Poseidon(2)` | 240 |
 | 2 | `C = Poseidon(value, label, pre)` | `Poseidon(3)` | 261 |
-| 3 | `C` adalah daun di bawah `stateRoot` | `MerkleInclusion(20)` | 4.860 |
-| 4 | `label` adalah daun di bawah `aspRoot` | `MerkleInclusion(20)` | 4.860 |
+| 3 | `C` is a leaf under `stateRoot` | `MerkleInclusion(20)` | 4,860 |
+| 4 | `label` is a leaf under `aspRoot` | `MerkleInclusion(20)` | 4,860 |
 | 5 | `Poseidon(sk, rho) = nullifierHash` | `Poseidon(2)` | 240 |
-| 6 | `remaining = value - withdrawnValue`; keduanya dalam `[0, 2^128)` | 2 × `Num2Bits(128)` | 256 |
-| 7 | note kembalian: `newPre = Poseidon(P, newRho)`, `newCommitment = Poseidon(remaining, label, newPre)` | `Poseidon(2)` + `Poseidon(3)` | 501 |
-| 8 | `contextSquare = context * context` (menahan `context` agar tidak dioptimalkan) | 1 perkalian | 1 |
-| | **Total (`--O2`)** | | **11.432** (6 publik, 85 privat, 11.478 wire) |
+| 6 | `remaining = value - withdrawnValue`; both in `[0, 2^128)` | 2 × `Num2Bits(128)` | 256 |
+| 7 | change note: `newPre = Poseidon(P, newRho)`, `newCommitment = Poseidon(remaining, label, newPre)` | `Poseidon(2)` + `Poseidon(3)` | 501 |
+| 8 | `contextSquare = context * context` (keeps `context` from being optimised away) | 1 multiplication | 1 |
+| | **Total (`--O2`)** | | **11,432** (6 public, 85 private, 11,478 wires) |
 
-Build `--O1` (tanpa penyederhanaan penuh) menghasilkan 24.236 constraint dan sirkuit yang **berbeda**; tingkat optimisasi harus dipin (lihat `docs/audit/README.md`, temuan I-2).
+The `--O1` build (without full simplification) yields 24,236 constraints and a **different** circuit; the optimisation level must be pinned (see `docs/audit/README.md`, finding I-2).
 
 ### 2.3 `MerkleInclusion(depth)` (`lib/merkle.circom`)
-Untuk tiap level: `pathIndices[i]` dipaksa bit (`b * (b - 1) === 0`), `left = node + b*(sibling - node)`, `right = sibling + b*(node - sibling)`, `node' = Poseidon(left, right)`; keluaran `root = node[depth]`. Biaya 20 × (240 + 3) = 4.860. Urutan hash identik dengan `MarginaliaPool._insert` (nol di sibling kosong: `zeros[level]`), dan diuji sama dengan implementasi JS dan TypeScript (`test/merkle_bulk.test.js`, `test/browser_sdk_parity.test.js`).
+For each level: `pathIndices[i]` is forced to be a bit (`b * (b - 1) === 0`), `left = node + b*(sibling - node)`, `right = sibling + b*(node - sibling)`, `node' = Poseidon(left, right)`; the output is `root = node[depth]`. Cost: 20 × (240 + 3) = 4,860. The hashing order is identical to `MarginaliaPool._insert` (zeros for empty siblings: `zeros[level]`) and is tested to match the JS and TypeScript implementations (`test/merkle_bulk.test.js`, `test/browser_sdk_parity.test.js`).
 
-### 2.4 Properti keamanan yang diklaim
-| Properti | Alasan di sirkuit |
+### 2.4 Security properties claimed
+| Property | Why it holds in the circuit |
 |---|---|
-| **Soundness nilai** (tidak bisa menarik lebih dari isi note) | `value = withdrawn + remaining` dengan keduanya 128-bit; selisih negatif menjadi ≈ p dan gagal `Num2Bits(128)` |
-| **Satu note, satu nullifier** | `N` fungsi deterministik dari `(sk, rho)`; kembalian memakai `newRho` baru sehingga nullifier berbeda |
-| **Keanggotaan label** | label (privat) harus ada di pohon ASP; label dibuat kontrak, bukan pengguna |
-| **Keterkaitan kembalian** | `sk` dan `label` yang sama, hanya `rho` dan `value` berubah: pemilik dan asal-usul label terjaga |
-| **Pengikatan transaksi** | `context` publik dan dibatasi kontrak; mengubah penerima/relayer/fee mengubah sinyal publik sehingga verifikasi gagal |
-| **Zero-knowledge** | hanya 6 nilai di atas publik; `sk`, `rho`, `value`, `label`, indeks daun, dan jalur tetap privat |
+| **Value soundness** (cannot withdraw more than the note holds) | `value = withdrawn + remaining` with both 128-bit; a negative difference becomes ≈ p and fails `Num2Bits(128)` |
+| **One note, one nullifier** | `N` is a deterministic function of `(sk, rho)`; the change note uses a fresh `newRho`, so its nullifier differs |
+| **Label membership** | the (private) label must be in the ASP tree; labels are created by the contract, not by users |
+| **Change-note linkage** | same `sk` and `label`, only `rho` and `value` change: owner and label provenance are preserved |
+| **Transaction binding** | `context` is public and constrained by the contract; changing recipient/relayer/fee changes a public signal, so verification fails |
+| **Zero-knowledge** | only the 6 values above are public; `sk`, `rho`, `value`, `label`, the leaf index and the paths stay private |
 
-### 2.5 Hal yang sengaja demikian (bukan cacat)
-1. **`context` hanya dikuadratkan di dalam sirkuit.** Satu-satunya input yang tetap menghasilkan witness setelah diubah. Itu disengaja: nilai ini diikat oleh `computeContext` di kontrak dan oleh pemeriksaan sinyal publik Groth16. Diuji: `test/circuit_audit.test.js` (mutasi context diterima di tingkat witness) dan `test/security_onchain.test.js` (mengubah penerima, relayer, fee → `InvalidContext`).
-2. **`value` dan `label` tidak punya pemeriksaan rentang sendiri.** `value` dibatasi secara tidak langsung (`withdrawn + remaining < 2^129`) dan harus cocok dengan commitment yang dibuat kontrak dari `msg.value` (≤ `uint128`). `label` < p secara alami karena elemen lapangan.
-3. **`withdrawnValue = 0` lolos di sirkuit.** Kontrak menolaknya (`InvalidValue`).
-4. **Tidak ada pemeriksaan "daun bukan nol".** Daun kosong adalah `0`; membuktikan keanggotaan `0` membutuhkan `C = 0`, yaitu preimage Poseidon: tidak dapat dilakukan.
-5. **Kedalaman 20 hardcoded** (`main = Withdraw(20, 20)`): kapasitas 1.048.576 daun; kontrak menolak setelah penuh (`TreeFull`).
+### 2.5 Intentional design points (not defects)
+1. **`context` is only squared inside the circuit.** It is the only input that still yields a witness after being changed. This is intentional: the value is bound by `computeContext` in the contract and by the Groth16 public-signal check. Tested: `test/circuit_audit.test.js` (a context mutation is accepted at witness level) and `test/security_onchain.test.js` (changing recipient, relayer or fee → `InvalidContext`).
+2. **`value` and `label` have no range check of their own.** `value` is bounded indirectly (`withdrawn + remaining < 2^129`) and must match the commitment the contract builds from `msg.value` (≤ `uint128`). `label` is < p naturally, being a field element.
+3. **`withdrawnValue = 0` passes in the circuit.** The contract rejects it (`InvalidValue`).
+4. **No "leaf is non-zero" check.** An empty leaf is `0`; proving membership of `0` requires `C = 0`, i.e. a Poseidon preimage: infeasible.
+5. **Depth 20 is hardcoded** (`main = Withdraw(20, 20)`): capacity 1,048,576 leaves; the contract rejects further deposits once full (`TreeFull`).
 
-## 3. Sirkuit `Ragequit()`
-Publik: `precommitment` [0], `nullifierHash` [1]. Privat: `sk`, `rho`.
-| Pernyataan | Komponen | Constraint |
+## 3. The `Ragequit()` circuit
+Public: `precommitment` [0], `nullifierHash` [1]. Private: `sk`, `rho`.
+| Statement | Component | Constraints |
 |---|---|---|
 | `Poseidon(Poseidon(sk), rho) = precommitment` | `Poseidon(1)` + `Poseidon(2)` | 453 |
 | `Poseidon(sk, rho) = nullifierHash` | `Poseidon(2)` | 240 |
-| **Total (`--O2`)** | | **693** (2 publik, 2 privat, 696 wire) |
+| **Total (`--O2`)** | | **693** (2 public, 2 private, 696 wires) |
 
-Kontrak memeriksa `precommitment == labelPrecommitment[label]` (hanya deposit asli dapat ragequit; **note kembalian tidak bisa**, karena `rho`-nya baru) dan bahwa pemanggil adalah `labelDepositor[label]`. Nullifier yang dibakar sama dengan nullifier withdraw, sehingga ragequit dan withdraw saling meniadakan.
+The contract checks `precommitment == labelPrecommitment[label]` (only the original deposit can be ragequit; **change notes cannot**, because their `rho` is new) and that the caller is `labelDepositor[label]`. The nullifier burned is the same as the withdraw nullifier, so ragequit and withdraw exclude each other.
 
-## 4. Kompatibilitas sirkuit ↔ kontrak ↔ klien
-| Hal | Lokasi | Dijaga oleh |
+## 4. Circuit ↔ contract ↔ client compatibility
+| Item | Location | Guarded by |
 |---|---|---|
-| Urutan sinyal publik withdraw `[value, stateRoot, aspRoot, context, nullifier, newCommitment]` | `Groth16Verifier` (6) dan `MarginaliaPool.withdraw` | `test/circuit_audit.test.js` (B-TEST2), `security_onchain` |
-| Poseidon identik: circomlib, kontrak hasher, `circomlibjs`, `poseidon-lite` (browser) | seluruh sistem | `test/browser_sdk_parity.test.js` dan fuzz diferensial |
-| Format `pB` ditukar (urutan koordinat G2) | `lib/marginalia.js`, `frontend/src/lib/zk.ts` | tes proof di chain |
+| Order of the withdraw public signals `[value, stateRoot, aspRoot, context, nullifier, newCommitment]` | `Groth16Verifier` (6) and `MarginaliaPool.withdraw` | `test/circuit_audit.test.js` (B-TEST2), `security_onchain` |
+| Identical Poseidon: circomlib, hasher contracts, `circomlibjs`, `poseidon-lite` (browser) | whole system | `test/browser_sdk_parity.test.js` and differential fuzz |
+| Swapped `pB` format (G2 coordinate order) | `lib/marginalia.js`, `frontend/src/lib/zk.ts` | on-chain proof tests |
 
-## 5. Cara mereproduksi
+## 5. How to reproduce
 ```bash
 npm ci
 node -e 'const {compileCircuit}=require("./scripts/ceremony/compile");for (const c of ["withdraw","ragequit"]) console.log(c, compileCircuit(c,{force:true}).r1cs)'
 npx snarkjs r1cs info .audit-build/withdraw.r1cs      # 11,432 constraints, 6 public, 85 private
-npx hardhat test test/circuit_audit.test.js           # serangan mutasi terhadap witness generator ter-deploy
+npx hardhat test test/circuit_audit.test.js           # mutation attacks against the deployed witness generator
 ```
-Dekomposisi di 2.2 diukur dengan mengompilasi tiap komponen sendiri: `Poseidon(1)=213`, `Poseidon(2)=240`, `Poseidon(3)=261`, `Num2Bits(128)=128`, `MerkleInclusion(20)=4.860`.
+The breakdown in 2.2 was measured by compiling each component on its own: `Poseidon(1)=213`, `Poseidon(2)=240`, `Poseidon(3)=261`, `Num2Bits(128)=128`, `MerkleInclusion(20)=4,860`.
 
-## 6. Daftar periksa yang disarankan untuk auditor
-- Apakah ada sinyal yang dapat diubah tanpa menggagalkan witness, selain `context`? (kami menguji semua input dan setiap elemen jalur, `test/circuit_audit.test.js`)
-- Apakah `Num2Bits(128)` pada `withdrawnValue` dan `remaining` cukup untuk mencegah overdraft di bawah batas lapangan BN254?
-- Apakah hubungan `label` (dibuat kontrak) dengan pohon ASP dapat dimanipulasi oleh penyetor?
-- Perilaku saat `remaining = 0` (kembalian bernilai nol tetap disisipkan sebagai daun).
-- Konsistensi parameter Poseidon antara circomlib (sirkuit), kontrak hasher yang di-deploy, dan pustaka klien.
-- Soundness pada tingkat setup: bergantung pada ceremony (`docs/ceremony_guide.md`); setup yang ter-commit adalah setup dev.
+## 6. Suggested checklist for auditors
+- Can any signal be changed without breaking the witness, other than `context`? (We test every input and every path element, `test/circuit_audit.test.js`.)
+- Are the `Num2Bits(128)` checks on `withdrawnValue` and `remaining` enough to prevent overdraft under the BN254 field bound?
+- Can a depositor manipulate the relation between `label` (created by the contract) and the ASP tree?
+- Behaviour when `remaining = 0` (a zero-value change note is still inserted as a leaf).
+- Consistency of the Poseidon parameters between circomlib (circuit), the deployed hasher contracts and the client libraries.
+- Soundness at the setup level: it depends on the ceremony (`docs/ceremony_guide.md`); the setup currently committed is the development setup.

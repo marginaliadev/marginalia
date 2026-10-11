@@ -3,9 +3,9 @@
  "walletA": "0xDa80Ef05f727C3Ef555ef16B601dEc6D69e3f3EF",
  "walletB": "0x8fe61BfFD7Ad584466ab874ffA750E891215C746",
  "pool": "0x340E20C7CBe7eA83d463432ac8FA1e891bdca948",
- "site": "http://localhost:3000",
+ "site": "https://marginaliazk.tech",
  "startBalances": {
-  "deployer": "0.000239595106760299",
+  "deployer": "0.000127397098760299",
   "A": "0.00000042",
   "B": "0.00000042"
  }
