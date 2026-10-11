@@ -1,6 +1,6 @@
 # MARGINALIA: Phase 04 "Audit & Ceremony" Execution Report
 
-**Date:** 2026-10-09 (updated 2026-10-11) · **Reference:** `docs/phase4_audit_ceremony_plan.md`
+**Date:** 2026-10-09 (updated 2026-10-11) · **Reference:** the internal Phase 04 plan (not published)
 **Summary:** all work that **can be done without outside parties** is complete and tested (audit preparation, static analysis, internal circuit audit, invariant fuzzing, ceremony toolkit and rehearsal, mainnet guard). **What cannot be done alone and does not exist yet:** the external audits (contracts and ZK), the real ceremony with ≥ 15 contributors, an independently confirmed Phase-1 hash pin, redeploying the O2 circuits, and the mainnet launch. Live status: `docs/mainnet_readiness.md`; go/no-go: `node scripts/mainnet-preflight.js`.
 
 ## 1. Test results (whole suite: 218 passing, no failures at the time of the first report)

@@ -1,6 +1,6 @@
 # MARGINALIA: Phase 03 "Hardening" Execution Report
 
-**Date:** 2026-10-09 (updated 2026-10-11) · **Reference:** `docs/phase3_hardening_plan.md`
+**Date:** 2026-10-09 (updated 2026-10-11) · **Reference:** the internal Phase 03 plan (not published)
 **Summary:** all *code and test* work for H1–H4 and H6 is done and passing; H5 was legitimately stopped by the decision gate. **Status update 2026-10-11:** the automated Magistrate, IPFS lists (Pinata), fee quote model, Safe guardian/owner roles and the 24 h soak gate are done and live on testnet (see `docs/mainnet_readiness.md`). Still open: a second IPFS provider and paid screening verified with real credentials, the pause *resume* transaction, and the decisions listed in section 4.
 
 ## 1. Test results
