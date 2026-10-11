@@ -18,7 +18,7 @@ without ceremony transcripts (`scripts/ceremony/mainnet-guard.js`).
 |---|---|---|
 | R1 | Safe 2-of-3 on mainnet with 3 hardware wallets; roles transferred; pause drill executed | testnet: Safe `0xE4F1…5765` is guardian; register ownership transfer pending a successful pause drill |
 | R2 | Magistrate worker on its own service, own key, two IPFS providers, paid sanctions screening (Chainalysis KYT/TRM) | testnet worker running (Pinata proven; Filebase and Chainalysis not yet verified) |
-| R3 | Soak 72 h on testnet with `scripts/soak-check.js` passing | running from 2026-10-10 11:00 UTC |
+| R3 | Soak on testnet with `scripts/soak-check.js` | **passed at the 24 h gate (owner's decision 2026-10-11, shortened from 48/72 h):** 25.2 h elapsed since 2026-10-10 11:00 UTC, 11/11 checks pass (worst publish lag 0.7 min, IPFS list equals the on-chain root, folio not stale, 20 observed relay samples, 66 decision rows). Honest limits: low traffic (5 deposits, 2 roots in the window), so the rate-limit and long-run behaviour are only lightly exercised; keep the checker running until mainnet |
 | R4 | Paid RPC with generous `eth_getLogs` + a backup (`RH_LOGS_RPC_URL`) on every service | public RPC works; not set on web services |
 | R5 | Monitoring: alert webhook, relayer and publisher balance alerts | webhook not configured |
 | R6 | Legal review of the Magistrate policy and the disclosure/appeals process | not started |

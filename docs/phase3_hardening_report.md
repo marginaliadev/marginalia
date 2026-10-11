@@ -24,7 +24,7 @@
 - `services/magistrate/` (kebijakan denylist, store atomik + log audit append-only, layanan, CLI dengan health endpoint, kunci instance tunggal, alarm webhook).
 - Terbukti: idempoten, dibatasi laju (3 jam simulasi → 12 publikasi, root tertua tetap valid), kontrol negatif (tanpa batas, 18 publikasi menghabiskan jendela 16 root), crash antara pin dan publish menghasilkan CID yang sama, kehilangan state tidak mengubah apa pun, deposit ragequit dan alamat denylist yang ditambahkan belakangan keluar dari daftar berikutnya, hanya kunci Magistrate yang bisa menerbitkan.
 - Di testnet: deposit dari UI → daftar terbit otomatis dalam **22–67 detik** tanpa langkah manual.
-- **Belum:** soak 48 jam (H1-TEST9) dan worker belum di-deploy di Railway.
+- **Soak (H1-TEST9) lulus pada gerbang 24 jam (keputusan pemilik 2026-10-11, 11/11 pemeriksaan, 25,2 jam), worker berjalan di Railway.** Lalu lintas rendah (5 deposit, 2 root dalam jendela), jadi perilaku jangka panjang baru diuji ringan.
 - **Dilengkapi kemudian:** `SupabaseStore` (state, verdict, log *append-only*, indeks `asp_roots`) + migrasi `supabase/migrations/20261009000000_phase3_magistrate.sql` + `scripts/supabase-check.js` (8 tes). **Migrasi sudah diterapkan** pada proyek Supabase (2026-10-09): `node scripts/supabase-check.js` melaporkan "Schema is complete"; round trip `SupabaseStore`, kolom provenance `asp_roots`, dan RLS (anon ditolak pada tabel layanan) diverifikasi langsung.
 
 ### H2: IPFS ✔ (kode + tes), ✖ penyedia nyata

@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-09T14:26:44.848Z",
-  "gitCommit": "7ca973cddbd47514bdd8aa93031a2706cc709b1f",
+  "generatedAt": "2026-10-11T12:11:05.359Z",
+  "gitCommit": "cd3c23808599f41c0a983ca7c88040d7585d934d",
   "gitDirty": false,
   "toolchain": {
     "solc": "0.8.24",
@@ -71,6 +71,7 @@
     "withdraw": {
       "optimisation": "--O2",
       "constraints": 11432,
+      "wires": 11478,
       "publicInputs": 6,
       "privateInputs": 85,
       "r1csSha256": "7fe3a3e14e65c7c0dbd3c6fbce35616247e4578e19dbdf10cc36566134d1114f"
@@ -78,6 +79,7 @@
     "ragequit": {
       "optimisation": "--O2",
       "constraints": 693,
+      "wires": 696,
       "publicInputs": 2,
       "privateInputs": 2,
       "r1csSha256": "b0c4a83670766c6a045b8fe3773cdc3b36d21ec0bab01ba20eeb5eac1800631b"
