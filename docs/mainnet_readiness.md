@@ -3,6 +3,8 @@
 Last updated 2026-10-10. Testnet only; **do not deploy mainnet** until every BLOCKER is closed. The deploy script already refuses chain 4663
 without ceremony transcripts (`scripts/ceremony/mainnet-guard.js`).
 
+> Live go / no-go: `node scripts/mainnet-preflight.js` (read-only). The step-by-step sequence for the day itself is [`mainnet_launch_checklist.md`](mainnet_launch_checklist.md); env variables per service are in `.env.mainnet.example`.
+
 ## BLOCKERS (technical, cannot be waived)
 | # | Gate | Status | Owner / how |
 |---|---|---|---|
