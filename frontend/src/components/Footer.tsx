@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, ShieldCheck, ExternalLink } from "lucide-react";
 import MarginaliaLogo from "@/components/MarginaliaLogo";
 
+import { CHAIN } from "@/lib/chain";
 export default function Footer() {
   return (
     <footer className="w-full bg-black py-16 text-white border-t border-dusk/60 relative z-20">
@@ -69,7 +70,7 @@ export default function Footer() {
             <span className="size-2 rounded-full bg-sun animate-pulse"></span>
             <span className="text-sun font-semibold uppercase">PROTOCOL STATUS :</span>
             <span className="text-dust/70">
-              Working prototype · Robinhood Chain Testnet (Chain ID 46630) · Zero-Knowledge Groth16
+              {CHAIN.isTestnet ? "Working prototype" : "Mainnet beta"} · {CHAIN.name} (Chain ID {CHAIN.chainId}) · Zero-Knowledge Groth16
             </span>
           </div>
           <div className="flex items-center gap-3 text-dust/50 text-[11px]">
@@ -374,7 +375,7 @@ export default function Footer() {
               </li>
               <li>
                 <span className="text-dust/40 block text-[10px] uppercase">Chain ID</span>
-                <span>46630 (Testnet)</span>
+                <span>{CHAIN.chainId}{CHAIN.isTestnet ? " (Testnet)" : ""}</span>
               </li>
               <li>
                 <span className="text-dust/40 block text-[10px] uppercase">Proof Protocol</span>

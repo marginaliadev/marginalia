@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
-import { RH_TESTNET, POOL_ABI } from "@/lib/constants";
+import { CHAIN } from "@/lib/chain";
+import { POOL_ABI } from "@/lib/constants";
 import { relayerHealth } from "@/lib/relayer-health";
-import { makeProvider } from "@/lib/folio";
+import { makeProvider, poolAddress as activePoolAddress, rpcUrl as activeRpcUrl } from "@/lib/folio";
 
 export async function GET() {
-  const rpcUrl = process.env.RH_TESTNET_RPC_URL || process.env.NEXT_PUBLIC_RH_TESTNET_RPC_URL || RH_TESTNET.rpcUrl;
-  const poolAddress = process.env.MARGINALIA_POOL_ADDRESS || process.env.NEXT_PUBLIC_MARGINALIA_POOL_ADDRESS || RH_TESTNET.poolAddress;
+  const rpcUrl = activeRpcUrl();
+  const poolAddress = activePoolAddress();
   const provider = makeProvider(rpcUrl);
 
   let poolBalanceEth = "0.0";
@@ -53,8 +54,8 @@ export async function GET() {
     name: "MARGINALIA Next.js Relayer Engine",
     version: "2.0.0",
     chain: {
-      chainId: RH_TESTNET.chainId,
-      name: RH_TESTNET.name,
+      chainId: CHAIN.chainId,
+      name: CHAIN.name,
       rpcUrl: rpcUrl.replace(/alch_[a-zA-Z0-9_-]+/g, "alch_***"),
     },
     contracts: {

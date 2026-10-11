@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { Shield, ArrowUpRight, ArrowDownLeft, Zap, AlertTriangle, KeyRound, Copy, Check, Terminal, ExternalLink } from "lucide-react";
 import NoirModal from "@/components/NoirModal";
-import { RH_TESTNET, POOL_ABI, REGISTER_ABI, POOL_EVENTS_ABI, POOL_ERROR_TEXT } from "@/lib/constants";
+import { CHAIN } from "@/lib/chain";
+import { POOL_ABI, REGISTER_ABI, POOL_EVENTS_ABI, POOL_ERROR_TEXT } from "@/lib/constants";
 import { MerkleTree, DEPTH, ASP_DEPTH, newSecret, nullifierOf, recoverNote, parseNote, serializeNote, proveWithdraw, proveRagequit } from "@/lib/zk";
 import { deriveVaultKey, encryptVaultData, decryptVaultData, type VaultNote } from "@/lib/client-vault";
 
@@ -99,8 +100,12 @@ export default function ShieldedAppPage() {
   // ------------------------------------------------------------------ wallet helpers
   const getEthereum = (): any => (typeof window !== "undefined" ? (window as any).ethereum : undefined);
 
-  /** Connect the wallet and make sure it is on Robinhood Chain Testnet. Returns a signer, or null (a modal is shown). */
+  /** Connect the wallet and make sure it is on the configured chain. Returns a signer, or null (a modal is shown). */
   const connectWallet = async (): Promise<ethers.JsonRpcSigner | null> => {
+    if (!CHAIN.configured) {
+      showModal("Not Configured", `This deployment targets ${CHAIN.name} but its contract addresses are not set, so no transaction can be sent from this page.`, "danger", "OK");
+      return null;
+    }
     const eth = getEthereum();
     if (!eth) {
       showModal("Wallet Required", "Please connect your Web3 wallet (MetaMask or Rabby) to continue.", "danger", "Connect Wallet");
@@ -109,19 +114,19 @@ export default function ShieldedAppPage() {
     try {
       await eth.request({ method: "eth_requestAccounts" });
       const chainId = await eth.request({ method: "eth_chainId" });
-      if (chainId !== RH_TESTNET.chainIdHex) {
+      if (chainId !== CHAIN.chainIdHex) {
         try {
-          await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: RH_TESTNET.chainIdHex }] });
+          await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN.chainIdHex }] });
         } catch (switchErr: any) {
           if (switchErr?.code === 4902 || /unrecognized|not added/i.test(switchErr?.message || "")) {
             await eth.request({
               method: "wallet_addEthereumChain",
               params: [{
-                chainId: RH_TESTNET.chainIdHex,
-                chainName: RH_TESTNET.name,
+                chainId: CHAIN.chainIdHex,
+                chainName: CHAIN.name,
                 nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                rpcUrls: [RH_TESTNET.rpcUrl],
-                blockExplorerUrls: [RH_TESTNET.explorerUrl],
+                rpcUrls: [CHAIN.rpcUrl],
+                blockExplorerUrls: [CHAIN.explorerUrl],
               }],
             });
           } else {
@@ -140,10 +145,10 @@ export default function ShieldedAppPage() {
 
   const readProvider = (): ethers.Provider => {
     const eth = getEthereum();
-    return eth ? new ethers.BrowserProvider(eth) : new ethers.JsonRpcProvider(RH_TESTNET.rpcUrl);
+    return eth ? new ethers.BrowserProvider(eth) : new ethers.JsonRpcProvider(CHAIN.rpcUrl);
   };
 
-  const txLink = (hash: string) => `${RH_TESTNET.explorerUrl}/tx/${hash}`;
+  const txLink = (hash: string) => `${CHAIN.explorerUrl}/tx/${hash}`;
 
   // ------------------------------------------------------------------ vault helpers
   const persistVault = async (key: CryptoKey, owner: string, notes: VaultNote[]) => {
@@ -210,8 +215,8 @@ export default function ShieldedAppPage() {
         const secret = { sk: BigInt(p.sk), rho: BigInt(p.rho), value: BigInt(p.value) };
         const folio = await (await fetch("/api/folio")).json();
         if (cancelled || !Array.isArray(folio.leaves)) return;
-        if (String(folio.pool).toLowerCase() !== RH_TESTNET.poolAddress.toLowerCase()) return; // server on another pool: never match leaves from it
-        const note = recoverNote(secret, folio.leaves.map((l: string) => BigInt(l)), RH_TESTNET.chainId, RH_TESTNET.poolAddress);
+        if (String(folio.pool).toLowerCase() !== CHAIN.poolAddress.toLowerCase()) return; // server on another pool: never match leaves from it
+        const note = recoverNote(secret, folio.leaves.map((l: string) => BigInt(l)), CHAIN.chainId, CHAIN.poolAddress);
         if (note) {
           const noteString = serializeNote(note);
           setActiveTab("deposit");
@@ -266,7 +271,7 @@ Your note has been rebuilt below. SAVE IT NOW.`,
       const secret = newSecret();
       // persist BEFORE sending: if anything dies after the tx is mined, the note is still recoverable
       savePending({ sk: secret.sk, rho: secret.rho, value });
-      const pool = new ethers.Contract(RH_TESTNET.poolAddress, POOL_ABI, signer);
+      const pool = new ethers.Contract(CHAIN.poolAddress, POOL_ABI, signer);
       const tx = await pool.deposit(secret.precommitment, { value });
       sent = true;
       const receipt = await tx.wait();
@@ -275,7 +280,7 @@ Your note has been rebuilt below. SAVE IT NOW.`,
       let label: bigint | null = null;
       let commitment: bigint | null = null;
       for (const log of receipt.logs) {
-        if (log.address.toLowerCase() !== RH_TESTNET.poolAddress.toLowerCase()) continue;
+        if (log.address.toLowerCase() !== CHAIN.poolAddress.toLowerCase()) continue;
         try {
           const ev = iface.parseLog(log);
           if (ev && ev.name === "Deposited") {
@@ -382,15 +387,15 @@ Your note has been rebuilt below. SAVE IT NOW.`,
       const fres = await fetch("/api/folio");
       const folio = await fres.json();
       if (!fres.ok) return fail("Folio Unavailable", folio.error || "Could not load the Folio tree.");
-      if (String(folio.pool).toLowerCase() !== RH_TESTNET.poolAddress.toLowerCase()) {
-        return fail("Server Misconfigured", `This site's server is configured for a different pool (${folio.pool}) than the one this page uses (${RH_TESTNET.poolAddress}). Nothing was sent.`);
+      if (String(folio.pool).toLowerCase() !== CHAIN.poolAddress.toLowerCase()) {
+        return fail("Server Misconfigured", `This site's server is configured for a different pool (${folio.pool}) than the one this page uses (${CHAIN.poolAddress}). Nothing was sent.`);
       }
 
       const stateTree = new MerkleTree(DEPTH, folio.leaves.map((l: string) => BigInt(l)));
       const aspTree = new MerkleTree(ASP_DEPTH, folio.aspLabels.map((l: string) => BigInt(l)));
       const provider = readProvider();
-      const pool = new ethers.Contract(RH_TESTNET.poolAddress, POOL_ABI, provider);
-      const register = new ethers.Contract(RH_TESTNET.registerAddress, REGISTER_ABI, provider);
+      const pool = new ethers.Contract(CHAIN.poolAddress, POOL_ABI, provider);
+      const register = new ethers.Contract(CHAIN.registerAddress, REGISTER_ABI, provider);
       // Trust no server: both roots must be accepted by the contracts themselves.
       if (!(await pool.isKnownRoot(stateTree.root()))) return fail("Folio Mismatch", "The Folio tree does not match any on-chain root. Try again in a moment.");
       if (!(await register.isValidRoot(aspTree.root()))) return fail("ASP Mismatch", "The approved-label set does not match the Magistrate's published root.");
@@ -438,7 +443,7 @@ Your note has been rebuilt below. SAVE IT NOW.`,
         txHash = rdata.txHash;
       } else {
         setWithdrawStage("SUBMITTING TRANSACTION");
-        const tx = await new ethers.Contract(RH_TESTNET.poolAddress, POOL_ABI, signer!).withdraw(w, proof);
+        const tx = await new ethers.Contract(CHAIN.poolAddress, POOL_ABI, signer!).withdraw(w, proof);
         await tx.wait();
         txHash = tx.hash;
         recordTx(txHash);
@@ -520,7 +525,7 @@ Your note has been rebuilt below. SAVE IT NOW.`,
     setIsRagequitting(true);
     setRagequitTx(null);
     try {
-      const pool = new ethers.Contract(RH_TESTNET.poolAddress, POOL_ABI, signer);
+      const pool = new ethers.Contract(CHAIN.poolAddress, POOL_ABI, signer);
       const depositor: string = await pool.labelDepositor(note.label);
       if (depositor === ethers.ZeroAddress) throw new Error("This note was never deposited into the pool.");
       if (depositor.toLowerCase() !== (await signer.getAddress()).toLowerCase()) {
@@ -552,7 +557,7 @@ Your note has been rebuilt below. SAVE IT NOW.`,
     try {
       const owner = await signer.getAddress();
       const signature = await signer.signTypedData(
-        { name: "MARGINALIA Vault", version: "1", chainId: RH_TESTNET.chainId },
+        { name: "MARGINALIA Vault", version: "1", chainId: CHAIN.chainId },
         { Unlock: [{ name: "purpose", type: "string" }, { name: "owner", type: "address" }] },
         { purpose: "Derive the key that encrypts my MARGINALIA note vault. Gas-free.", owner }
       );
@@ -620,7 +625,7 @@ Your note has been rebuilt below. SAVE IT NOW.`,
               <div>
                 <div className="flex items-center gap-2.5 text-mono-s uppercase tracking-wider text-sun mb-2">
                   <span className="size-1.5 rounded-full bg-sun animate-pulse"></span>
-                  <span>Robinhood Chain Testnet (46630) · Active</span>
+                  <span>{CHAIN.name} ({CHAIN.chainId}) · Active</span>
                 </div>
                 <h1 className="text-heading-48 text-dust font-light">
                   Shielded Pool & Account Terminal

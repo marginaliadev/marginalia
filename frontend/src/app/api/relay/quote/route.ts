@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { RH_TESTNET } from "@/lib/constants";
+import { CHAIN } from "@/lib/chain";
 import { makeProvider } from "@/lib/folio";
 import { currentGasEstimate, minFeeFor, relayerHealth, warmGasSamples } from "@/lib/relayer-health";
 
@@ -29,8 +29,8 @@ export async function POST() {
     gasSamples: gas.samples,
     gasPriceGwei: ethers.formatUnits(gasPrice, "gwei"),
     minFeeEth: ethers.formatEther(feeWei),
-    chain: RH_TESTNET.name,
-    chainId: RH_TESTNET.chainId,
+    chain: CHAIN.name,
+    chainId: CHAIN.chainId,
     validUntil: Date.now() + 120_000,
   });
 }

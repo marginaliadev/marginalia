@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Lock, Copy, Check, ShieldCheck, ArrowRight, Eye, Shield, FileText, CheckCircle2, XCircle } from "lucide-react";
 
+import { CHAIN } from "@/lib/chain";
 export default function CompliancePage() {
   const [noteInput, setNoteInput] = useState("");
   const [auditorPem, setAuditorPem] = useState("");
@@ -119,7 +120,7 @@ export default function CompliancePage() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 pointer-events-none" />
                   <div className="absolute bottom-2.5 left-2.5 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded-xs border border-sun/30 text-[10px] font-mono text-sun">
-                    ORBIT 46630 · ZERO RETENTION
+                    ORBIT {CHAIN.chainId} · ZERO RETENTION
                   </div>
                 </div>
 

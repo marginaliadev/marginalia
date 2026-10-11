@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import MarginaliaLogo from "@/components/MarginaliaLogo";
 
+import { CHAIN } from "@/lib/chain";
 export default function IntroSequence() {
   const [isVisible, setIsVisible] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -175,7 +176,7 @@ export default function IntroSequence() {
 
           {/* Bottom Bar: Cryptographic Parameters */}
           <div className="w-full max-w-4xl flex flex-col sm:flex-row items-center justify-between gap-2 text-mono-s text-dust/40 relative z-10 pb-2">
-            <div>ROBINHOOD CHAIN TESTNET (46630) · ARBITRUM ORBIT L2</div>
+            <div>{CHAIN.name.toUpperCase()} ({CHAIN.chainId}) · ARBITRUM ORBIT L2</div>
             <div>GROTH16 · POSEIDON T3/T4 · 24,236 R1CS</div>
           </div>
         </motion.div>

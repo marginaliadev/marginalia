@@ -5,26 +5,34 @@ import fs from "fs";
 import path from "path";
 import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
-import { RH_TESTNET, POOL_ABI, REGISTER_ABI, POOL_EVENTS_ABI } from "@/lib/constants";
+import { CHAIN } from "@/lib/chain";
+import { POOL_ABI, REGISTER_ABI, POOL_EVENTS_ABI } from "@/lib/constants";
 import { MerkleTree, DEPTH, ASP_DEPTH } from "@/lib/zk";
 import { loadAspLabelsFromIpfs } from "@/lib/aspStore";
 import { buildProvider, rpcUrlList, scanInChunks } from "@/lib/rpc";
 
-const DEPLOY_BLOCK = Number(process.env.POOL_DEPLOY_BLOCK || 129140787);
+const DEPLOY_BLOCK = Number(process.env.POOL_DEPLOY_BLOCK || CHAIN.deployBlock);
 const SCAN_BUDGET_MS = 25_000;
 
+/** The RPC of the active chain: RH_TESTNET_RPC_URL (testnet) or RH_MAINNET_RPC_URL (mainnet), comma separated allowed. */
 export function rpcUrl() {
-  return process.env.RH_TESTNET_RPC_URL || process.env.NEXT_PUBLIC_RH_TESTNET_RPC_URL || RH_TESTNET.rpcUrl;
+  return CHAIN.rpcEnvNames.map((n) => process.env[n]).find(Boolean) || CHAIN.rpcUrl;
 }
-/** Configured RPC (RH_TESTNET_RPC_URL, comma separated allowed), then the public RPC as automatic fallback. */
+/** Configured RPC(s), then the chain's public RPC as the automatic fallback. */
 export function makeProvider(url = rpcUrl()) {
-  return buildProvider(rpcUrlList(url), RH_TESTNET.chainId);
+  return buildProvider(rpcUrlList(url, CHAIN.publicRpcUrl), CHAIN.chainId);
+}
+/** Throws when this deployment targets mainnet but the contract addresses / deploy block were not provided. */
+export function assertChainConfigured() {
+  if (!CHAIN.configured) {
+    throw new Error(`This deployment targets ${CHAIN.name} but NEXT_PUBLIC_MARGINALIA_POOL_ADDRESS, NEXT_PUBLIC_MAGISTRATE_REGISTER_ADDRESS and NEXT_PUBLIC_POOL_DEPLOY_BLOCK are not all set.`);
+  }
 }
 export function poolAddress() {
-  return process.env.MARGINALIA_POOL_ADDRESS || RH_TESTNET.poolAddress;
+  return process.env.MARGINALIA_POOL_ADDRESS || CHAIN.poolAddress;
 }
 export function registerAddress() {
-  return process.env.MAGISTRATE_REGISTER_ADDRESS || RH_TESTNET.registerAddress;
+  return process.env.MAGISTRATE_REGISTER_ADDRESS || CHAIN.registerAddress;
 }
 
 interface LeafRec { index: number; leaf: bigint; block: number; tx: string }
@@ -186,6 +194,7 @@ async function loadVerifiedAsp(register: ethers.Contract): Promise<{ labels: big
 }
 
 export async function getFolio(force = false): Promise<FolioData> {
+  assertChainConfigured();
   if (!force && g.__folioCache && Date.now() - g.__folioCache.at < 10_000) return g.__folioCache.data;
 
   const provider = makeProvider();

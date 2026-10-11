@@ -38,6 +38,7 @@ import NoirpayAccountPreview from "@/components/NoirpayAccountPreview";
 import MarginaliaLogo from "@/components/MarginaliaLogo";
 import { motion } from "framer-motion";
 
+import { CHAIN } from "@/lib/chain";
 export default function HomePage() {
   const [selectedNoteIndex, setSelectedNoteIndex] = useState<number>(14);
   const [hoveredDot, setHoveredDot] = useState<number | null>(null);
@@ -100,7 +101,7 @@ export default function HomePage() {
                   {/* Top Status Tag */}
                   <div className="inline-flex items-center gap-x-2 rounded-xs border border-white/15 px-3 py-1 text-[11px] font-mono uppercase tracking-wider text-dust mb-6 bg-night">
                     <span className="size-1.5 rounded-full bg-sun animate-pulse"></span>
-                    <span>ROBINHOOD CHAIN (46630) · GROTH16 ZK POOLS</span>
+                    <span>ROBINHOOD CHAIN ({CHAIN.chainId}) · GROTH16 ZK POOLS</span>
                   </div>
 
                   {/* Contract Address */}
@@ -178,7 +179,7 @@ export default function HomePage() {
           </div>
           <div className="flex-1 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
             <div className="flex items-center gap-8 whitespace-nowrap animate-marquee-x font-mono text-xs text-stroke-2">
-              <span className="text-dust font-medium">ROBINHOOD CHAIN (46630)</span>
+              <span className="text-dust font-medium">ROBINHOOD CHAIN ({CHAIN.chainId})</span>
               <span className="text-sun">◈</span>
               <span>GROTH16 ZK-SNARK</span>
               <span className="text-sun">◈</span>
@@ -192,7 +193,7 @@ export default function HomePage() {
               <span className="text-sun">◈</span>
               <span className="text-sun font-medium">UNLINKABLE PAYOUTS</span>
               <span className="text-sun">◈</span>
-              <span className="text-dust font-medium">ROBINHOOD CHAIN (46630)</span>
+              <span className="text-dust font-medium">ROBINHOOD CHAIN ({CHAIN.chainId})</span>
               <span className="text-sun">◈</span>
               <span>GROTH16 ZK-SNARK</span>
               <span className="text-sun">◈</span>
@@ -297,7 +298,7 @@ export default function HomePage() {
                   </span>
                   <span className="size-1.5 rounded-full bg-white"></span>
                 </div>
-                <div className="font-heading text-2xl font-normal text-dust">46630</div>
+                <div className="font-heading text-2xl font-normal text-dust">{CHAIN.chainId}</div>
                 <ProgressGauge progressPercentage={100} className="mt-3" />
                 <span className="text-[10px] text-stroke-3 font-mono mt-1.5 block">Robinhood Orbit L2</span>
               </TechCard>
@@ -873,7 +874,7 @@ export default function HomePage() {
                 <div className="flex items-center justify-between pb-3 mb-4 border-b border-dusk font-mono text-xs">
                   <span className="text-sun font-semibold tracking-wider flex items-center gap-2">
                     <span className="size-2 rounded-full bg-sun animate-pulse" />
-                    MAGISTRATE SEAL · ATT-46630
+                    MAGISTRATE SEAL · ATT-{CHAIN.chainId}
                   </span>
                   <span className="text-stroke-3 font-mono text-[11px]">ASP REGISTER</span>
                 </div>
@@ -1106,7 +1107,7 @@ export default function HomePage() {
 
               <motion.div whileHover={{ y: -3 }} className="p-4 rounded-xs bg-midnight border border-dusk">
                 <span className="text-xs font-mono text-stroke-2 block mb-1">ENVIRONMENT</span>
-                <span className="font-heading text-lg text-dust">Testnet Only</span>
+                <span className="font-heading text-lg text-dust">{CHAIN.isTestnet ? "Testnet Only" : "Mainnet Beta"}</span>
               </motion.div>
 
               <motion.div whileHover={{ y: -3 }} className="p-4 rounded-xs bg-midnight border border-rose-900/40">

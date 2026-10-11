@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 
+import { CHAIN } from "@/lib/chain";
 export default function NoirpayCircuitCard() {
   const [activeJobIndex, setActiveJobIndex] = useState(0);
 
@@ -158,7 +159,7 @@ export default function NoirpayCircuitCard() {
                     fontSize="10"
                     letterSpacing="0.08em"
                   >
-                    CHAIN 46630
+                    CHAIN {CHAIN.chainId}
                   </text>
                   <rect
                     x="40"

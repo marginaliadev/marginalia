@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
 
+import { CHAIN } from "@/lib/chain";
 // Generated at request time: the previous static /images/marginalia-hero.webp never existed (404), so link previews had no image.
 export const alt = "MARGINALIA: Compliant Shielded Pool on Robinhood Chain";
 export const size = { width: 1200, height: 630 };
@@ -21,7 +22,7 @@ export default function OpengraphImage() {
           border: "2px solid #3a322b",
         }}
       >
-        <div style={{ display: "flex", fontSize: 26, letterSpacing: 6, color: "#FF7A3D" }}>ROBINHOOD CHAIN TESTNET · 46630</div>
+        <div style={{ display: "flex", fontSize: 26, letterSpacing: 6, color: "#FF7A3D" }}>{`${CHAIN.name.toUpperCase()} · ${CHAIN.chainId}`}</div>
         <div style={{ display: "flex", flexDirection: "column" }}>
           <div style={{ display: "flex", fontSize: 128, fontWeight: 700, letterSpacing: 10 }}>MARGINALIA</div>
           <div style={{ display: "flex", fontSize: 44, marginTop: 24, color: "#cfc7b6" }}>Proven. Not revealed.</div>

@@ -50,8 +50,14 @@ Nothing below is skipped, reordered or "accepted as a risk" to meet a date. Four
 10. [ ] Smoke test with your own funds, small amounts: deposit, approval, wallet withdraw, Courier withdraw, ragequit.
 11. [ ] Announce.
 
-## 5. Front end and services for mainnet (engineering, after the audit)
-The app is currently hard-wired to testnet in 16 files (`frontend/src/lib/constants.ts`, `folio.ts`, `rpc.ts`, the API routes, pages, `Navbar.tsx` wallet-switch, UI copy "46630", `lib/vault.js`, scripts). Introduce one chain config (`NEXT_PUBLIC_CHAIN=mainnet|testnet`, default testnet) that supplies chainId, name, RPCs, explorer, contract addresses and deploy block, replace the literals, and add tests. **Do not change contracts or circuits for this.** Variables for each service are in `.env.mainnet.example`.
+## 5. Front end and services for mainnet
+**Done (2026-10-11):** the front end now takes its chain from one place, `frontend/src/lib/chain.ts`. The default is the testnet and nothing changes for it; `NEXT_PUBLIC_CHAIN=mainnet` selects Robinhood Chain (4663: chainId, wallet-add parameters, public RPC fallback, explorer, `RH_MAINNET_RPC_URL`). There are **no mainnet defaults for the contract addresses**: a mainnet build needs `NEXT_PUBLIC_MARGINALIA_POOL_ADDRESS`, `NEXT_PUBLIC_MAGISTRATE_REGISTER_ADDRESS` and `NEXT_PUBLIC_POOL_DEPLOY_BLOCK`, otherwise `/api/folio` answers with a configuration error and the app refuses to send transactions ("Not Configured"). Tested in `test/chain_config.test.js`; a mainnet build was started and verified to report chainId 4663.
+
+**Still to do before launch (copy and ops, not code risk):**
+- Review the copy that changes with the chain: the footer says "Mainnet beta" and the landing card "Mainnet Beta" on a mainnet build; decide the final wording, and remove or rewrite the testnet-only statements ("Testnet Only", the roadmap line mentioning 46630).
+- The Magistrate worker, `scripts/` (deploy, governance, soak-check, sync-folio) and the Hardhat network `robinhood` still read their chain from `deployments/<network>.json` and their own env; use the per-service variables in `.env.mainnet.example`.
+- Update the live-test and soak scripts to take the chain from env before running them against mainnet.
+**Do not change contracts or circuits for any of this.**
 
 ## 6. Monitoring from minute zero
 - `scripts/soak-check.js` on a schedule (hourly) with an alert on non-zero exit.

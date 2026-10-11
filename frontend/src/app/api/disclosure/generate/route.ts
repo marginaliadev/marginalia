@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { ethers } from "ethers";
 import { generateViewingKeypair, createEncryptedMemo, parseNoteString } from "@/lib/server-crypto";
-import { RH_TESTNET } from "@/lib/constants";
+import { CHAIN } from "@/lib/chain";
 
 export async function POST(req: Request) {
   try {
@@ -38,9 +38,9 @@ export async function POST(req: Request) {
       valueWei: parsed.value ? parsed.value.toString() : "0",
       valueEth: parsed.value ? ethers.formatEther(parsed.value.toString()) : "0",
       label: parsed.label ? parsed.label.toString() : "0",
-      poolAddress: process.env.MARGINALIA_POOL_ADDRESS || RH_TESTNET.poolAddress,
+      poolAddress: process.env.MARGINALIA_POOL_ADDRESS || CHAIN.poolAddress,
       timestamp: new Date().toISOString(),
-      chainId: RH_TESTNET.chainId,
+      chainId: CHAIN.chainId,
     };
 
     const encryptedMemo = createEncryptedMemo(memoDetails, pubKeyPem);
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     const disclosurePkg = {
       protocol: "MARGINALIA_ZK_SHIELDED_POOL",
       standard: "LETTER_OF_DISCLOSURE_V1",
-      chain: `${RH_TESTNET.name} (${RH_TESTNET.chainId})`,
+      chain: `${CHAIN.name} (${CHAIN.chainId})`,
       timestamp: memoDetails.timestamp,
       auditorPublicKey: pubKeyPem,
       memoDetails: {

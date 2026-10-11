@@ -1,8 +1,8 @@
-import { makeProvider } from "@/lib/folio";
+import { makeProvider, poolAddress as activePoolAddress, rpcUrl as activeRpcUrl } from "@/lib/folio";
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { parseNoteString, onChainPoseidon } from "@/lib/server-crypto";
-import { RH_TESTNET } from "@/lib/constants";
+import { CHAIN } from "@/lib/chain";
 
 const FIELD = BigInt("21888242871839275222246405745257275088548364400416034343698204186575808495617");
 
@@ -36,8 +36,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ valid: false, error: "Invalid Scalar Field: Parameters are out of BN254 range." }, { status: 400 });
     }
 
-    const rpcUrl = process.env.RH_TESTNET_RPC_URL || RH_TESTNET.rpcUrl;
-    const poolAddress = process.env.MARGINALIA_POOL_ADDRESS || RH_TESTNET.poolAddress;
+    const rpcUrl = activeRpcUrl();
+    const poolAddress = activePoolAddress();
 
     try {
       const chain = await onChainPoseidon(makeProvider(rpcUrl), poolAddress);

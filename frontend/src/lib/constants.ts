@@ -1,13 +1,6 @@
-export const RH_TESTNET = {
-  chainId: 46630,
-  chainIdHex: "0xb626",
-  name: "Robinhood Chain Testnet",
-  rpcUrl: process.env.NEXT_PUBLIC_RH_TESTNET_RPC_URL || "https://rpc.testnet.chain.robinhood.com",
-  explorerUrl: process.env.NEXT_PUBLIC_EXPLORER_URL || "https://explorer.testnet.chain.robinhood.com",
-  poolAddress: (process.env.NEXT_PUBLIC_MARGINALIA_POOL_ADDRESS || "0x340E20C7CBe7eA83d463432ac8FA1e891bdca948") as `0x${string}`,
-  symbol: "ETH",
-  registerAddress: (process.env.NEXT_PUBLIC_MAGISTRATE_REGISTER_ADDRESS || "0x9a54AaADB10472a930822D635831Ee7aa3488d75") as `0x${string}`,
-};
+import { CHAIN } from "./chain";
+/** @deprecated use CHAIN from "@/lib/chain": this is the ACTIVE chain (testnet unless NEXT_PUBLIC_CHAIN=mainnet), kept for older imports. */
+export const RH_TESTNET = CHAIN;
 
 export const POOL_ABI = [
   "function deposit(uint256 precommitment) external payable returns (uint256 commitment)",

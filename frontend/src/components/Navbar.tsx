@@ -6,9 +6,8 @@ import { useState, useEffect } from "react";
 import { Wallet, CheckCircle, ArrowRight, Menu, X } from "lucide-react";
 
 import MarginaliaLogo from "@/components/MarginaliaLogo";
+import { CHAIN } from "@/lib/chain";
 
-const RH_TESTNET_CHAIN_ID = "0xb626"; // 46630 in hex
-const RH_TESTNET_CHAIN_ID_DEC = 46630;
 
 // Links of the mobile / tablet menu (below the lg breakpoint the inline nav is hidden). Ceremony lives here and in the footer.
 const MENU_LINKS: { href: string; label: string }[] = [
@@ -99,11 +98,11 @@ export default function Navbar() {
         localStorage.setItem("marginalia_wallet_connected", "true");
       }
       const currentChainId = await eth.request({ method: "eth_chainId" });
-      if (parseInt(currentChainId, 16) !== RH_TESTNET_CHAIN_ID_DEC) {
+      if (parseInt(currentChainId, 16) !== CHAIN.chainId) {
         try {
           await eth.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: RH_TESTNET_CHAIN_ID }],
+            params: [{ chainId: CHAIN.chainIdHex }],
           });
         } catch (switchError: any) {
           if (switchError.code === 4902) {
@@ -111,11 +110,11 @@ export default function Navbar() {
               method: "wallet_addEthereumChain",
               params: [
                 {
-                  chainId: RH_TESTNET_CHAIN_ID,
-                  chainName: "Robinhood Chain Testnet",
+                  chainId: CHAIN.chainIdHex,
+                  chainName: CHAIN.name,
                   nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                  rpcUrls: ["https://rpc.testnet.chain.robinhood.com"],
-                  blockExplorerUrls: ["https://explorer.testnet.chain.robinhood.com"],
+                  rpcUrls: [CHAIN.rpcUrl],
+                  blockExplorerUrls: [CHAIN.explorerUrl],
                 },
               ],
             });
@@ -217,7 +216,7 @@ export default function Navbar() {
               className="inline-flex cursor-pointer items-center gap-x-2 rounded-xs border bg-transparent px-3.5 py-[0.5625rem] whitespace-nowrap transition-colors select-none border-white/25 text-white hover:border-white/60 hover:bg-white/5 font-mono text-[0.75rem]"
             >
               <span className="size-1.5 rounded-full bg-sun animate-pulse"></span>
-              <span>CHAIN 46630</span>
+              <span>CHAIN {CHAIN.chainId}</span>
             </button>
           </div>
 
@@ -289,7 +288,7 @@ export default function Navbar() {
             <li className="flex items-center justify-between gap-3 pt-4 pb-2">
               <span className="inline-flex items-center gap-x-2 text-xs font-mono text-white/70">
                 <span className="size-1.5 rounded-full bg-sun animate-pulse"></span>
-                CHAIN 46630
+                CHAIN {CHAIN.chainId}
               </span>
               <a
                 href="https://x.com/MarginaliaZK"
