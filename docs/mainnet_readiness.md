@@ -18,13 +18,13 @@ without ceremony transcripts (`scripts/ceremony/mainnet-guard.js`).
 ## REQUIRED before launch (operations)
 | # | Item | Status |
 |---|---|---|
-| R1 | Safe 2-of-3 on mainnet with 3 hardware wallets; roles transferred; pause drill executed | **testnet done (2026-10-11):** Safe `0xE4F1CE7C30753a9aF8125d53A1c35DE172635765` (3 owners, threshold 2) is guardian (tx `0xc0df25ca…a013e`) and **owner of the register** (tx `0x57c2d98b…d686`); the pause was executed through the Safe (tx `0xb0d11f06…6def`) and deposits were refused with `DepositsPaused`; the deployer EOA has no admin power left. **Pending:** RESUME of deposits (the pool is paused until the Safe executes it). Mainnet needs its own Safe, hardware wallets and a repeat of the drill |
+| R1 | Safe 2-of-3 on mainnet with 3 hardware wallets; roles transferred; pause drill executed | **testnet done (2026-10-11):** Safe `0xE4F1CE7C30753a9aF8125d53A1c35DE172635765` (3 owners, threshold 2) is guardian (tx `0xc0df25ca…a013e`) and **owner of the register** (tx `0x57c2d98b…d686`); the pause was executed through the Safe (tx `0xb0d11f06…6def`) and deposits were refused with `DepositsPaused`; the **RESUME was executed through the Safe** (tx `0xd46822b8…98f6` at block 133081913, sent by `0x8694…4Aea`) setting `depositsPaused = false`; production E2E phase L verified (7/7 pass); deployer EOA has no admin power left. Mainnet needs its own Safe, hardware wallets and a repeat of the drill |
 | R2 | Magistrate worker on its own service, own key, two IPFS providers, paid sanctions screening (Chainalysis KYT/TRM) | testnet worker running (Pinata proven; Filebase and Chainalysis not yet verified) |
 | R3 | Soak on testnet with `scripts/soak-check.js` | **passed at the 24 h gate (owner's decision 2026-10-11, shortened from 48/72 h):** 25.2 h elapsed since 2026-10-10 11:00 UTC, 11/11 checks pass (worst publish lag 0.7 min, IPFS list equals the on-chain root, folio not stale, 20 observed relay samples, 66 decision rows). Honest limits: low traffic (5 deposits, 2 roots in the window), so the rate-limit and long-run behaviour are only lightly exercised; keep the checker running until mainnet |
 | R4 | Paid RPC with generous `eth_getLogs` + a backup (`RH_LOGS_RPC_URL`) on every service | public RPC works; not set on web services |
 | R5 | Monitoring: alert webhook, relayer and publisher balance alerts | webhook not configured |
 | R6 | Legal review of the Magistrate policy and the disclosure/appeals process | not started |
-| R7 | Bug bounty / incident runbook rehearsed (`docs/incident_response_runbook.md`) | runbook written; drill of pause done only after R1 |
+| R7 | Bug bounty / incident runbook rehearsed (`docs/incident_response_runbook.md`) | runbook written; full pause and resume cycle drill completed on testnet Safe |
 
 ## DONE (evidence in repo)
 Automated Magistrate with IPFS lists and append-only decision log (live); empirical Courier fee quote (20 relays, 18/18 covered); Safe governance scripts on a real

@@ -26,9 +26,9 @@ Scope: every shipped feature, the automated suite, the live site (production and
 
 ## Not tested (and why)
 - **Anything on mainnet**: not deployed; guarded.
-- **Safe pause/resume drill on the live Safe** and the register ownership transfer: waiting for two owner signatures.
+- **Safe pause/resume drill on the live Safe**: **Completed and verified (2026-10-11)**. Pause executed (tx `0xb0d11f06…6def`) and resume executed (tx `0xd46822b8…98f6` at block 133081913 by Safe `0xE4F1…5765`). Register ownership transferred to Safe (tx `0x57c2d98b…d686`). Production E2E Phase L 7/7 passed.
 - **Filebase (second IPFS pin), Chainalysis screening, alert webhook**: no credentials yet.
-- **A single clean 15/15 run on production today**: the deployer holds about 0.00013 ETH after the runs above; a full-size run needs about 0.002 ETH from a faucet.
+- **A single clean 15/15 run on production today**: the deployer holds about 0.000115 ETH after the runs above; a full-size run needs about 0.002 ETH from a faucet.
 - Load and stress tests, hardware-wallet flows, mobile wallets, long-run (> 1 day) soak.
 - Anything that needs the audit or the real ceremony.
 

@@ -1,7 +1,7 @@
 # MARGINALIA: Phase 03 "Hardening" Execution Report
 
 **Date:** 2026-10-09 (updated 2026-10-11) · **Reference:** the internal Phase 03 plan (not published)
-**Summary:** all *code and test* work for H1–H4 and H6 is done and passing; H5 was legitimately stopped by the decision gate. **Status update 2026-10-11:** the automated Magistrate, IPFS lists (Pinata), fee quote model, Safe guardian/owner roles and the 24 h soak gate are done and live on testnet (see `docs/mainnet_readiness.md`). Still open: a second IPFS provider and paid screening verified with real credentials, the pause *resume* transaction, and the decisions listed in section 4.
+**Summary:** all *code and test* work for H1–H4 and H6 is done and passing; H5 was legitimately stopped by the decision gate. **Status update 2026-10-11:** the automated Magistrate, IPFS lists (Pinata), fee quote model, Safe guardian/owner roles, the full Safe pause and resume cycle (tx `0xd46822b8…98f6`), and the 24 h soak gate are done and live on testnet (see `docs/mainnet_readiness.md`). Still open: a second IPFS provider and paid screening verified with real credentials, and the decisions listed in section 4.
 
 ## 1. Test results
 
@@ -39,7 +39,7 @@
 - Safe v1.4.1 is **deployed** on Robinhood Testnet (spike H3-T0: the biggest risk is gone).
 - `scripts/governance/` (`transfer-roles.js` with a built-in dry run and precondition checks, `rotate-magistrate.js`, `pause-deposits.js`).
 - Proven with a real 2-of-3 Safe: the deployer loses all 8 admin functions with specific errors (`NotOwner` / `NotMagistrate` / `NotGuardian`); one signature is rejected; rotation takes 1.6 s; the old publisher gets `NotMagistrate`; pause takes 1.4 s, deposits are rejected while **ragequit keeps working**; the script refuses publisher = deployer, a threshold-1 Safe, and a Safe that contains the deployer.
-- **Live (2026-10-11):** Safe `0xE4F1CE7C30753a9aF8125d53A1c35DE172635765` (3 owners, threshold 2) is the pool guardian and the register owner; a pause was executed through the Safe and deposits were refused with `DepositsPaused`. The *resume* transaction is pending.
+- **Live (2026-10-11):** Safe `0xE4F1CE7C30753a9aF8125d53A1c35DE172635765` (3 owners, threshold 2) is the pool guardian and the register owner; the pause drill was executed through the Safe (tx `0xb0d11f06…6def`, deposits refused with `DepositsPaused`); the resume transaction was executed through the Safe (tx `0xd46822b8…98f6` at block 133081913, `setDepositsPaused(false)`), reopening deposits (`depositsPaused = false`). Production E2E Phase L passed 7/7.
 
 ### H4: Healthy relayer ✔
 - Balance/health in `/api/status`, the Courier is switched off automatically (UI + API 503) below `RELAYER_MIN_BALANCE_ETH`, webhook alarm at most once per 10 minutes, 90% fee tolerance and a fee cap of 50% of the value, relays are serialised (one nonce), actual gas cost vs fee is recorded.
@@ -86,7 +86,7 @@
 1. A second IPFS provider (Filebase) and the Chainalysis key verified with real credentials, and a paid RPC with a backup.
 2. The name of the **daily reviewer** for screening decisions.
 3. The alert webhook URL.
-4. Execute the pending *resume* transaction on the Safe so deposits reopen.
+4. ~~Execute the pending *resume* transaction on the Safe so deposits reopen.~~ **Done (2026-10-11):** executed via Safe tx `0xd46822b8…98f6` at block 133081913; deposits reopened and verified live (production E2E Phase L 7/7).
 
 ## 5. Next steps
 See `docs/mainnet_readiness.md` and `docs/mainnet_launch_checklist.md`. The remaining gates (external audit, public ceremony, redeploy) are tracked there; Phase 03 itself has no further code work.
