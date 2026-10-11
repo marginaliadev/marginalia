@@ -448,6 +448,55 @@ export default function CompliancePage() {
           </div>
         </div>
       </section>
+
+      {/* SECTION 5: SCREENING POLICY & APPEALS */}
+      <section id="appeals" className="relative py-16 md:py-24 border-t border-dusk/50 bg-[#0f0c0b]">
+        <div className="max-w-[80rem] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-[42rem] mb-12">
+            <div className="text-mono-s uppercase tracking-wider text-sun mb-2">Screening policy &amp; appeals</div>
+            <h2 className="text-heading-40 text-dust">What is checked, what happens if you are not approved, and how to contest it.</h2>
+            <p className="text-body-18-light mt-3 text-dust/70">
+              Approval is a compliance signal, never a custody decision. Nobody can hold or confiscate your deposit.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="relative border border-dusk bg-night/80 p-6">
+              <div className="bracket-x h-2 text-stroke-3 border-t mb-4"></div>
+              <span className="text-mono-s text-dust/40">01</span>
+              <h3 className="text-heading-28 text-dust mt-2">What is screened</h3>
+              <p className="text-body-16-light text-dust/70 mt-3 leading-relaxed">
+                Only the <strong>depositor wallet address</strong>, against the public OFAC sanctions list and a maintained list of known exploit and hack addresses. A sanctions-screening API is added as the pool grows. No identity documents, no balances, no browsing data.
+              </p>
+            </div>
+
+            <div className="relative border border-dusk bg-night/80 p-6">
+              <div className="bracket-x h-2 text-stroke-3 border-t mb-4"></div>
+              <span className="text-mono-s text-dust/40">02</span>
+              <h3 className="text-heading-28 text-dust mt-2">If your deposit is not approved</h3>
+              <p className="text-body-16-light text-dust/70 mt-3 leading-relaxed">
+                Your funds are not frozen. The original depositor wallet can <strong>Ragequit</strong> at any time from the Shielded App and receive the full deposit back, publicly, with no permission needed. Approvals are published at most every 15 minutes, so a new deposit may simply be waiting for the next list.
+              </p>
+            </div>
+
+            <div className="relative border border-dusk bg-night/80 p-6">
+              <div className="bracket-x h-2 text-stroke-3 border-t mb-4"></div>
+              <span className="text-mono-s text-dust/40">03</span>
+              <h3 className="text-heading-28 text-dust mt-2">How to appeal</h3>
+              <ol className="text-body-16-light text-dust/70 mt-3 leading-relaxed list-decimal pl-5 space-y-1.5">
+                <li>
+                  Message{" "}
+                  <a href="https://x.com/MarginaliaZK" target="_blank" rel="noreferrer" className="text-sun hover:text-dust underline underline-offset-2">@MarginaliaZK</a>{" "}
+                  with the deposit transaction hash and the wallet address.
+                </li>
+                <li>A designated reviewer checks the case every day and records the decision.</li>
+                <li>Any override (approving a denied deposit or revoking an approved one) requires 2 of 3 signers of the governance Safe. No single person can override.</li>
+                <li>Every list change is published on-chain and every decision is kept in an append-only audit log.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

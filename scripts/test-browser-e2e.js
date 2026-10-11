@@ -15,6 +15,8 @@
 //   - the run fails (Z1/Z2) if any ledger note is still open or if more than gas was spent.
 //   Crash drills: CRASH_AFTER_DEPOSIT=1, CRASH_AFTER_PARTIAL_WITHDRAW=1, and phase R (page killed mid-deposit).
 // ASP_PUBLISH_CMD: shell command run after approval for servers that read the label list from ASP_LABELS_URL (e.g. git add/commit/push asp).
+// AUTO_MAGISTRATE=1: do not approve manually; wait for the automated Magistrate service (services/magistrate) instead.
+// DEPLOYMENT_FILE: use another deployment (e.g. notes/staging-deployment.json) for sweeper and checks.
 // Phases: 1 = vault + deposits, 2 = Magistrate approval (CLI), 3 = withdraw / courier / ragequit, R = app-level crash recovery drill, L = live-safe deposit + ragequit (no server pool needed), none = sweep only. Default: all.
 // Costs ~0.002 testnet ETH per run. Use `localhost`, not 127.0.0.1, with `next dev`.
 const os = require("os");
@@ -30,6 +32,7 @@ const puppeteer = require(R + "node_modules/puppeteer-core");
 const { ethers } = require(R + "node_modules/ethers");
 
 const BASE = process.env.APP_URL || "http://localhost:3000";
+const LAMT = process.env.E2E_L_DEPOSIT || "0.0003"; // deposit size of phase L
 const CHROME = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 // Everything that can hold funds lives under notes/ (gitignored, NOT the OS temp dir) so a crash never loses it.
 const KEY_FILE = R + "notes/e2e-testwallet.key";
@@ -48,6 +51,12 @@ const ledgerAdd = (name, note) => {
 const results = [];
 const rec = (n, ok, d) => { results.push({ n, ok, d }); console.log((ok ? "PASS " : "FAIL ") + n + " :: " + d); };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+/** Balance change since `before`, polled: load-balanced public RPC nodes can answer one block late right after a tx confirms. */
+async function deltaSince(provider, addr, before, atLeast = 1n) {
+  let d = 0n;
+  for (let i = 0; i < 30; i++) { d = (await provider.getBalance(addr)) - before; if (d >= atLeast) break; await sleep(1000); }
+  return d;
+}
 
 (async () => {
   const provider = new ethers.JsonRpcProvider(process.env.RH_TESTNET_RPC_URL, 46630, { staticNetwork: true });
@@ -57,7 +66,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const SINK_FILE = R + "notes/e2e-sink.key";
   if (!fs.existsSync(SINK_FILE)) fs.writeFileSync(SINK_FILE, ethers.Wallet.createRandom().privateKey);
   const sink = new ethers.Wallet(fs.readFileSync(SINK_FILE, "utf8").trim(), provider);
-  const poolAddr = require(R + "deployments/robinhoodTestnet.json").pool;
+  const DEPLOY = require(process.env.DEPLOYMENT_FILE ? path.resolve(process.env.DEPLOYMENT_FILE) : R + "deployments/robinhoodTestnet.json");
+  const poolAddr = DEPLOY.pool;
   const sweepPool = new ethers.Contract(poolAddr, [
     "function nullifierSpent(uint256) view returns (bool)",
     "function labelDepositor(uint256) view returns (address)",
@@ -157,8 +167,9 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   console.log("test wallet", wallet.address, "balance", ethers.formatEther(await provider.getBalance(wallet.address)));
 
   await sweep("recover leftovers from previous runs");
-  if ((await provider.getBalance(wallet.address)) < ethers.parseEther("0.0010")) {
-    const tx = await deployer.sendTransaction({ to: wallet.address, value: ethers.parseEther("0.0012") });
+  const FUND = process.env.E2E_FUND_ETH || "0.0012"; // test wallet funding (lower it together with E2E_L_DEPOSIT when the deployer is low)
+  if ((await provider.getBalance(wallet.address)) < ethers.parseEther(FUND) * 5n / 6n) {
+    const tx = await deployer.sendTransaction({ to: wallet.address, value: ethers.parseEther(FUND) });
     await tx.wait();
     console.log("funded test wallet", tx.hash);
   }
@@ -168,7 +179,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const browser = await puppeteer.launch({ executablePath: CHROME, headless: "new", args: ["--no-sandbox", "--window-size=1500,1000"], defaultViewport: { width: 1500, height: 1000 } });
   const page = await browser.newPage();
   page.on("pageerror", (e) => console.log("  [pageerror]", e.message.slice(0, 200)));
-  page.on("console", (m) => { if (m.type() === "error" || process.env.DEBUG_E2E) console.log("  [console.error]", m.text().slice(0, 200)); });
+  const cspViolations = [];
+  page.on("console", (m) => { if (/Content Security Policy|violates the following/i.test(m.text())) cspViolations.push(m.text().slice(0, 240)); if (m.type() === "error" || process.env.DEBUG_E2E) console.log("  [console.error]", m.text().slice(0, 200)); });
 
   // ---- wallet shim
   let sentTx = false;
@@ -222,7 +234,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     }, sel, text);
   };
   const open = async () => { await page.goto(BASE + "/app", { waitUntil: "domcontentloaded" }); await page.evaluate(() => { document.querySelectorAll("form").forEach((f) => (f.noValidate = true)); const i = document.getElementById("introSequenceOverlay"); if (i) i.remove(); }); await page.waitForFunction(() => /Leaves On-Chain/.test(document.body.innerText), { timeout: 120000 }); await sleep(500); };
-  const pool = new ethers.Contract(require(R + "deployments/robinhoodTestnet.json").pool, ["function nullifierSpent(uint256) view returns (bool)", "function isRagequit(uint256) view returns (bool)"], provider);
+  const pool = new ethers.Contract(DEPLOY.pool, ["function nullifierSpent(uint256) view returns (bool)", "function isRagequit(uint256) view returns (bool)"], provider);
   const recipient = sink.address; // all test payouts go to a wallet we control, so nothing is ever stranded
   const recipient2 = sink.address;
   const phase = process.argv[2] || "all";
@@ -238,12 +250,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       await page.evaluate(() => document.getElementById("unlockVaultBtn").click());
       let lm = await modal(); rec("L1 Vault unlock (live bundle)", lm.t === "Vault Unlocked", lm.t); await closeModal();
       await tab("deposit");
-      await set("#depositAmount", "0.0003");
+      await set("#depositAmount", LAMT);
       await page.evaluate(() => document.getElementById("submitDepositBtn").click());
       lm = await modal();
       const lnote = await page.$eval("#generatedNote", (e) => e.value).catch(() => null);
       ledgerAdd("live-deposit", lnote);
-      rec("L2 Deposit 0.0003 ETH on the live site", lm.t === "Deposit Inscribed" && !!lnote, lm.t);
+      rec(`L2 Deposit ${LAMT} ETH on the live site`, lm.t === "Deposit Inscribed" && !!lnote, lm.t);
       await closeModal();
       if (lnote) {
         await tab("ragequit");
@@ -252,8 +264,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
         const b0 = await provider.getBalance(sink.address);
         await page.evaluate(() => document.getElementById("submitRagequitBtn").click());
         lm = await modal();
-        const d = (await provider.getBalance(sink.address)) - b0;
-        rec("L3 Ragequit through the live UI refunds 0.0003", lm.t === "Ragequit Complete" && d === ethers.parseEther("0.0003"), `${lm.t}; +${ethers.formatEther(d)}`);
+        const d = await deltaSince(provider, sink.address, b0, ethers.parseEther(LAMT));
+        rec(`L3 Ragequit through the live UI refunds ${LAMT}`, lm.t === "Ragequit Complete" && d === ethers.parseEther(LAMT), `${lm.t}; +${ethers.formatEther(d)}`);
         await closeModal();
         await page.evaluate(() => document.getElementById("submitRagequitBtn").click());
         lm = await modal(); rec("L4 Second ragequit rejected", lm.t === "Ragequit Failed", lm.t + " / " + lm.b.slice(0, 50));
@@ -312,6 +324,22 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
     }
 
     if (phase === "2" || phase === "all") {
+      if (process.env.AUTO_MAGISTRATE === "1") {
+        // The automated Magistrate service must approve and publish on its own: we only WAIT, no manual step.
+        console.log("-- waiting for the automated Magistrate service --");
+        const M2 = require(R + "lib/marginalia");
+        const want = [st.A, st.B].filter(Boolean).map((n) => M2.parseNote(n).label.toString());
+        const t0 = Date.now();
+        let seen = false;
+        for (let i = 0; i < 240 && !seen; i++) { // up to 20 minutes
+          try {
+            const f = await (await fetch(BASE + "/api/folio")).json();
+            seen = f.aspStale === false && want.every((l) => f.aspLabels.includes(l));
+          } catch (_) {}
+          if (!seen) await sleep(5000);
+        }
+        rec("B4 Automated Magistrate approved + published both new deposits (no manual step)", seen, `${((Date.now() - t0) / 1000).toFixed(0)}s after the deposits`);
+      } else {
       // Magistrate approves (CLI, real on-chain tx)
       console.log("-- Magistrate approval via CLI --");
       const out = execFileSync("node", [R + "node_modules/hardhat/internal/cli/cli.js", "run", "scripts/magistrate-approve.js", "--network", "robinhoodTestnet"], {
@@ -330,6 +358,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
           if (!ok) await sleep(5000);
         }
         rec("B4b Approved labels visible to the server", ok, ok ? "/api/folio serves the latest ASP root" : "timed out waiting for the latest ASP list");
+      }
       }
     }
 
@@ -358,7 +387,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const sinkBefore1 = await provider.getBalance(recipient);
       await page.evaluate(() => document.getElementById("submitWithdrawBtn").click());
       let m = await modal();
-      const bal1 = (await provider.getBalance(recipient)) - sinkBefore1;
+      const bal1 = await deltaSince(provider, recipient, sinkBefore1, ethers.parseEther("0.0002"));
       const change = await page.$eval("#changeNote", (e) => e.value).catch(() => null);
       if (change) { st.Achange = change; ledgerAdd("change-A", change); fs.writeFileSync(stateFile, JSON.stringify(st)); }
       if (process.env.CRASH_AFTER_PARTIAL_WITHDRAW) { console.log("!! simulated hard crash right after the partial withdraw"); process.exit(98); }
@@ -377,7 +406,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const sinkBefore2 = await provider.getBalance(recipient2);
       await page.evaluate(() => document.getElementById("submitWithdrawBtn").click());
       m = await modal();
-      const bal2 = (await provider.getBalance(recipient2)) - sinkBefore2;
+      const bal2 = await deltaSince(provider, recipient2, sinkBefore2);
       rec("B6 Withdraw change note via Mersenne Courier (gasless)", m.t === "Withdrawal Confirmed" && bal2 > 0n, `${m.t}; recipient2 +${ethers.formatEther(bal2)}`);
       if (m.t !== "Withdrawal Confirmed") console.log("   modal:", m.b);
       await closeModal();
@@ -401,7 +430,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const before = await provider.getBalance(recipient);
       await page.evaluate(() => document.getElementById("submitRagequitBtn").click());
       m = await modal();
-      const after = await provider.getBalance(recipient);
+      const after = before + (await deltaSince(provider, recipient, before, ethers.parseEther("0.0003")));
       rec("B8 Ragequit from browser refunds the deposit", m.t === "Ragequit Complete" && after - before === ethers.parseEther("0.0003"), `${m.t}; +${ethers.formatEther(after - before)}`);
       if (m.t !== "Ragequit Complete") console.log("   modal:", m.b);
       await closeModal();
@@ -426,6 +455,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const fundsAtEnd = await totalFunds();
   const cost = fundsAtStart - fundsAtEnd;
   console.log(`funds at end: ${ethers.formatEther(fundsAtEnd)} ETH  (gas + fees spent this run: ${ethers.formatEther(cost)} ETH)`);
+  rec("S1 No Content-Security-Policy violations in the browser", cspViolations.length === 0, cspViolations.length ? cspViolations[0] : "none");
   rec("Z1 No test ETH stranded (all ledger notes spent)", openLeft === 0, `${openLeft} open note(s)`);
   rec("Z2 Run cost is only gas (< 0.0002 ETH)", cost < ethers.parseEther("0.0002"), ethers.formatEther(cost) + " ETH");
   const pass = results.filter((r) => r.ok).length;

@@ -1,0 +1,27 @@
+{
+  "comment": "Pin of the PUBLIC Phase-1 (Powers of Tau) file used for the real ceremony (blake2b-512). The mainnet deploy guard refuses to run while blake2b is null; it still refuses without a valid ceremony transcript.",
+  "file": "powersOfTau28_hez_final_15.ptau",
+  "power": 15,
+  "blake2b": "982372c867d229c236091f767e703253249a9b432c1710b4f326306bfa2428a17b06240359606cfe4d580b10a5a1f63fbed499527069c18ae17060472969ae6e",
+  "sources": [
+    {
+      "name": "snarkjs README (iden3/snarkjs, table of prepared Hermez ptau files)",
+      "url": "https://github.com/iden3/snarkjs#7-prepare-phase-2",
+      "hash": "982372c867d229c2...ae6e",
+      "checkedOn": "2026-10-11"
+    }
+  ],
+  "sizeBytes": 37831832,
+  "status": "PROVISIONAL: the hash matches the one publication checked so far and the file passes a full cryptographic verification; add at least two more INDEPENDENT sources before the real ceremony (see docs/ceremony_b1_plan.md section 7).",
+  "downloadedFrom": "https://circom.info/powersOfTau28_hez_final_15.ptau",
+  "verification": {
+    "tool": "snarkjs powersoftau verify",
+    "result": "Powers of Tau Ok!",
+    "contributions": 54,
+    "beacon": {
+      "generator": "e586fccaf245c9a1d7e78294d4802018f3001149a71b8f10cd997ef8235aa372",
+      "iterationsExp": 10
+    },
+    "checkedOn": "2026-10-11"
+  }
+}

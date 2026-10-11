@@ -1,3 +1,4 @@
+import { makeProvider } from "@/lib/folio";
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { RH_TESTNET, POOL_ABI } from "@/lib/constants";
@@ -19,7 +20,7 @@ export async function POST(req: Request) {
 
     let isSpent: boolean;
     try {
-      const pool = new ethers.Contract(poolAddress, POOL_ABI, new ethers.JsonRpcProvider(rpcUrl));
+      const pool = new ethers.Contract(poolAddress, POOL_ABI, makeProvider(rpcUrl));
       isSpent = await pool.nullifierSpent(nullifierStr);
     } catch (e: any) {
       // Never report "unspent" when the chain could not be read.

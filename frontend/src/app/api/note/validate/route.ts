@@ -1,3 +1,4 @@
+import { makeProvider } from "@/lib/folio";
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { parseNoteString, onChainPoseidon } from "@/lib/server-crypto";
@@ -39,7 +40,7 @@ export async function POST(req: Request) {
     const poolAddress = process.env.MARGINALIA_POOL_ADDRESS || RH_TESTNET.poolAddress;
 
     try {
-      const chain = await onChainPoseidon(new ethers.JsonRpcProvider(rpcUrl), poolAddress);
+      const chain = await onChainPoseidon(makeProvider(rpcUrl), poolAddress);
       const precommitment = await chain.p2([await chain.p1([sk]), rho]);
       const nullifierHash = await chain.p2([sk, rho]);
 

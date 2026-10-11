@@ -1,6 +1,6 @@
 # MARGINALIA: Rencana Fase 03 "Hardening"
 
-**Status:** Rencana (belum dikerjakan) · **Durasi:** 3–4 minggu (2 developer) atau 5–6 minggu (1 developer) · **Total:** ±28 hari-orang
+**Status:** Dikerjakan sebagian, lihat `docs/phase3_hardening_report.md` (kode + tes H1–H4, H6 selesai; H5 dihentikan oleh gerbang keputusan; soak dan deploy produksi belum) · **Durasi:** 3–4 minggu (2 developer) atau 5–6 minggu (1 developer) · **Total:** ±28 hari-orang
 **Pendahulu:** Testnet Alpha (aplikasi browser nyata, relayer, vault, E2E, keamanan dasar) · **Penerus:** Fase 04 "Audit & Ceremony"
 
 > Penomoran: roadmap di web menyebut "03 Hardening"; dokumen lama (`engineering_master_plan.md`, `tasks_and_test_matrix.md`) menyebutnya "Phase 2". Isinya sama. Dokumen ini adalah rincian eksekusinya.

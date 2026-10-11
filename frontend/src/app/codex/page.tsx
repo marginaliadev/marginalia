@@ -4,8 +4,10 @@ import { BookOpen, Shield, ArrowRight, Sparkles, Binary, Lock, Compass, CheckCir
 import MarginaliaLogo from "@/components/MarginaliaLogo";
 
 export const metadata = {
-  title: "The Codex: MARGINALIA",
+  title: { absolute: "The Codex: MARGINALIA" },
   description: "Historical foundation, mathematical treatise, and cryptographic primitives of MARGINALIA on Robinhood Chain.",
+  alternates: { canonical: "/codex" },
+  openGraph: { url: "/codex", title: "The Codex: MARGINALIA" },
 };
 
 export default function CodexPage() {

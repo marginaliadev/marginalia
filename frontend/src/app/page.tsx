@@ -1250,7 +1250,7 @@ export default function HomePage() {
                 <span className="text-emerald-400 font-bold">01</span>
                 <div>
                   <span className="text-dust font-semibold block">PROTOTYPE</span>
-                  <span className="text-stroke-2 text-[11px]">Circuits, pool contract, register, CLI, 12 passing tests</span>
+                  <span className="text-stroke-2 text-[11px]">Circuits, pool contract, register, CLI, 200+ automated tests</span>
                 </div>
               </div>
               <span className="wax-seal-badge wax-seal-intact text-[10px]">
@@ -1269,7 +1269,7 @@ export default function HomePage() {
                 <span className="text-emerald-400 font-bold">02</span>
                 <div>
                   <span className="text-dust font-semibold block">TESTNET ALPHA</span>
-                  <span className="text-stroke-2 text-[11px]">Robinhood Chain 46630, Next.js WebApp, ragequit, encrypted vault</span>
+                  <span className="text-stroke-2 text-[11px]">Robinhood Chain 46630, in-browser proving, ragequit, encrypted vault, gasless Courier</span>
                 </div>
               </div>
               <span className="wax-seal-badge wax-seal-intact text-[10px]">
@@ -1288,7 +1288,7 @@ export default function HomePage() {
                 <span className="text-sun font-bold">03</span>
                 <div>
                   <span className="text-dust font-semibold block">HARDENING</span>
-                  <span className="text-stroke-1 text-[11px]">Relayer fee quoting, multisig Magistrate, IPFS label lists, gas optimization</span>
+                  <span className="text-stroke-1 text-[11px]">Automated Magistrate, IPFS label lists, Safe multisig governance, relayer health and fee quoting</span>
                 </div>
               </div>
               <span className="wax-seal-badge text-[10px]">ACTIVE ●</span>
@@ -1304,7 +1304,7 @@ export default function HomePage() {
                 <span>04</span>
                 <div>
                   <span className="text-stroke-1 font-semibold block">AUDIT & CEREMONY</span>
-                  <span className="text-[11px]">Circuit ZK audit, contract audit, public Phase-2 setup ceremony</span>
+                  <span className="text-[11px]">Circuit ZK audit, contract audit, public Phase-2 setup ceremony (audit pack and ceremony toolkit ready)</span>
                 </div>
               </div>
               <span>UPCOMING ○</span>

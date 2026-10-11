@@ -7,6 +7,8 @@ import { ethers } from "ethers";
 import { createClient } from "@supabase/supabase-js";
 import { RH_TESTNET, POOL_ABI, REGISTER_ABI, POOL_EVENTS_ABI } from "@/lib/constants";
 import { MerkleTree, DEPTH, ASP_DEPTH } from "@/lib/zk";
+import { loadAspLabelsFromIpfs } from "@/lib/aspStore";
+import { buildProvider, rpcUrlList } from "@/lib/rpc";
 
 const DEPLOY_BLOCK = Number(process.env.POOL_DEPLOY_BLOCK || 129140787);
 const SCAN_BUDGET_MS = 25_000;
@@ -14,9 +16,9 @@ const SCAN_BUDGET_MS = 25_000;
 export function rpcUrl() {
   return process.env.RH_TESTNET_RPC_URL || process.env.NEXT_PUBLIC_RH_TESTNET_RPC_URL || RH_TESTNET.rpcUrl;
 }
+/** Configured RPC (RH_TESTNET_RPC_URL, comma separated allowed), then the public RPC as automatic fallback. */
 export function makeProvider(url = rpcUrl()) {
-  // fixed network: no eth_chainId detection round trips (and no retry noise) on every request
-  return new ethers.JsonRpcProvider(url, RH_TESTNET.chainId, { staticNetwork: true });
+  return buildProvider(rpcUrlList(url), RH_TESTNET.chainId);
 }
 export function poolAddress() {
   return process.env.MARGINALIA_POOL_ADDRESS || RH_TESTNET.poolAddress;
@@ -108,12 +110,12 @@ export async function leavesFromTx(provider: ethers.Provider, txHash: string): P
   return out;
 }
 
-async function scanLogs(provider: ethers.JsonRpcProvider, from: number, to: number): Promise<LeafRec[]> {
+async function scanLogs(provider: ethers.AbstractProvider, from: number, to: number): Promise<LeafRec[]> {
   const iface = new ethers.Interface(POOL_EVENTS_ABI);
   const topic = iface.getEvent("LeafInserted")!.topicHash;
   // Free-tier RPCs cap eth_getLogs at 10 blocks. Set RH_LOG_CHUNK (and RH_LOGS_RPC_URL) for RPCs that allow more.
   const chunk = Math.max(1, parseInt(process.env.RH_LOG_CHUNK || "10", 10));
-  const logsProvider = process.env.RH_LOGS_RPC_URL ? new ethers.JsonRpcProvider(process.env.RH_LOGS_RPC_URL) : provider;
+  const logsProvider = process.env.RH_LOGS_RPC_URL ? makeProvider(process.env.RH_LOGS_RPC_URL) : provider;
   const started = Date.now();
   const out: LeafRec[] = [];
   for (let f = from; f <= to; f += chunk) {
@@ -135,10 +137,17 @@ function parseLabels(j: any): bigint[] {
 }
 
 /** Candidate approved-label lists, in order: local file (dev), then a published URL (deployments without the repo). */
-async function aspCandidates(): Promise<Array<{ source: string; load: () => Promise<bigint[]> }>> {
+async function aspCandidates(register: ethers.Contract): Promise<Array<{ source: string; load: () => Promise<bigint[]> }>> {
   const file = process.env.ASP_LABELS_FILE || path.join(process.cwd(), "..", "asp", "robinhoodTestnet.labels.json");
   const url = process.env.ASP_LABELS_URL || DEFAULT_ASP_URL;
+  const list: Array<{ source: string; load: () => Promise<bigint[]> }> = [];
+  // 1st choice: the list the Magistrate pinned to IPFS. The CID is read from the chain (rootData of the latest root).
+  try {
+    const uri: string = await register.rootData(await register.latestRoot());
+    if (typeof uri === "string" && uri.startsWith("ipfs://")) list.push({ source: uri, load: () => loadAspLabelsFromIpfs(uri) });
+  } catch {}
   return [
+    ...list,
     { source: `file ${file}`, load: async () => parseLabels(JSON.parse(fs.readFileSync(file, "utf8"))) },
     {
       source: `url ${url}`,
@@ -160,7 +169,7 @@ async function loadVerifiedAsp(register: ethers.Contract): Promise<{ labels: big
   const problems: string[] = [];
   const latest = BigInt(await register.latestRoot());
   let fallback: { labels: bigint[]; root: bigint } | null = null;
-  for (const c of await aspCandidates()) {
+  for (const c of await aspCandidates(register)) {
     try {
       const labels = await c.load();
       const root = new MerkleTree(ASP_DEPTH, labels).root();

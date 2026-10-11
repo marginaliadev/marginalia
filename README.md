@@ -7,7 +7,7 @@
 [![Circom](https://img.shields.io/badge/Circom-2.1.8-FF6B6B?style=for-the-badge)](https://iden3.io/circom)
 [![Groth16 BN254](https://img.shields.io/badge/ZK_Snarks-Groth16_BN254-8A2BE2?style=for-the-badge)](https://en.wikipedia.org/wiki/Zero-knowledge_proof)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.badge?style=for-the-badge)](LICENSE)
-[![Tests Passing](https://img.shields.io/badge/Tests-78%2F78_Passing-success?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/marginaliadev/marginalia/actions)
+[![Tests Passing](https://img.shields.io/badge/Tests-232%2F232_Passing-success?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/marginaliadev/marginalia/actions)
 
 ---
 
@@ -27,7 +27,9 @@
 - [7. 🚀 Quickstart & Local Setup](#7--quickstart--local-setup)
 - [8. ⚙️ Robinhood Chain Configuration](#8-️-robinhood-chain-configuration)
 - [9. 🧪 Test Suite & Invariants](#9--test-suite--invariants)
-- [10. 📄 License](#10--license)
+- [10. 🧭 Operations & Services](#10--operations--services)
+- [11. 🗺️ Status & Roadmap](#11-️-status--roadmap)
+- [12. 📄 License](#12--license)
 
 ---
 
@@ -114,7 +116,10 @@ Marginalia implements the Privacy Pools paradigm to satisfy global AML/CFT stand
    Users can cryptographically derive a selective disclosure certificate from their viewing key:
    $$\text{DisclosureKey} = \text{Poseidon}_2(\text{sk}, \text{SALT})$$
    This proves the origin of funds to an auditor without giving them custody or the ability to spend.
-3. **Ragequit (Emergency Capital Reclamation)**:  
+3. **Automated Magistrate** (`services/magistrate/`):
+   A worker screens every deposit (OFAC public list, Chainalysis free sanctions API, a maintained list of known exploit addresses), builds the approved-label list, pins it to **IPFS** (two providers) and publishes only its Merkle root on-chain (`publishRoot(root, "ipfs://<cid>")`). Anyone can re-derive the root from the list, so integrity never depends on IPFS or on the web server. Roots are published at most every 15 minutes (the register keeps 16), screening failures stop publication instead of approving unscreened deposits, and every verdict change is kept in an append-only log.
+4. **Safe governance**: the register owner and the pool guardian are a **2-of-3 Safe**; the Magistrate is a separate hot key that the Safe can replace. The guardian can pause *new deposits* only. Withdrawals and ragequit can never be paused.
+5. **Ragequit (Emergency Capital Reclamation)**:  
 The original depositing address can reclaim its deposit with `ragequit(label, recipient, proof)`, where `proof` is a small Groth16 proof (`circuits/ragequit.circom`) showing knowledge of `(sk, ρ)` behind the deposit's precommitment and revealing the note's **genuine** nullifier, which the pool burns. `sk` and `ρ` never appear in calldata. Because withdraw and ragequit burn the same nullifier, each note can be exited at most once by either path. ASP approval status is bookkeeping only, not a safety mechanism.
 
 ---
@@ -126,6 +131,8 @@ Recipients of private withdrawals typically have **zero ETH** in their freshly g
 - The Courier submits the proof on-chain and pays the L2 gas fee.
 - The contract atomically transfers `value - fee` to the recipient and `fee` to the courier.
 - **Front-running protection**: `recipient` and `fee` are public circuit inputs; any relayer attempting to hijack the transaction invalidates the cryptographic proof instantly.
+- **Fee quoting**: the fee is bound into the proof, so it is chosen before proving. The quote is the 90th percentile of the gas recent relays actually used (+5% headroom, +10% margin; a measured constant until enough relays exist). At relay time `eth_estimateGas` of the exact transaction must be covered by the fee, otherwise the relay is refused.
+- **Health**: the Courier is offered only while its wallet holds enough gas money (`RELAYER_MIN_BALANCE_ETH`); the UI hides it and `/api/relay/withdraw` answers 503 otherwise, with a rate-limited alert webhook. A fee may not exceed 50% of the withdrawn value, and relays are serialised (one nonce sequence).
 
 ---
 
@@ -135,18 +142,18 @@ The frontend is constructed using a high-density, mathematical Noirpay design sy
 
 | Page | Route | Description |
 | :--- | :--- | :--- |
-| **Landing** | `/` (`index.html`) | Showcase of the 3 Axioms, Pierre de Fermat narrative, interactive pipeline diagram, and real-time network telemetry. |
-| **Shielded Cockpit** | `/app` (`app.html`) | Full deposit vault, live WebAssembly Groth16 terminal prover, ragequit recovery, and encrypted note vault. |
-| **Codex** | `/codex` (`codex.html`) | Complete cryptographic documentation: BN254 algebra, R1CS constraint matrix, and smart contract invariants. |
-| **Folio Explorer** | `/explorer` (`explorer.html`) | Real-time Merkle leaf inspector, Wax Seal nullifier registry, and gas performance analytics. |
-| **Compliance Desk** | `/compliance` (`compliance.html`) | Magistrate ASP audit portal, OFAC/AML association screening, and Letter of Disclosure generator. |
+| **Landing** | `/` | Showcase of the 3 Axioms, Pierre de Fermat narrative, interactive pipeline diagram, and real-time network telemetry. |
+| **Shielded Cockpit** | `/app` | Deposit from your wallet, in-browser Groth16 proving (snarkjs), withdraw via wallet or Courier, ragequit, and the encrypted note vault. Crash recovery rebuilds a note from its secret if the page dies after a deposit. |
+| **Codex** | `/codex` | Complete cryptographic documentation: BN254 algebra, R1CS constraint matrix, and smart contract invariants. |
+| **Folio Explorer** | `/explorer` | Real-time Merkle leaf inspector, Wax Seal nullifier registry, and gas performance analytics. |
+| **Compliance Desk** | `/compliance` | Screening policy and appeals process, and the Letter of Disclosure generator. |
 
 ---
 
 ## 7. 🚀 Quickstart & Local Setup
 
 ### Prerequisites
-- Node.js `>= 20.0.0`
+- Node.js `>= 22` (the SDK parity tests run TypeScript directly)
 - npm `>= 10.0.0`
 
 ### Installation
@@ -161,16 +168,18 @@ npm install
 
 ### Run All Cryptographic & Contract Tests
 ```bash
-# Runs the 18 comprehensive invariant and circuit tests
-npx hardhat test
+npx hardhat test            # whole suite, no .env and no network needed (about 5-6 minutes)
+npx hardhat test test/security_onchain.test.js   # one suite
 ```
 
 ### Launch the Web Application
 ```bash
-npm start
-# Server listening on http://localhost:3000
+cd frontend
+cp .env.example .env.local   # see the comments inside for each variable
+npm install
+npm run dev                  # open http://localhost:3000 (use "localhost", not 127.0.0.1)
 ```
-Open `http://localhost:3000` in your browser.
+The legacy Express API (`npm start`, `server.js`) is no longer the front end; it remains for the CLI tooling and its tests.
 
 ---
 
@@ -209,37 +218,50 @@ npm run deploy:testnet
 
 ## 9. 🧪 Test Suite & Invariants
 
-Marginalia enforces strict mathematical invariants verified in `test/marginalia.test.js`:
+`npx hardhat test` runs **230+ tests** on a local chain with no external services (CI runs the same). What each group defends:
 
-```
-  MARGINALIA shielded pool
-    ✔ off-chain Merkle tree matches the on-chain Folio (empty + after inserts)
-    ✔ on-chain commitment equals Poseidon(value, label, precommitment)
-    ✔ full withdrawal to a fresh address via a relayer
-    ✔ partial withdrawal, then spend the change note
-    ✔ Axiom I: a Wax Seal cannot be broken twice (double-spend protection)
-    ✔ Axiom III: an unapproved label cannot produce a proof against the Register
-    ✔ front-running: changing recipient or fee invalidates the proof
-    ✔ cannot withdraw more than the note holds
-    ✔ reports gas for deposit and withdraw (deposit: ~956k gas, withdraw: ~1.07M gas)
-    ✔ tampered public signals are rejected by the verifier
-    ✔ only the Magistrate can publish Register roots
-    ✔ note serialization round-trips
-    Ragequit (Emergency Exit)
-      ✔ allows original depositor to ragequit an unapproved deposit and recover funds
-      ✔ prevents non-depositor from ragequitting someone else's deposit
-      ✔ prevents double ragequit
-      ✔ prevents shielded ZK withdrawal on a note that was ragequitted
-      ✔ prevents ragequitting a note that has already been withdrawn via ZK proof
-    Sliding-Window ASP Root Buffer (L5 Mitigation)
-      ✔ accepts proof generated against a previous root within the 16-root historical window
+| Group | Files | What it proves |
+|---|---|---|
+| Protocol | `marginalia`, `invariants`, `token_pool`, `mainnet_guard` | deposits, private withdrawals, change notes, ragequit, sliding ASP window, guardian pause |
+| **Security (adversarial)** | `security_onchain` (21) | every admin call needs its role (exact custom error), forged/malleated proofs, front-running, replay, one exit door |
+| **Circuit audit** | `circuit_audit` (31) | every withdraw input and every Merkle path element mutated: rejected (except `context`, bound on-chain); 128-bit overflow; differential vs JS |
+| **Stateful fuzz** | `invariant_fuzz` | random sequences with a shadow model: value conservation, nullifier single use, root consistency |
+| Magistrate | `magistrate_service`, `magistrate_policy`, `magistrate_supabase_store`, `asp_store` | idempotent, rate-limited, crash-safe publication; fail-closed screening; IPFS integrity; Supabase state |
+| SDK parity | `merkle_bulk`, `browser_sdk_parity`, `gas_estimator` | the browser TypeScript SDK equals the Node SDK bit for bit |
+| Ceremony | `ceremony_rehearsal`, `mainnet_ceremony_guard`, `reproducible_build` | full rehearsal with forgery detection; mainnet deploy refused without a real ceremony; reproducible builds |
+| Gas | `gas_benchmark` | regression guard (fails above baseline + 2%): deposit ~945k, withdraw ~1.07M, ragequit ~321k |
 
-  18 passing (26s)
-```
+On-chain / browser suites (need a funded testnet key): `scripts/test-governance.js` (real Safe v1.4.1), `scripts/test-relayer-health.js`, `scripts/test-browser-e2e.js` (headless Chrome driving the real UI with a crash-safe funds ledger).
 
 ---
 
-## 10. 📄 License
+## 10. 🧭 Operations & Services
+
+| Piece | Where | Doc |
+|---|---|---|
+| Automated Magistrate worker | `services/magistrate/` (`npm run magistrate`) | `services/magistrate/README.md` |
+| Safe governance scripts (transfer roles, rotate Magistrate, pause deposits) | `scripts/governance/` | `docs/incident_response_runbook.md` |
+| Supabase schema, Fase 03 migration, check | `supabase/`, `node scripts/supabase-check.js` | the migration must be run once in the SQL editor |
+| Trusted-setup ceremony toolkit | `scripts/ceremony/` | `docs/ceremony_guide.md` |
+| Audit pack, circuit notes, threat model | `docs/audit/`, `docs/threat_model_and_audit_pack.md` | `node scripts/audit/manifest.js` |
+
+---
+
+## 11. 🗺️ Status & Roadmap
+
+| Phase | Status |
+|---|---|
+| 01 Prototype | Completed |
+| 02 Testnet Alpha | **Completed**: deposit, in-browser proving, withdraw (wallet and Courier), ragequit, vault, verified on the live testnet |
+| 03 Hardening | **Active**: automated Magistrate, IPFS lists, Safe governance, relayer health and fee quoting are built and tested (`docs/phase3_hardening_report.md`); rollout (worker deployment, soak, moving roles to the Safe) is pending |
+| 04 Audit & Ceremony | **Upcoming**: audit pack, internal circuit audit, fuzzing, ceremony toolkit and rehearsal are ready (`docs/phase4_audit_ceremony_report.md`); external audits and the public ceremony are not done |
+| 05 Mainnet | Not started. **Technically blocked:** the committed proving keys are a single-party dev setup and `scripts/deploy.js` refuses chain 4663 without ceremony transcripts |
+
+> **Testnet only. Not audited.** Do not deposit funds you cannot lose.
+
+---
+
+## 12. 📄 License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
