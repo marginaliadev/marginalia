@@ -1253,39 +1253,45 @@ export default function HomePage() {
                   <span className="text-stroke-2 text-[11px]">Circuits, pool contract, register, CLI, 12 passing tests</span>
                 </div>
               </div>
-              <span className="text-emerald-400 font-semibold">COMPLETED ✓</span>
+              <span className="wax-seal-badge wax-seal-intact text-[10px]">
+                <CheckCircle2 className="size-3.5" />
+                COMPLETED
+              </span>
             </motion.div>
           </RevealMotion>
 
           <RevealMotion delay={0.1}>
             <motion.div
               whileHover={{ x: 6 }}
-              className="p-5 rounded-xs bg-midnight border border-sun/60 flex items-center justify-between font-mono text-xs shadow-lg relative"
+              className="p-5 rounded-xs bg-midnight border border-emerald-900/60 flex items-center justify-between font-mono text-xs relative"
             >
               <div className="flex items-center gap-3">
-                <span className="text-sun font-bold">02</span>
+                <span className="text-emerald-400 font-bold">02</span>
                 <div>
                   <span className="text-dust font-semibold block">TESTNET ALPHA</span>
-                  <span className="text-stroke-1 text-[11px]">Robinhood Chain 46630, Next.js WebApp, ragequit, encrypted vault</span>
+                  <span className="text-stroke-2 text-[11px]">Robinhood Chain 46630, Next.js WebApp, ragequit, encrypted vault</span>
                 </div>
               </div>
-              <span className="wax-seal-badge text-[10px]">ACTIVE ●</span>
+              <span className="wax-seal-badge wax-seal-intact text-[10px]">
+                <CheckCircle2 className="size-3.5" />
+                COMPLETED
+              </span>
             </motion.div>
           </RevealMotion>
 
           <RevealMotion delay={0.15}>
             <motion.div
               whileHover={{ x: 6 }}
-              className="p-5 rounded-xs bg-midnight border border-dusk flex items-center justify-between font-mono text-xs text-stroke-2 relative"
+              className="p-5 rounded-xs bg-midnight border border-sun/60 flex items-center justify-between font-mono text-xs shadow-lg relative"
             >
               <div className="flex items-center gap-3">
-                <span>03</span>
+                <span className="text-sun font-bold">03</span>
                 <div>
-                  <span className="text-stroke-1 font-semibold block">HARDENING</span>
-                  <span className="text-[11px]">Relayer fee quoting, multisig Magistrate, IPFS label lists, gas optimization</span>
+                  <span className="text-dust font-semibold block">HARDENING</span>
+                  <span className="text-stroke-1 text-[11px]">Relayer fee quoting, multisig Magistrate, IPFS label lists, gas optimization</span>
                 </div>
               </div>
-              <span>UPCOMING ○</span>
+              <span className="wax-seal-badge text-[10px]">ACTIVE ●</span>
             </motion.div>
           </RevealMotion>
 
