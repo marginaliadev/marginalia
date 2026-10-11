@@ -78,9 +78,9 @@ Setiap perubahan sirkuit setelah ceremony **membatalkan** ceremony (r1cs berubah
 |---|---|---|
 | E1 ✅ | **Bundel kontributor** (selesai: `scripts/ceremony/contribute.js`, mandiri; perlu `snarkjs` dengan versi yang dipin): paket kecil (skrip `contribute`, versi Node yang dipin, checksum) beserta halaman petunjuk satu langkah | menurunkan hambatan; mengurangi kesalahan; hash bundel diumumkan |
 | E2 ✅ | **Skrip koordinator** (selesai: `scripts/ceremony/coordinator.js`: start, next, receive, skip, status, seal; `test/ceremony_coordinator.test.js`): antrian slot, pencatatan hash masuk/keluar, verifikasi otomatis tiap putaran, log publik | berbasis `scripts/ceremony/lib.js`; keluaran siap dipublikasikan |
-| E3 | **Halaman status** di situs (mis. `/ceremony`): daftar kontributor, status putaran, hash, tautan atestasi, hitung mundur beacon | transparansi; memudahkan verifikasi pihak ketiga |
+| E3 ✅ | **Halaman status** (selesai: `frontend/src/app/ceremony/`, data dari `coordinator.js publish` ke `frontend/public/ceremony/status.json`; kontak kontributor tidak pernah diekspor) di situs (mis. `/ceremony`): daftar kontributor, status putaran, hash, tautan atestasi, hitung mundur beacon | transparansi; memudahkan verifikasi pihak ketiga |
 | E4 | **Tes ulang gladi bersih** pada sirkuit final (rantai penuh, proof nyata, 6/6 tanpa SKIP) dan **CI `circuits-o2`** hijau | sudah ada untuk build saat ini; ulangi setelah freeze |
-| E5 | **Panduan verifikasi publik** (satu halaman: unduh berkas, jalankan `verify`, bandingkan hash verifier dengan bytecode di chain) | agar siapa pun dapat memeriksa tanpa mempercayai kami |
+| E5 ✅ | **Panduan verifikasi publik** (selesai: `docs/ceremony/VERIFY.md`, `scripts/ceremony/phase1-check.js`, `scripts/ceremony/check-deployed-verifier.js`) (satu halaman: unduh berkas, jalankan `verify`, bandingkan hash verifier dengan bytecode di chain) | agar siapa pun dapat memeriksa tanpa mempercayai kami |
 | E6 | **Penjaga mainnet** tetap aktif; uji bahwa transkrip palsu/di bawah ambang ditolak (sudah ada, 10 tes) | tidak dilemahkan |
 
 ## 9. Risiko dan mitigasi

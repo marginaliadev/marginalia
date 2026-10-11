@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-10-11T15:42:30.764Z",
+  "phase": "recruiting",
+  "minContributors": 15,
+  "window": null,
+  "beacon": null,
+  "phase1": {
+    "file": "powersOfTau28_hez_final_15.ptau",
+    "blake2b": "982372c867d229c236091f767e703253249a9b432c1710b4f326306bfa2428a17b06240359606cfe4d580b10a5a1f63fbed499527069c18ae17060472969ae6e",
+    "sizeBytes": 37831832,
+    "status": "PROVISIONAL",
+    "sources": [
+      {
+        "name": "snarkjs README (iden3/snarkjs, table of prepared Hermez ptau files)",
+        "url": "https://github.com/iden3/snarkjs#7-prepare-phase-2",
+        "checkedOn": "2026-10-11"
+      },
+      {
+        "name": "Hermez phase2ceremony_4 VERIFY.md (independent publication of the PARENT file powersOfTau28_hez_final.ptau, 2^28)",
+        "url": "https://github.com/hermeznetwork/phase2ceremony_4/blob/main/VERIFY.md",
+        "checkedOn": "2026-10-11"
+      }
+    ]
+  },
+  "circuits": []
+}

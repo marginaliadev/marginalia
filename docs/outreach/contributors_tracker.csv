@@ -1,0 +1,2 @@
+public_name,contact,channel_invited,invited_on,replied_on,status,outside_team,organization,country_timezone,attestation_channel,slot,notes
+<example: Ayu R.>,<kept private: do not commit real contacts>,email,2026-10-12,,invited,yes,<org>,<UTC+7>,X,,

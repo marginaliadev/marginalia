@@ -11,6 +11,10 @@
 //   status   --dir d
 //   seal     --dir d --hash <hex beacon> --source "drand round N" [--iterations 10] [--contract Groth16Verifier]
 //            beacon -> final.zkey -> verification key + Solidity verifier -> ceremony.json -> transcript.json
+//   publish  [--dirs ceremony/withdraw,ceremony/ragequit] --out frontend/public/ceremony/status.json [--meta meta.json] [--phase1 f]
+//            no --dirs = "recruiting" (before the ceremony starts); Phase-1 pin is read from docs/ceremony/phase1.json
+//            public status for the /ceremony page (task E3). Contributor CONTACTS are never exported.
+//            meta.json (optional): { "window": "...", "beacon": { "source", "chain", "round", "expectedAt", "iterationsExp", "announcement" } }
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -146,15 +150,70 @@ async function seal() {
   console.log(`sealed: ${path.join(dir, "final.zkey")}\ntranscript: ${path.join(dir, "transcript.json")}\nverifier: ${fin.solFile}\nverify with: node scripts/ceremony/cli.js verify --transcript ${path.join(dir, "transcript.json")} --r1cs ${s.r1cs} --ptau ${s.ptau} --zkey ${path.join(dir, "final.zkey")} --verifier ${fin.solFile} --min ${min}`);
 }
 
+/** Public view of one ceremony directory. Whitelists fields so a future state.json field can never leak by accident. */
+function publicCircuit(dir) {
+  const s = load(dir);
+  const out = {
+    circuit: s.circuit,
+    startedAt: s.createdAt,
+    zkey0Blake2b: s.zkey0.blake2b,
+    accepted: s.rounds.length,
+    lastGood: s.lastGood.file,
+    slots: s.slots.map((x) => ({ slot: x.slot, name: x.name, status: x.status })),
+    rounds: s.rounds.map((r) => ({ index: r.index, contributor: r.contributor, contributionHash: r.contributionHash, sha256: r.sha256, blake2b: r.blake2b, attestation: r.attestation, receivedAt: r.receivedAt })),
+    events: s.log.map((e) => ({ at: e.at, event: e.event, name: e.name || null, index: e.index || null })), // reasons (skips, rejections) stay private to the coordinator
+    sealed: null,
+  };
+  const tFile = path.join(dir, "transcript.json");
+  const cFile = path.join(dir, "ceremony.json");
+  if (fs.existsSync(tFile) && fs.existsSync(cFile)) {
+    const t = JSON.parse(fs.readFileSync(tFile, "utf8"));
+    const c = JSON.parse(fs.readFileSync(cFile, "utf8"));
+    out.sealed = {
+      finalZkeyBlake2b: (t.final && t.final.zkeyBlake2b) || null,
+      vkeyHash: c.finalization.vkeyHash, verifierHash: c.finalization.verifierHash, contractName: c.finalization.contractName,
+      beacon: { hash: c.beacon.hash, source: c.beacon.source, iterationsExp: c.beacon.iterationsExp },
+    };
+  }
+  return out;
+}
+
+function publish() {
+  const dirs = String(opt("dirs", "")).split(",").map((d) => d.trim()).filter(Boolean).map((d) => path.resolve(d));
+  const meta = opt("meta") ? JSON.parse(fs.readFileSync(opt("meta"), "utf8")) : {};
+  const circuits = dirs.map(publicCircuit);
+  const p1File = path.resolve(opt("phase1", path.join(__dirname, "..", "..", "docs", "ceremony", "phase1.json")));
+  let phase1 = null;
+  if (fs.existsSync(p1File)) {
+    const p = JSON.parse(fs.readFileSync(p1File, "utf8"));
+    phase1 = { file: p.file, blake2b: p.blake2b, sizeBytes: p.sizeBytes || null, status: String(p.status || "").split(":")[0] || null, sources: (p.sources || []).map((x) => ({ name: x.name, url: x.url, checkedOn: x.checkedOn })) };
+  }
+  const doc = {
+    schema: 1,
+    updatedAt: new Date().toISOString(),
+    phase: circuits.length === 0 ? "recruiting" : circuits.every((c) => c.sealed) ? "sealed" : circuits.some((c) => c.accepted > 0) ? "contributing" : "started",
+    minContributors: Number(opt("min", 15)),
+    window: meta.window || null,
+    beacon: meta.beacon || null,
+    phase1,
+    circuits,
+  };
+  const outFile = path.resolve(need("out"));
+  fs.mkdirSync(path.dirname(outFile), { recursive: true });
+  fs.writeFileSync(outFile, JSON.stringify(doc, null, 2) + "\n");
+  console.log(`published ${outFile}: phase ${doc.phase}; ${circuits.map((c) => `${c.circuit} ${c.accepted}/${c.slots.length}`).join(", ")}`);
+}
+
 (async () => {
   switch (cmd) {
+    case "publish": publish(); break;
     case "start": await start(); break;
     case "next": next(); break;
     case "receive": await receive(); break;
     case "skip": skip(); break;
     case "status": status(); break;
     case "seal": await seal(); break;
-    default: console.log(fs.readFileSync(__filename, "utf8").split("\n").slice(1, 14).map((l) => l.replace(/^\/\/ ?/, "")).join("\n"));
+    default: console.log(fs.readFileSync(__filename, "utf8").split("\n").slice(1, 17).map((l) => l.replace(/^\/\/ ?/, "")).join("\n"));
   }
   process.exit(process.exitCode || 0);
 })().catch((e) => { console.error(e.message); process.exit(1); });

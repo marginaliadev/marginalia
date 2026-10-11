@@ -100,4 +100,27 @@ describe("Ceremony coordinator + standalone contributor tool (B1 E1/E2)", functi
     const t = JSON.parse(fs.readFileSync(path.join(dir, "transcript.json"), "utf8"));
     expect(t.rounds.map((r) => r.contributor)).to.deep.equal(["Alice", "Dave"]);
   });
+
+  it("publish (E3): the public status lists rounds and the seal but never a contributor contact", function () {
+    // give one contributor a contact in state.json to prove it is stripped
+    const st = JSON.parse(fs.readFileSync(path.join(dir, "state.json"), "utf8"));
+    st.slots[0].contact = "alice-secret@example.org";
+    fs.writeFileSync(path.join(dir, "state.json"), JSON.stringify(st, null, 2));
+    const meta = path.join(dir, "meta.json");
+    fs.writeFileSync(meta, JSON.stringify({ window: "test window", beacon: { source: "drand quicknet", round: 123, iterationsExp: 10 } }));
+    const out = path.join(dir, "public", "status.json");
+    const r = node("scripts/ceremony/coordinator.js", ["publish", "--dirs", dir, "--out", out, "--meta", meta]);
+    expect(r.status, r.stderr).to.equal(0);
+    const raw = fs.readFileSync(out, "utf8");
+    expect(raw).to.not.include("alice-secret");
+    expect(raw).to.not.include("contact");
+    const pub = JSON.parse(raw);
+    expect(pub.phase).to.equal("sealed");
+    expect(pub.beacon.round).to.equal(123);
+    const c = pub.circuits[0];
+    expect(c.rounds.map((x) => x.contributor)).to.deep.equal(["Alice", "Dave"]);
+    expect(c.slots.find((x) => x.name === "Bob").status).to.equal("rejected");
+    expect(c.sealed.contractName).to.equal("RagequitVerifier");
+    expect(c.sealed.beacon.hash).to.equal(BEACON);
+  });
 });

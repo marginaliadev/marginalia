@@ -46,7 +46,7 @@ node scripts/ceremony/cli.js transcript --config ceremony/withdraw/ceremony.json
 ```
 
 ## 2. Kontributor
-Alat mandiri (cukup Node >= 22 dan `snarkjs`): `node scripts/ceremony/contribute.js --in 0003.zkey --out 0004.zkey --name "Nama Anda" --expect-sha256 <hash yang diumumkan koordinator>`. Koordinator memakai `scripts/ceremony/coordinator.js` (start, next, receive, skip, status, seal), yang memverifikasi tiap putaran sebelum menerimanya.
+Alat mandiri (cukup Node >= 22 dan `snarkjs`): `node scripts/ceremony/contribute.js --in 0003.zkey --out 0004.zkey --name "Nama Anda" --expect-sha256 <hash yang diumumkan koordinator>`. Koordinator memakai `scripts/ceremony/coordinator.js` (start, next, receive, skip, status, seal), yang memverifikasi tiap putaran sebelum menerimanya. Setelah setiap `receive`, `skip` atau `seal`, jalankan `node scripts/ceremony/coordinator.js publish --dirs ceremony/withdraw,ceremony/ragequit --out frontend/public/ceremony/status.json --meta ceremony/meta.json` lalu deploy situs, agar halaman `/ceremony` ikut diperbarui.
 Lakukan di mesin yang Anda percayai (idealnya tanpa jaringan dan bersih, misalnya live USB):
 ```bash
 node scripts/ceremony/cli.js contribute --in 0003.zkey --out 0004.zkey --name "Nama Anda"

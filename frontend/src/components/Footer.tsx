@@ -322,6 +322,26 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link className="group relative block" href="/ceremony">
+                  <svg
+                    viewBox="0 0 12 12"
+                    fill="none"
+                    className="absolute top-1/2 left-0 w-3 -translate-y-1/2 scale-50 text-sun opacity-0 transition-all duration-200 group-hover:scale-100 group-hover:opacity-100"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M1.5 6L10.5 6M10.5 6L6.2 10.3M10.5 6L6.2 1.7"
+                      stroke="currentColor"
+                      strokeWidth="1.2"
+                      strokeLinecap="square"
+                    ></path>
+                  </svg>
+                  <span className="text-dust/80 group-hover:text-sun block transition-transform duration-200 group-hover:translate-x-5">
+                    Trusted Setup Ceremony
+                  </span>
+                </Link>
+              </li>
+              <li>
                 <Link className="group relative block" href="/compliance">
                   <svg
                     viewBox="0 0 12 12"
