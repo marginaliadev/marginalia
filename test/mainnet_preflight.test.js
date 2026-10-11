@@ -12,7 +12,7 @@ describe("Mainnet preflight", function () {
     const r = spawnSync(process.execPath, [path.join(ROOT, "scripts/mainnet-preflight.js")], { encoding: "utf8", env: { ...process.env, SKIP_NETWORK: "1", CEREMONY_WITHDRAW_TRANSCRIPT: "", CEREMONY_RAGEQUIT_TRANSCRIPT: "" } });
     expect(r.status).to.equal(1);
     expect(r.stdout).to.include("MAINNET IS BLOCKED");
-    for (const gate of ["B1 ", "B2 ", "B4 ", "B6 ", "R7 "]) expect(r.stdout).to.match(new RegExp("NO-GO\s+" + gate));
+    for (const gate of ["B1 ", "B2 ", "B4 ", "B6 ", "R7 "]) expect(r.stdout).to.include("NO-GO  " + gate);
   });
   it("is read-only: it never signs or sends", function () {
     const src = fs.readFileSync(path.join(ROOT, "scripts/mainnet-preflight.js"), "utf8");
