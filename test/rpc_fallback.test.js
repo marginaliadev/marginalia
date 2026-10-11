@@ -25,4 +25,14 @@ describe("RPC provider fallback", function () {
     expect(r.primaryOnly).to.equal(123);
     expect(r.deadOnly).to.equal("error");
   });
+
+  it("log scanning shrinks the range when an RPC caps it, covers each block once, and is one call on a generous RPC", function () {
+    expect(r.scan).to.deep.equal({ covered: 1000, unique: 1000, first: 1000, last: 1999 });
+    expect(r.bigChunkCalls).to.equal(1);
+  });
+
+  it("log scanning fails loudly when even the smallest range is refused, and honours its time budget", function () {
+    expect(r.refused).to.equal("always refused");
+    expect(r.budget).to.equal("over budget");
+  });
 });

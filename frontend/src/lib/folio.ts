@@ -8,7 +8,7 @@ import { createClient } from "@supabase/supabase-js";
 import { RH_TESTNET, POOL_ABI, REGISTER_ABI, POOL_EVENTS_ABI } from "@/lib/constants";
 import { MerkleTree, DEPTH, ASP_DEPTH } from "@/lib/zk";
 import { loadAspLabelsFromIpfs } from "@/lib/aspStore";
-import { buildProvider, rpcUrlList } from "@/lib/rpc";
+import { buildProvider, rpcUrlList, scanInChunks } from "@/lib/rpc";
 
 const DEPLOY_BLOCK = Number(process.env.POOL_DEPLOY_BLOCK || 129140787);
 const SCAN_BUDGET_MS = 25_000;
@@ -113,19 +113,20 @@ export async function leavesFromTx(provider: ethers.Provider, txHash: string): P
 async function scanLogs(provider: ethers.AbstractProvider, from: number, to: number): Promise<LeafRec[]> {
   const iface = new ethers.Interface(POOL_EVENTS_ABI);
   const topic = iface.getEvent("LeafInserted")!.topicHash;
-  // Free-tier RPCs cap eth_getLogs at 10 blocks. Set RH_LOG_CHUNK (and RH_LOGS_RPC_URL) for RPCs that allow more.
-  const chunk = Math.max(1, parseInt(process.env.RH_LOG_CHUNK || "10", 10));
+  // RH_LOG_CHUNK sets the first range size. With a dedicated logs RPC (RH_LOGS_RPC_URL) the default is large; a free-tier
+  // RPC that caps eth_getLogs at 10 blocks is handled by scanInChunks shrinking the range on refusal.
+  const configured = parseInt(process.env.RH_LOG_CHUNK || "", 10);
+  const chunk = Number.isFinite(configured) && configured > 0 ? configured : process.env.RH_LOGS_RPC_URL ? 100_000 : 10;
   const logsProvider = process.env.RH_LOGS_RPC_URL ? makeProvider(process.env.RH_LOGS_RPC_URL) : provider;
-  const started = Date.now();
+  const raw = await scanInChunks({
+    from, to, chunk, budgetMs: SCAN_BUDGET_MS,
+    budgetError: "Folio log scan exceeded its time budget; sync the index (scripts/sync-folio.js)",
+    fetchRange: (f, t) => logsProvider.getLogs({ address: poolAddress(), topics: [topic], fromBlock: f, toBlock: t }),
+  });
   const out: LeafRec[] = [];
-  for (let f = from; f <= to; f += chunk) {
-    if (Date.now() - started > SCAN_BUDGET_MS) throw new Error("Folio log scan exceeded its time budget; sync the index (scripts/sync-folio.js)");
-    const t = Math.min(f + chunk - 1, to);
-    const logs = await logsProvider.getLogs({ address: poolAddress(), topics: [topic], fromBlock: f, toBlock: t });
-    for (const log of logs) {
-      const ev = iface.parseLog(log)!;
-      out.push({ index: Number(ev.args.index), leaf: BigInt(ev.args.leaf), block: log.blockNumber, tx: log.transactionHash });
-    }
+  for (const log of raw) {
+    const ev = iface.parseLog(log)!;
+    out.push({ index: Number(ev.args.index), leaf: BigInt(ev.args.leaf), block: log.blockNumber, tx: log.transactionHash });
   }
   return out;
 }
