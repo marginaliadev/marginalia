@@ -1,0 +1,46 @@
+site https://marginaliazk.tech
+deployer 0x673eF77ccb27e106769d2d56C536a4A0523B260E 0.000252539276760299
+walletA (own) 0xDa80Ef05f727C3Ef555ef16B601dEc6D69e3f3EF 0.00000042
+walletB (other) 0x8fe61BfFD7Ad584466ab874ffA750E891215C746 0.00000042
+PASS API-01 GET /api/status :: chain 46630, pool 0x340E20C7CBe7eA83d463432ac8FA1e891bdca948, db true, leaves 110, asp 2, relayer active
+PASS API-02 Status does not leak the RPC key :: https://robinhood-testnet.g.alchemy.com/v2/alch_***
+PASS API-03 Pool balance in /api/status equals on-chain balance :: api 0.002900000000000001 vs chain 0.002900000000000001
+PASS API-04 GET /api/folio returns tree + ASP :: leaves 110, nextIndex 110, aspLabels 17, aspStale true
+PASS API-05 Folio root recomputed locally equals served root :: served 11751085813385… local 11751085813385…
+FAIL API-06 Served ASP root equals on-chain MagistrateRegister root :: served 20325139020029… chain 53849076756821… aspStale=true
+PASS API-07 GET /api/relay/quote :: available true, minFee 0.00001265 ETH, gas 1150000, gwei 0.01, relayer 0x31C17bbddF3409bD27B35F0b3dE7E990230655e5
+PASS API-08 POST /api/relay/quote :: status 200
+PASS API-09 nullifier/check unspent value :: {"nullifier":"111222333444555666777","isSpent":false,"checkedAt":"2026-10-10T17:24:33.849Z","onChainChecked":true,"pool":"0x340E20C7CBe7eA83d463432ac8FA1e891bdc
+PASS API-10 nullifier/check spent value (from ledger) :: isSpent true
+PASS API-11 nullifier/check rejects hex :: status 400 Nullifier must be a decimal integer
+PASS API-12 nullifier/check rejects empty :: status 400 Missing nullifier parameter
+PASS API-13 nullifier/check rejects 79-digit number :: status 400 Nullifier must be a decimal integer
+PASS API-14 nullifier/check rejects SQL-ish string :: status 400 Nullifier must be a decimal integer
+PASS API-15 note/validate rejects malformed note :: status 400 Malformed Note JSON: The note payload is not valid JSON.
+PASS API-16 note/validate rejects empty note :: status 400
+PASS API-17 disclosure/generate rejects missing note :: status 400 Missing marginal note parameter
+PASS API-18 disclosure/generate rejects garbage note :: status 400 Invalid Note Prefix: Expected 'marginalia-note-v1-' prefix.
+PASS API-19 relay/withdraw rejects an invalid request (no tx sent) :: status 400 Malformed withdrawal or proof payload
+PASS API-20 Unknown API route is 404 :: status 404
+PASS API-21 folio/record does not accept GET :: status 405
+FAIL API-22 Security headers on / :: content-security-policy=NO, x-content-type-options=yes, strict-transport-security=NO
+INFO API-23 Other headers :: x-frame-options=DENY, referrer-policy=no-referrer, permissions-policy=set
+PASS API-24 Rate limiter engages on /api/relay/withdraw (10/min) :: 5 of 14 rapid requests answered 429
+PASS PG-01 Landing page loads (/) :: HTTP 200, title "MARGINALIA: Compliant Shielded Pool on Robinhood Chain", 10562 chars of text
+PASS PG-01b Landing: no console/page/network errors :: clean
+PASS PG-01c Landing: mobile 390px has no horizontal overflow :: scrollWidth - viewport = 0px
+PASS PG-02 App page loads (/app) :: HTTP 200, title "MARGINALIA: Compliant Shielded Pool on Robinhood Chain", 1660 chars of text
+PASS PG-02b App: no console/page/network errors :: clean
+PASS PG-02c App: mobile 390px has no horizontal overflow :: scrollWidth - viewport = 0px
+PASS PG-03 Explorer page loads (/explorer) :: HTTP 200, title "MARGINALIA: Compliant Shielded Pool on Robinhood Chain", 1715 chars of text
+PASS PG-03b Explorer: no console/page/network errors :: clean
+PASS PG-03c Explorer: mobile 390px has no horizontal overflow :: scrollWidth - viewport = 0px
+PASS PG-04 Compliance page loads (/compliance) :: HTTP 200, title "MARGINALIA: Compliant Shielded Pool on Robinhood Chain", 4891 chars of text
+PASS PG-04b Compliance: no console/page/network errors :: clean
+PASS PG-04c Compliance: mobile 390px has no horizontal overflow :: scrollWidth - viewport = 0px
+PASS PG-05 Codex page loads (/codex) :: HTTP 200, title "The Codex: MARGINALIA", 3858 chars of text
+PASS PG-05b Codex: no console/page/network errors :: clean
+PASS PG-05c Codex: mobile 390px has no horizontal overflow :: scrollWidth - viewport = 0px
+PASS PG-06 404 page page loads (/zzz-not-found) :: HTTP 404, title "404: Page Not Found | MARGINALIA", 1296 chars of text
+PASS PG-06b 404 page: no console/page/network errors :: clean
+PASS PG-06c 404 page: mobile 390px has no horizontal overflow :: scrollWidth - viewport = 0px
