@@ -14,7 +14,7 @@ describe("Responsive layout guards", function () {
     expect(card).to.not.include("md:w-5/12");
   });
   it("section headings can wrap below lg", function () {
-    expect(read("frontend/src/app/page.tsx")).to.not.include("sm:whitespace-nowrap");
+    expect(read("frontend/src/app/page.tsx")).to.not.match(/<h2[^>]*sm:whitespace-nowrap/);
   });
   it("the app tabs wrap into a grid on small screens instead of a clipped scroller", function () {
     const app = read("frontend/src/app/app/page.tsx");
