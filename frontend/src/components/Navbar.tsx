@@ -3,18 +3,50 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Wallet, CheckCircle, ArrowRight } from "lucide-react";
+import { Wallet, CheckCircle, ArrowRight, Menu, X } from "lucide-react";
 
 import MarginaliaLogo from "@/components/MarginaliaLogo";
 
 const RH_TESTNET_CHAIN_ID = "0xb626"; // 46630 in hex
 const RH_TESTNET_CHAIN_ID_DEC = 46630;
 
+// Links of the mobile / tablet menu (below the lg breakpoint the inline nav is hidden). Ceremony lives here and in the footer.
+const MENU_LINKS: { href: string; label: string }[] = [
+  { href: "/", label: "Overview" },
+  { href: "/#how-it-works", label: "How It Works" },
+  { href: "/app", label: "Shielded App" },
+  { href: "/explorer", label: "Explorer" },
+  { href: "/compliance", label: "Compliance" },
+  { href: "/codex", label: "Codex" },
+  { href: "/ceremony", label: "Trusted Setup Ceremony" },
+];
+
 export default function Navbar() {
   const pathname = usePathname();
   const [account, setAccount] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // close the menu after navigating, on Escape, and when the viewport grows to the desktop layout
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => mq.matches && setMenuOpen(false);
+    window.addEventListener("keydown", onKey);
+    mq.addEventListener("change", onChange);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden"; // the page behind the open menu does not scroll
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      mq.removeEventListener("change", onChange);
+      document.body.style.overflow = prev;
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     // DO NOT eagerly trigger wallet popup unless user previously clicked connect
@@ -107,7 +139,7 @@ export default function Navbar() {
               variant="white"
               className="size-8.5 rounded-lg border border-white/20 shadow-md group-hover:scale-105 transition-all duration-300"
             />
-            <span className="font-cinzel text-xl sm:text-[22px] tracking-[0.14em] font-semibold text-dust group-hover:text-sun transition-colors uppercase">
+            <span className="font-cinzel text-base min-[400px]:text-xl sm:text-[22px] tracking-[0.1em] min-[400px]:tracking-[0.14em] font-semibold text-dust group-hover:text-sun transition-colors uppercase">
               Marginalia
             </span>
           </Link>
@@ -164,7 +196,7 @@ export default function Navbar() {
         </div>
 
         {/* Right Action Buttons */}
-        <div className="flex shrink-0 items-center gap-x-3">
+        <div className="flex shrink-0 items-center gap-x-2 sm:gap-x-3">
           {/* Official X (Twitter) Account */}
           <a
             href="https://x.com/MarginaliaZK"
@@ -172,7 +204,7 @@ export default function Navbar() {
             rel="noopener noreferrer"
             aria-label="Official X Account"
             title="Follow @MarginaliaZK on X"
-            className="inline-flex cursor-pointer items-center justify-center size-9 rounded-xs border border-white/20 bg-transparent text-white/80 hover:text-sun hover:border-sun/60 hover:bg-white/5 transition-all duration-200"
+            className="max-sm:hidden inline-flex cursor-pointer items-center justify-center size-9 rounded-xs border border-white/20 bg-transparent text-white/80 hover:text-sun hover:border-sun/60 hover:bg-white/5 transition-all duration-200"
           >
             <svg className="size-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -215,8 +247,62 @@ export default function Navbar() {
               dApp access
             </Link>
           )}
+
+          {/* Hamburger: only below the lg breakpoint, where the inline nav is hidden */}
+          <button
+            type="button"
+            className="lg:hidden inline-flex cursor-pointer items-center justify-center size-9 rounded-xs border border-white/20 bg-transparent text-white/80 hover:text-sun hover:border-sun/60 transition-colors"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-menu"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            {menuOpen ? <X className="size-4" /> : <Menu className="size-4" />}
+          </button>
         </div>
       </div>
+
+      {/* Mobile / tablet menu */}
+      {menuOpen && (
+        <nav
+          id="mobile-menu"
+          aria-label="Main"
+          className="lg:hidden absolute inset-x-0 top-full z-40 max-h-[calc(100dvh-5.375rem)] overflow-y-auto border-b border-white/10 bg-black/98 backdrop-blur-sm"
+        >
+          <ul className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+            {MENU_LINKS.map((l) => {
+              const active = l.href === pathname;
+              return (
+                <li key={l.href} className="border-b border-white/5 last:border-0">
+                  <Link
+                    href={l.href}
+                    onClick={() => setMenuOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex items-center justify-between py-3.5 text-nav-link transition-colors ${active ? "text-sun font-medium" : "text-white/80 hover:text-sun"}`}
+                  >
+                    <span>{l.label}</span>
+                    <ArrowRight className="size-4 opacity-50" />
+                  </Link>
+                </li>
+              );
+            })}
+            <li className="flex items-center justify-between gap-3 pt-4 pb-2">
+              <span className="inline-flex items-center gap-x-2 text-xs font-mono text-white/70">
+                <span className="size-1.5 rounded-full bg-sun animate-pulse"></span>
+                CHAIN 46630
+              </span>
+              <a
+                href="https://x.com/MarginaliaZK"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-xs font-mono text-white/70 hover:text-sun"
+              >
+                @MarginaliaZK on X <ArrowRight className="size-3.5" />
+              </a>
+            </li>
+          </ul>
+        </nav>
+      )}
 
       {/* Wallet Error In-App Banner */}
       {walletError && (
