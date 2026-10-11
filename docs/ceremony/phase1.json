@@ -9,10 +9,17 @@
       "url": "https://github.com/iden3/snarkjs#7-prepare-phase-2",
       "hash": "982372c867d229c2...ae6e",
       "checkedOn": "2026-10-11"
+    },
+    {
+      "name": "Hermez phase2ceremony_4 VERIFY.md (independent publication of the PARENT file powersOfTau28_hez_final.ptau, 2^28)",
+      "url": "https://github.com/hermeznetwork/phase2ceremony_4/blob/main/VERIFY.md",
+      "hash": "55c77ce8562366c91e7cda394cf7b7c15a06c12d8c905e8b36ba9cf5e13eb37d1a429c589e8eaba4c591bc4b88a0e2828745a53e170eac300236f5c1a326f41a",
+      "checkedOn": "2026-10-11",
+      "note": "matches the 2^28 row of the snarkjs README table, which supports that the table is accurate; it does NOT list the 2^15 file. The 2^28 file is 309 GB, so the 2^15 file cannot be re-derived from it here."
     }
   ],
   "sizeBytes": 37831832,
-  "status": "PROVISIONAL: the hash matches the one publication checked so far and the file passes a full cryptographic verification; add at least two more INDEPENDENT sources before the real ceremony (see docs/ceremony_b1_plan.md section 7).",
+  "status": "PROVISIONAL: the 2^15 hash is published by one source (snarkjs README; the same table is copied by forks and packages, so those are not independent) and the file passes a full cryptographic verification (54 contributions + beacon). The table is corroborated for the parent 2^28 file by an independent publication (Hermez). Still needed before the real ceremony: one more INDEPENDENT publication of the 2^15 hash, or a second party who downloads the file from a different host and compares blake2b (see docs/ceremony_b1_plan.md section 7).",
   "downloadedFrom": "https://circom.info/powersOfTau28_hez_final_15.ptau",
   "verification": {
     "tool": "snarkjs powersoftau verify",
