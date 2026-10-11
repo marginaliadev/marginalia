@@ -1253,7 +1253,10 @@ export default function HomePage() {
                   <span className="text-stroke-2 text-[11px]">Circuits, pool contract, register, CLI, 200+ automated tests</span>
                 </div>
               </div>
-              <span className="text-emerald-400 font-semibold">COMPLETED ✓</span>
+              <span className="wax-seal-badge wax-seal-intact text-[10px]">
+                <CheckCircle2 className="size-3.5" />
+                COMPLETED
+              </span>
             </motion.div>
           </RevealMotion>
 
@@ -1269,7 +1272,10 @@ export default function HomePage() {
                   <span className="text-stroke-2 text-[11px]">Robinhood Chain 46630, in-browser proving, ragequit, encrypted vault, gasless Courier</span>
                 </div>
               </div>
-              <span className="text-emerald-400 font-semibold">COMPLETED ✓</span>
+              <span className="wax-seal-badge wax-seal-intact text-[10px]">
+                <CheckCircle2 className="size-3.5" />
+                COMPLETED
+              </span>
             </motion.div>
           </RevealMotion>
 
