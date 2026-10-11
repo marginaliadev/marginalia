@@ -43,6 +43,18 @@ export default function HomePage() {
   const [hoveredDot, setHoveredDot] = useState<number | null>(null);
   const [liveProofs, setLiveProofs] = useState<number>(126);
   const [activeStage, setActiveStage] = useState<number>(1);
+  const [caCopied, setCaCopied] = useState<boolean>(false);
+  const CONTRACT_ADDRESS = "0x7d8d7b6bcabfa1a617b8020395c5c8b49419a8ab";
+
+  const copyCa = async () => {
+    try {
+      await navigator.clipboard.writeText(CONTRACT_ADDRESS);
+      setCaCopied(true);
+      setTimeout(() => setCaCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
 
   const dots = Array.from({ length: 30 }, (_, i) => i);
 
@@ -89,6 +101,24 @@ export default function HomePage() {
                   <div className="inline-flex items-center gap-x-2 rounded-xs border border-white/15 px-3 py-1 text-[11px] font-mono uppercase tracking-wider text-dust mb-6 bg-night">
                     <span className="size-1.5 rounded-full bg-sun animate-pulse"></span>
                     <span>ROBINHOOD CHAIN (46630) · GROTH16 ZK POOLS</span>
+                  </div>
+
+                  {/* Contract Address */}
+                  <div className="mb-6 -mt-3">
+                    <button
+                      type="button"
+                      onClick={copyCa}
+                      title="Copy contract address"
+                      className="inline-flex max-w-full cursor-pointer items-center gap-x-2 rounded-xs border border-white/15 bg-night px-3 py-1 text-[11px] font-mono tracking-wider text-dust transition-colors hover:border-white/30"
+                    >
+                      <span className="uppercase text-stroke-1">CA:</span>
+                      <span className="break-all text-left">{CONTRACT_ADDRESS}</span>
+                      {caCopied ? (
+                        <Check className="size-3.5 shrink-0 text-sun" />
+                      ) : (
+                        <Hash className="size-3.5 shrink-0 opacity-60" />
+                      )}
+                    </button>
                   </div>
 
                   {/* Headline */}
