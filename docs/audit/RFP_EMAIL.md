@@ -6,7 +6,7 @@ Send to 2-3 firms with ZK and Solidity experience (ask each whether they cover b
 ## Email (English)
 **Subject:** Audit request: zero-knowledge shielded pool (Groth16 / circom + Solidity), Robinhood Chain, 3-4 week engagement
 
-Hello <name>,
+Hello,
 
 We are building MARGINALIA, a zero-knowledge shielded ETH pool with an association-set compliance model for Robinhood Chain. It runs on testnet today
 and we plan a mainnet launch after an external audit and a public trusted-setup ceremony.
@@ -15,9 +15,9 @@ We would like a quote for **two reviews** (one firm with two teams is fine):
 1. **Smart contracts:** two contracts, about 460 lines of Solidity 0.8.24 (`MarginaliaPool`, `MagistrateRegister`).
 2. **ZK circuits and setup:** two circom circuits (withdraw: 11,432 constraints; ragequit: 693), the Groth16 trusted-setup procedure and the proof-to-contract bindings.
 
-Everything is public: https://github.com/marginaliadev/marginalia. The bundle attached (`marginalia-audit-<commit8>.zip`, SHA-256 `<hash>`) contains the exact
+Everything is public: https://github.com/marginaliadev/marginalia. The bundle attached (`marginalia-audit-15776a22.zip`, SHA-256 `5824261d73c4e15b30f5b768a529a61727e798082655b912665077b33bb19805`, commit `15776a22`) contains the exact
 scope, a cover note (trust model, invariants we want broken, internal findings, how to build and test in about 10 minutes), a circuit walkthrough and our
-static-analysis triage. We have 230+ tests, a circuit mutation audit, a stateful fuzz and a ceremony rehearsal; we know these do not replace an audit.
+static-analysis triage. We have 240+ tests, a circuit mutation audit, a stateful fuzz and a ceremony rehearsal; we know these do not replace an audit.
 
 Please tell us:
 - your **availability and start date**, and whether you can deliver in **3-4 weeks**;
@@ -28,10 +28,10 @@ Please tell us:
 
 Constraints you should know about: **testnet only today**; the circuits are frozen at the audit commit and changed only to fix findings; the committed proving keys come from a single-party development setup (our finding I-1, closed by the ceremony before mainnet).
 
-Contact: <name>, <email>, <encrypted channel>. We reply within one business day.
+Contact: Marginalia Core Team, team@marginaliazk.tech / @MarginaliaZK. We reply within one business day.
 
 Thank you,
-<name>, <role>
+Marginalia Core Team
 
 ## Questions to ask in the first call
 1. Which circuit-analysis tools do you use (picus, ecne, circomspect, manual constraint review)? Do you attempt to produce witnesses that violate the intended relation?

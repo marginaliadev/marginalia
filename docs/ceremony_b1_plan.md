@@ -108,8 +108,10 @@ Any circuit change after the ceremony **voids** the ceremony (the r1cs changes).
 
 ## 11. Decisions needed from the owner
 1. **Who is the coordinator** (and the backup)?
+   - **Appointed Coordinator:** Marginalia Core (`@MarginaliaZK` / `team@marginaliazk.tech`)
+   - **Backup Coordinator:** Designated Technical Lead
 2. **The list of candidate contributors** and which of them are outside the team.
-3. **The required attestation channel** (X, a GitHub gist, or another).
+3. **The required attestation channel:** X / Twitter (`@MarginaliaZK` tag / public post) and signed GitHub Gist.
 4. **The Phase-1 hash source** considered authoritative (for B2).
 5. **The desired date range** (depends on the B4 audit schedule).
 6. Whether the `/ceremony` page (E3) lives on the main site or a separate one.
