@@ -1,0 +1,8 @@
+{
+  "glueReview":         { "by": "<reviewer / firm>", "date": "<YYYY-MM-DD>", "evidence": "<report link or hash>" },
+  "ceremonyProvenance": { "by": "<who>", "date": "<YYYY-MM-DD>", "evidence": "<link>" },
+  "ownerDecision":      { "by": "<owner>", "date": "<YYYY-MM-DD>", "evidence": "<signed doc, incl. the TVL trigger number>" },
+  "linuxGate":          { "by": "<CI run>", "date": "<YYYY-MM-DD>", "evidence": "<run url>" },
+  "rolesHandedOver":    { "by": "<who>", "date": "<YYYY-MM-DD>", "evidence": "<readback.js output / tx>" },
+  "incidentDrill":      { "by": "<who>", "date": "<YYYY-MM-DD>", "evidence": "<tx hashes>" }
+}
