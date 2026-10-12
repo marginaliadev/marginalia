@@ -1283,32 +1283,35 @@ export default function HomePage() {
           <RevealMotion delay={0.15}>
             <motion.div
               whileHover={{ x: 6 }}
-              className="p-5 rounded-xs bg-midnight border border-sun/60 flex items-center justify-between font-mono text-xs shadow-lg relative"
+              className="p-5 rounded-xs bg-midnight border border-emerald-900/60 flex items-center justify-between font-mono text-xs relative"
             >
               <div className="flex items-center gap-3">
-                <span className="text-sun font-bold">03</span>
+                <span className="text-emerald-400 font-bold">03</span>
                 <div>
                   <span className="text-dust font-semibold block">HARDENING</span>
-                  <span className="text-stroke-1 text-[11px]">Automated Magistrate, IPFS label lists, Safe multisig governance, relayer health and fee quoting</span>
+                  <span className="text-stroke-2 text-[11px]">Automated Magistrate, IPFS label lists, Safe multisig governance, relayer health and fee quoting</span>
                 </div>
               </div>
-              <span className="wax-seal-badge text-[10px]">ACTIVE ●</span>
+              <span className="wax-seal-badge wax-seal-intact text-[10px]">
+                <CheckCircle2 className="size-3.5" />
+                COMPLETED
+              </span>
             </motion.div>
           </RevealMotion>
 
           <RevealMotion delay={0.2}>
             <motion.div
               whileHover={{ x: 6 }}
-              className="p-5 rounded-xs bg-midnight border border-dusk flex items-center justify-between font-mono text-xs text-stroke-2 relative"
+              className="p-5 rounded-xs bg-midnight border border-sun/60 flex items-center justify-between font-mono text-xs shadow-lg relative"
             >
               <div className="flex items-center gap-3">
-                <span>04</span>
+                <span className="text-sun font-bold">04</span>
                 <div>
-                  <span className="text-stroke-1 font-semibold block">AUDIT & CEREMONY</span>
-                  <span className="text-[11px]">Circuit ZK audit, contract audit, public Phase-2 setup ceremony (audit pack and ceremony toolkit ready)</span>
+                  <span className="text-dust font-semibold block">AUDIT & CEREMONY</span>
+                  <span className="text-stroke-1 text-[11px]">Circuit ZK audit, contract audit, public Phase-2 setup ceremony (audit pack and ceremony toolkit ready)</span>
                 </div>
               </div>
-              <span>UPCOMING ○</span>
+              <span className="wax-seal-badge text-[10px]">ACTIVE ●</span>
             </motion.div>
           </RevealMotion>
 
