@@ -36,7 +36,7 @@ the owner decisions below, and every operational gate of `scripts/mainnet-prefli
 | M0 | Remove the Letter of Disclosure generator (it attested facts the server could not verify) | **done** (commit `3d73a95`) |
 | M1 | Vendor the tag, manifest, empty-diff check, verifier-vs-ceremony-key check, proving-asset hash pins | **done**: `vendor/0xbow`, `scripts/vendor/0xbow.js`, `test/vendor_0xbow.test.js` |
 | M2 | Deploy the unmodified core on testnet, read back every setting | **done**: `deployments/bow-robinhoodTestnet.json`, `scripts/bow/{deploy,readback}.js` |
-| M3 | SDK, note format, indexer and front end | proof cycle with the upstream SDK **done** (`scripts/bow/e2e.mjs`, 12 checks + invariant). Browser client library **done**: `frontend/src/lib/bow-zk.ts` and `bow-tree.ts` reproduce the SDK known answers, build the circuit input and produce a real proof that verifies with the ceremony key (`test/bow_zk.test.js`); proving assets are fetched and pinned by `node scripts/vendor/0xbow.js fetch`. **Not started:** the `/app` pages (deposit, withdraw, ragequit UI), the vault format migration, the event indexer and the dual-read of the old pool |
+| M3 | SDK, note format, indexer and front end | **done on testnet, not yet the default UI**: SDK proof cycle (`scripts/bow/e2e.mjs`), browser client library (`frontend/src/lib/bow-zk.ts`, `bow-tree.ts`, known-answer and real-proof tests), indexer route `/api/bow/state` (leaves and approved list; the browser recomputes both roots and compares them with the chain before proving) and the `/pool` page (encrypted vault, deposit journal, deposit, Courier or self-relay withdrawal with change notes, ragequit). Exercised end to end on a production build with real in-browser proofs (section 8). **Not done:** migration of notes from the old vault, dual-read of the old pool, a persistent indexer (the cache is in memory) |
 | M4 | Magistrate publishes to `Entrypoint.updateRoot` | **done on testnet**: `services/magistrate/bow-target.js` leaves `service.js` unchanged; `scripts/bow/magistrate-live.js` passed 5/5 (root == lean root == SDK root, ragequit excluded, 59-byte CID, idempotent). Worker deployment against a bow entrypoint: not started |
 | M5 | Courier relays through `Entrypoint.relay` with one fee policy | **done on testnet**: `/api/relay/bow` and `/api/relay/bow/quote` (`frontend/src/lib/bow-relay.ts`, 6 unit tests); `scripts/bow/courier-e2e.mjs` passed 7/7 with real proofs (quote, dust refused, low fee refused before gas, wrong fee recipient refused, relay paid, replay refused). The old pool routes are untouched until M6 |
 | M6 | Cutover: freeze the old pool, default the UI to the new pool | **not started** (needs Safe signatures) |
@@ -90,3 +90,12 @@ node scripts/bow/verify-pool-invariant.mjs deployments/bow-robinhoodTestnet.json
 SDK_DIR=<sdk dir> node scripts/bow/magistrate-live.js deployments/bow-robinhoodTestnet.json
 node scripts/bow/preflight.js
 ```
+
+## 8. Testing the /pool page without a wallet extension
+
+The page was exercised on a PRODUCTION build (`next build` + `next start`) in the built-in browser with real proofs, using a test-only wallet server
+(`scripts/bow/ui-test-wallet.js`, key from the process environment, 127.0.0.1 only). The page must be built with `NEXT_PUBLIC_RH_TESTNET_RPC_URL=http://127.0.0.1:8790` so that its CSP allows that origin; do not deploy such a build.
+
+Observed on testnet (2026-10-12): deposit through the Entrypoint; vault unlock by typed-data signature; note shown as waiting for approval; after the Magistrate adapter published the list, a partial relayed withdrawal (proof in the browser 3.4 s, Courier fee 90 BPS), the change note saved automatically, the change note spent by self-relay (proof 2.3 s), and a ragequit of an unapproved deposit. The pool invariant held afterwards (9 deposits, 6 withdrawals, 2 ragequits).
+
+Defects found and fixed while doing this: the indexer must read the chain head from the same provider that serves the logs (a lagging log node otherwise makes it skip events), and the `_index` of `LeafInserted` is 1-based (the tree size after the insert).

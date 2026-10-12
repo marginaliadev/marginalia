@@ -46,5 +46,6 @@ describe("Browser client for the 0xbow core (frontend/src/lib/bow-zk.ts)", funct
     expect(r.signals).to.deep.equal({ newCommitment: true, nullifierHash: true, withdrawnValue: true, stateRoot: true, stateDepth: true, aspRoot: true, aspDepth: true, context: true });
     expect(r.relayShape).to.equal(true);
     expect(r.tamperedRejected).to.equal(true);
+    expect(r.ragequit).to.deep.equal({ verifies: true, signals: true });
   });
 });

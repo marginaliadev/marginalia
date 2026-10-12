@@ -142,3 +142,25 @@ export async function proveBowWithdrawal(input: Record<string, unknown>, base = 
   const { proof, publicSignals } = await snarkjs.groth16.fullProve(input, { type: "mem", data: wasm }, { type: "mem", data: zkey });
   return { proof, publicSignals: publicSignals as string[], relayProof: toRelayProof(proof, publicSignals) };
 }
+
+/** Circuit input of the commitment circuit used for ragequit (all decimal strings). */
+export const bowRagequitInput = (n: { value: bigint; label: bigint; nullifier: bigint; secret: bigint }) => ({ value: n.value.toString(), label: n.label.toString(), nullifier: n.nullifier.toString(), secret: n.secret.toString() });
+
+/** Ragequit proof (commitment circuit): public signals are [commitment, nullifierHash, value, label]. */
+export async function proveBowRagequit(note: { value: bigint; label: bigint; nullifier: bigint; secret: bigint }, base = "/zk-bow") {
+  const snarkjs: any = await import("snarkjs");
+  const wasm = await loadVerifiedBowAsset(`${base}/commitment.wasm`);
+  const zkey = await loadVerifiedBowAsset(`${base}/commitment.zkey`);
+  const input = bowRagequitInput(note);
+  const { proof, publicSignals } = await snarkjs.groth16.fullProve(input, { type: "mem", data: wasm }, { type: "mem", data: zkey });
+  const s = (x: unknown) => String(x);
+  return {
+    publicSignals: publicSignals as string[],
+    ragequitProof: {
+      pA: [s(proof.pi_a[0]), s(proof.pi_a[1])],
+      pB: [[s(proof.pi_b[0][1]), s(proof.pi_b[0][0])], [s(proof.pi_b[1][1]), s(proof.pi_b[1][0])]],
+      pC: [s(proof.pi_c[0]), s(proof.pi_c[1])],
+      pubSignals: publicSignals.slice(0, 4).map(s),
+    },
+  };
+}

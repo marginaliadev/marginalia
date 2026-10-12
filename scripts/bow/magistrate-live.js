@@ -20,17 +20,20 @@ async function main() {
   if (rec.chainId !== 46630) throw new Error("testnet only");
   const provider = new ethers.JsonRpcProvider(process.env.RH_TESTNET_RPC_URL, rec.chainId, { staticNetwork: true });
   const wallet = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY, provider);
-  const t = createBowTarget({ entrypoint: rec.entrypoint, pool: rec.pool, wallet, M });
+  const logsProvider = process.env.RH_LOGS_RPC_URL ? new ethers.JsonRpcProvider(process.env.RH_LOGS_RPC_URL, rec.chainId, { staticNetwork: true }) : provider;
+  const t = createBowTarget({ entrypoint: rec.entrypoint, pool: rec.pool, logsProvider, wallet, M });
 
   const pinned = new Map();
   const pinner = { name: "memory", async pin(bytes) { const cid = aspStore.rawCid(bytes); pinned.set(cid, bytes); return cid; } };
+  // real pinners when IPFS_RPC_URL / PINATA_JWT are set (for example the local services/magistrate/dev-ipfs.js), otherwise two in-memory ones
+  const envPinners = aspStore.pinnersFromEnv(process.env);
   const alerts = [];
   const poolBlock = rec.contracts.find((c) => c.name === "PrivacyPoolSimple_ETH").block;
   const svc = new MagistrateService({
-    provider, pool: t.pool, register: t.register, M: t.M, store: new MemoryStore(),
+    provider: logsProvider, pool: t.pool, register: t.register, M: t.M, store: new MemoryStore(),
     policy: { screenAll: async (ds) => ds.map(() => ({ decision: "APPROVE", reason: "live adapter test: allow all" })) },
-    pinners: [pinner, { ...pinner, name: "memory-2" }], chainId: rec.chainId, deployBlock: poolBlock, logChunk: 10, minIntervalMs: 0,
-    gateways: ["http://127.0.0.1:9/ipfs/"], log: (m) => console.log("  " + m), alert: async (m) => { alerts.push(m); },
+    pinners: envPinners.length ? envPinners : [pinner, { ...pinner, name: "memory-2" }], chainId: rec.chainId, deployBlock: poolBlock, logChunk: Number(process.env.RH_LOG_CHUNK || 10), minIntervalMs: 0,
+    gateways: process.env.ASP_IPFS_GATEWAYS ? process.env.ASP_IPFS_GATEWAYS.split(",") : ["http://127.0.0.1:9/ipfs/"], log: (m) => console.log("  " + m), alert: async (m) => { alerts.push(m); },
   });
 
   const before = await t.register.latestRoot();

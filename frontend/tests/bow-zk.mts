@@ -86,6 +86,10 @@ if (fs.existsSync(path.join(dir, "withdraw.zkey")) && fs.existsSync(path.join(di
   // a tampered signal must not verify
   const bad = [...publicSignals]; bad[2] = (BigInt(bad[2]) + BigInt(1)).toString();
   out.tamperedRejected = (await snarkjs.groth16.verify(vkey, bad, proof)) === false;
+  // ragequit: the commitment circuit
+  const rq = await snarkjs.groth16.fullProve(Z.bowRagequitInput({ value, label, nullifier, secret }), path.join(dir, "commitment.wasm"), path.join(dir, "commitment.zkey"));
+  const rqVkey = JSON.parse(fs.readFileSync(path.join(root, "vendor/0xbow/packages/circuits/trusted-setup/final-keys/commitment.vkey"), "utf8"));
+  out.ragequit = { verifies: await snarkjs.groth16.verify(rqVkey, rq.publicSignals, rq.proof), signals: rq.publicSignals.length === 4 && rq.publicSignals[0] === kat.commitment && rq.publicSignals[1] === Z.bowNullifierHash(nullifier).toString() && rq.publicSignals[2] === kat.value && rq.publicSignals[3] === kat.label };
 } else {
   out.proofSkipped = "pinned assets not fetched";
 }

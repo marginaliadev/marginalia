@@ -30,13 +30,13 @@ describe("0xbow route preflight", function () {
     expect(run().stdout).to.match(/NO-GO\s+S1/);
   });
 
-  it("complete sign-offs close S1-S10 but cannot close the mainnet record or the front-end gate", () => {
+  it("complete sign-offs close S1-S10 but can never close the mainnet deployment record (D1)", () => {
     const e = { by: "tester", date: "2026-01-01", evidence: "x" };
     fs.writeFileSync(SIGNOFF, JSON.stringify({ glueReview: e, ceremonyProvenance: e, ownerDecision: e, linuxGate: e, rolesHandedOver: e, incidentDrill: e, screeningAndPinning: e, legalReview: e, launchLimits: e, cutover: e }));
     const r = run();
     expect(r.status).to.equal(1);
     for (const id of ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8", "S9", "S10"]) expect(r.stdout).to.contain("GO     " + id.padEnd(4) + " ");
     expect(r.stdout).to.match(/NO-GO\s+D1/);
-    expect(r.stdout).to.match(/NO-GO\s+A1/);
+    expect(r.stdout).to.contain("GO     A1 "); // closed by the repository itself (page present, hashes equal the manifest), not by paperwork
   });
 });
