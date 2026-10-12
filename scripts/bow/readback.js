@@ -33,7 +33,9 @@ const POSTMAN_ROLE = ethers.id("ASP_POSTMAN");
 const IMPL_SLOT = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
 
 async function main() {
-  const provider = new ethers.JsonRpcProvider(process.env.RH_TESTNET_RPC_URL);
+  const rpcUrl = rec.chainId === 4663 ? (process.env.MAINNET_RPC || "").split(",")[0].trim() : process.env.RH_TESTNET_RPC_URL;
+  if (!rpcUrl) throw new Error(rec.chainId === 4663 ? "MAINNET_RPC is not set" : "RH_TESTNET_RPC_URL is not set");
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
   const net = await provider.getNetwork();
   if (Number(net.chainId) !== rec.chainId) throw new Error(`RPC chain ${net.chainId} != record chain ${rec.chainId}`);
   const entry = new ethers.Contract(rec.entrypoint, ENTRY, provider);

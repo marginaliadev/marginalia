@@ -24,9 +24,13 @@ const POSTMAN_ROLE = ethers.id("ASP_POSTMAN");
 async function main() {
   const safe = process.env.SAFE, publisher = process.env.PUBLISHER;
   if (!safe || !publisher) throw new Error("SAFE and PUBLISHER are required");
-  const provider = new ethers.JsonRpcProvider(process.env.RH_TESTNET_RPC_URL, rec.chainId, { staticNetwork: true });
-  if (rec.chainId !== 46630) throw new Error("only the testnet record is supported by this script");
-  const me = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY, provider);
+  const mainnet = rec.chainId === 4663;
+  if (!mainnet && rec.chainId !== 46630) throw new Error("unsupported chain " + rec.chainId);
+  const rpcUrl = mainnet ? (process.env.MAINNET_RPC || "").split(",")[0].trim() : process.env.RH_TESTNET_RPC_URL;
+  const keyName = mainnet ? "MAINNET_DEPLOYER_PRIVATE_KEY" : "DEPLOYER_PRIVATE_KEY";
+  if (!rpcUrl || !process.env[keyName]) throw new Error((mainnet ? "MAINNET_RPC and " : "RH_TESTNET_RPC_URL and ") + keyName + " are required");
+  const provider = new ethers.JsonRpcProvider(rpcUrl, rec.chainId, { staticNetwork: true });
+  const me = new ethers.Wallet(process.env[keyName], provider);
   const entry = new ethers.Contract(rec.entrypoint, ENTRY, me);
   const eq = (a, b) => a.toLowerCase() === b.toLowerCase();
 
