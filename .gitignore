@@ -18,6 +18,7 @@ services/magistrate/state/
 # Local tooling and internal material (kept on disk, not published)
 .claude/
 docs/outreach/
+docs/decision_0xbow_core_adoption.md
 docs/live-test/
 docs/phase3_hardening_plan.md
 docs/phase4_audit_ceremony_plan.md
