@@ -37,8 +37,8 @@ the owner decisions below, and every operational gate of `scripts/mainnet-prefli
 | M1 | Vendor the tag, manifest, empty-diff check, verifier-vs-ceremony-key check, proving-asset hash pins | **done**: `vendor/0xbow`, `scripts/vendor/0xbow.js`, `test/vendor_0xbow.test.js` |
 | M2 | Deploy the unmodified core on testnet, read back every setting | **done**: `deployments/bow-robinhoodTestnet.json`, `scripts/bow/{deploy,readback}.js` |
 | M3 | Proof cycle with the upstream SDK on the testnet deployment | **done**: `scripts/bow/e2e.mjs` (12 checks + pool invariant). Application SDK wrapper and front end: **not started** |
-| M4 | Magistrate publishes to `Entrypoint.updateRoot` | adapter and live test written (`services/magistrate/bow-target.js`, `scripts/bow/magistrate-live.js`); deployment of the worker against a bow entrypoint: not started |
-| M5 | Courier relays through `Entrypoint.relay` with one fee policy | **not started** |
+| M4 | Magistrate publishes to `Entrypoint.updateRoot` | **done on testnet**: `services/magistrate/bow-target.js` leaves `service.js` unchanged; `scripts/bow/magistrate-live.js` passed 5/5 (root == lean root == SDK root, ragequit excluded, 59-byte CID, idempotent). Worker deployment against a bow entrypoint: not started |
+| M5 | Courier relays through `Entrypoint.relay` with one fee policy | **done on testnet**: `/api/relay/bow` and `/api/relay/bow/quote` (`frontend/src/lib/bow-relay.ts`, 6 unit tests); `scripts/bow/courier-e2e.mjs` passed 7/7 with real proofs (quote, dust refused, low fee refused before gas, wrong fee recipient refused, relay paid, replay refused). The old pool routes are untouched until M6 |
 | M6 | Cutover: freeze the old pool, default the UI to the new pool | **not started** (needs Safe signatures) |
 | M7 | Full gate and deployment record | **not started**; `scripts/bow/preflight.js` lists what is missing |
 
