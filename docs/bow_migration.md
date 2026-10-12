@@ -27,7 +27,7 @@ the owner decisions below, and every operational gate of `scripts/mainnet-prefli
 | Ragequit | original deposit only | original depositor can also ragequit change notes |
 | Relayer fee | absolute amount bound in the proof | percentage (BPS) bound in the proof, capped by the pool configuration |
 | Gas (measured) | deposit 945k, withdraw 1.07M | deposit ~300k, withdraw ~440-500k |
-| Browser proving (measured, 12-core desktop) | ~2.1 s | ~3.4 s (1.6x, same ratio as the constraint count) |
+| Browser proving (measured, 12-core desktop, snarkjs in Chromium) | ~2.1 s | ~3.4 s (1.6x, same ratio as the constraint count); Node with the same snarkjs: 3.9 s. Mobile devices are NOT measured |
 
 ## 3. Milestones and status
 
@@ -36,7 +36,7 @@ the owner decisions below, and every operational gate of `scripts/mainnet-prefli
 | M0 | Remove the Letter of Disclosure generator (it attested facts the server could not verify) | **done** (commit `3d73a95`) |
 | M1 | Vendor the tag, manifest, empty-diff check, verifier-vs-ceremony-key check, proving-asset hash pins | **done**: `vendor/0xbow`, `scripts/vendor/0xbow.js`, `test/vendor_0xbow.test.js` |
 | M2 | Deploy the unmodified core on testnet, read back every setting | **done**: `deployments/bow-robinhoodTestnet.json`, `scripts/bow/{deploy,readback}.js` |
-| M3 | Proof cycle with the upstream SDK on the testnet deployment | **done**: `scripts/bow/e2e.mjs` (12 checks + pool invariant). Application SDK wrapper and front end: **not started** |
+| M3 | SDK, note format, indexer and front end | proof cycle with the upstream SDK **done** (`scripts/bow/e2e.mjs`, 12 checks + invariant). Browser client library **done**: `frontend/src/lib/bow-zk.ts` and `bow-tree.ts` reproduce the SDK known answers, build the circuit input and produce a real proof that verifies with the ceremony key (`test/bow_zk.test.js`); proving assets are fetched and pinned by `node scripts/vendor/0xbow.js fetch`. **Not started:** the `/app` pages (deposit, withdraw, ragequit UI), the vault format migration, the event indexer and the dual-read of the old pool |
 | M4 | Magistrate publishes to `Entrypoint.updateRoot` | **done on testnet**: `services/magistrate/bow-target.js` leaves `service.js` unchanged; `scripts/bow/magistrate-live.js` passed 5/5 (root == lean root == SDK root, ragequit excluded, 59-byte CID, idempotent). Worker deployment against a bow entrypoint: not started |
 | M5 | Courier relays through `Entrypoint.relay` with one fee policy | **done on testnet**: `/api/relay/bow` and `/api/relay/bow/quote` (`frontend/src/lib/bow-relay.ts`, 6 unit tests); `scripts/bow/courier-e2e.mjs` passed 7/7 with real proofs (quote, dust refused, low fee refused before gas, wrong fee recipient refused, relay paid, replay refused). The old pool routes are untouched until M6 |
 | M6 | Cutover: freeze the old pool, default the UI to the new pool | **not started** (needs Safe signatures) |
@@ -75,6 +75,7 @@ Run `node scripts/bow/preflight.js` (automatic gates V1-V3, T1, D1, A1; manual g
 - `eth_getLogs` is limited to 10 blocks on the free Alchemy plan, so the state tree needs chunked scanning or an indexer.
 - The pool bytecode links two Poseidon libraries; deploy them once per chain.
 - The 3 upstream fuzz tests that fail on Windows (extreme inputs) must be re-checked on Linux CI.
+- In the SDK the field `getCommitment(...).nullifierHash` is the PRECOMMITMENT hash. The value the pool records as spent (public signal 1) is `Poseidon(nullifier)`; `bowNullifierHash` computes it and the proof test checks it.
 - Ragequit links the depositor to the recipient publicly; self-relay with `processooor == depositor` reduces privacy. The UI must say so.
 
 ## 7. Commands
