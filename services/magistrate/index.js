@@ -10,6 +10,7 @@
 //                MAGISTRATE_LAG_ALERT_MIN (30)  RH_LOG_CHUNK (10; large on RPCs that allow it)  RH_LOGS_RPC_URL
 //                MAGISTRATE_STORE=supabase (state, verdict log and root index in Supabase; default is a local file)
 //                MAGISTRATE_STATE_FILE  MAGISTRATE_HEALTH_PORT  DEPLOYMENT_FILE  ALERT_WEBHOOK_URL  ASP_IPFS_GATEWAYS
+// 0xbow core   : BOW_ENTRYPOINT (+ BOW_POOL, BOW_DEPLOY_BLOCK) publishes through Entrypoint.updateRoot; DEPLOYMENT_FILE is then a deployments/bow-*.json record
 require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
@@ -20,6 +21,7 @@ const aspStore = require("../../lib/aspStore");
 const { MagistrateService } = require("./service");
 const { denylistPolicy, ofacPolicy, chainalysisPolicy, composePolicies } = require("./policy");
 const { FileStore, SupabaseStore } = require("./store");
+const { createBowTarget } = require("./bow-target");
 
 const env = process.env;
 const log = (m) => console.log(`[${new Date().toISOString()}] ${m}`);
@@ -75,8 +77,18 @@ async function build() {
   const wallet = new ethers.Wallet(env.MAGISTRATE_PUBLISHER_KEY, provider);
   // ABIs are committed (services/magistrate/abi): the worker image does not compile the contracts, so build artifacts do not exist there.
   const abi = (n) => JSON.parse(fs.readFileSync(path.join(__dirname, "abi", `${n}.json`), "utf8"));
-  const register = new ethers.Contract(d.register, abi("MagistrateRegister"), wallet);
-  const pool = new ethers.Contract(d.pool, abi("MarginaliaPool"), logsProvider);
+  // BOW_ENTRYPOINT switches the worker to the 0xbow core (DEPLOYMENT_FILE is then a deployments/bow-*.json record); otherwise the old register is used.
+  let register, pool, SdkM = M, deployBlock = d.deployBlock || 0;
+  if (env.BOW_ENTRYPOINT) {
+    if (d.entrypoint && d.entrypoint.toLowerCase() !== env.BOW_ENTRYPOINT.toLowerCase()) throw new Error("BOW_ENTRYPOINT differs from the entrypoint in DEPLOYMENT_FILE");
+    const t = createBowTarget({ entrypoint: env.BOW_ENTRYPOINT, pool: env.BOW_POOL || d.pool, logsProvider, wallet, M });
+    register = t.register; pool = t.pool; SdkM = t.M;
+    deployBlock = Number(env.BOW_DEPLOY_BLOCK || (d.contracts || []).find((c) => c.name === "PrivacyPoolSimple_ETH")?.block || 0);
+    if (!deployBlock) throw new Error("BOW_DEPLOY_BLOCK (or a bow record with the pool block) is required");
+  } else {
+    register = new ethers.Contract(d.register, abi("MagistrateRegister"), wallet);
+    pool = new ethers.Contract(d.pool, abi("MarginaliaPool"), logsProvider);
+  }
 
   const stateFile = env.MAGISTRATE_STATE_FILE || path.join(__dirname, "state", `${d.network || "network"}.json`);
   acquireLock(stateFile + ".lock");
@@ -98,10 +110,10 @@ async function build() {
   const pinners = aspStore.pinnersFromEnv(env);
   if (!pinners.length) throw new Error("No IPFS pinner configured (PINATA_JWT / IPFS_RPC_URL)");
   const svc = new MagistrateService({
-    provider: logsProvider, pool, register, M,
+    provider: logsProvider, pool, register, M: SdkM,
     store,
     policy: buildPolicy(),
-    pinners, chainId: d.chainId || 46630, deployBlock: d.deployBlock || 0, logChunk: Number(env.RH_LOG_CHUNK || 10),
+    pinners, chainId: d.chainId || 46630, deployBlock, logChunk: Number(env.RH_LOG_CHUNK || 10),
     minIntervalMs: Number(env.MAGISTRATE_MIN_INTERVAL_MIN || 15) * 60_000,
     lagAlertMs: Number(env.MAGISTRATE_LAG_ALERT_MIN || 30) * 60_000,
     minBalanceWei: ethers.parseEther(env.MAGISTRATE_MIN_BALANCE_ETH || "0.0005"),
