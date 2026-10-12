@@ -4,7 +4,7 @@ name: 0xbow core gate
 # Foundry remappings work; the Windows development machine cannot produce evidence for the "upstream suite green" sign-off.
 on:
   push:
-    branches: [ "feat/0xbow-core" ]
+    branches: [ "feat/0xbow-core", "dev" ]
     paths: [ "vendor/**", "scripts/vendor/**", "scripts/bow/**", ".github/workflows/bow.yml" ]
   pull_request:
     paths: [ "vendor/**", "scripts/vendor/**", "scripts/bow/**", ".github/workflows/bow.yml" ]
