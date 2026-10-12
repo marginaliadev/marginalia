@@ -11,7 +11,7 @@ const { ethers } = require("ethers");
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith("--"));
 const opt = (n) => { const i = args.indexOf("--" + n); return i >= 0 ? args[i + 1] : undefined; };
-if (!file) { console.error("usage: readback.js <deployment.json> [--expect-owner a] [--expect-postman a]"); process.exit(1); }
+if (!file) { console.error("usage: readback.js <deployment.json> [--expect-owner a] [--expect-postman a] [--artifacts <forge out dir>]"); process.exit(1); }
 const rec = JSON.parse(fs.readFileSync(file, "utf8"));
 
 const ENTRY = [
@@ -59,6 +59,32 @@ async function main() {
   check("pool.RAGEQUIT_VERIFIER", eq(await pool.RAGEQUIT_VERIFIER(), rec.ragequitVerifier));
   check("pool.ASSET is the native asset", eq(await pool.ASSET(), rec.config.asset));
   check("dead == false", (await pool.dead()) === false);
+
+  // Optional: the code on chain equals the code of a Foundry build of the pinned tag (reproducible-build gate).
+  // Immutable slots are masked on both sides and library addresses are linked from the record; metadata is off in the upstream profile.
+  const artDir = opt("artifacts");
+  if (artDir) {
+    const norm = (h) => h.toLowerCase().replace(/^0x/, "");
+    const mask = (hex, refs) => { let s = hex; for (const list of Object.values(refs || {})) for (const { start, length } of list) s = s.slice(0, start * 2) + "0".repeat(length * 2) + s.slice(start * 2 + length * 2); return s; };
+    const libAddr = (name) => rec.contracts.find((c) => c.name === "library_" + name)?.address;
+    const cmp = async (label, address, file, name) => {
+      const j = JSON.parse(fs.readFileSync(`${artDir}/${file}.sol/${name}.json`, "utf8"));
+      let expected = norm(j.deployedBytecode.object);
+      for (const [, libs] of Object.entries(j.deployedBytecode.linkReferences || {})) {
+        for (const [lib, refs] of Object.entries(libs)) for (const { start, length } of refs) {
+          const a = libAddr(lib); if (!a) { check(label, false, `no recorded address for library ${lib}`); return; }
+          expected = expected.slice(0, start * 2) + norm(a) + expected.slice(start * 2 + length * 2);
+        }
+      }
+      const actual = norm(await provider.getCode(address));
+      const refs = j.deployedBytecode.immutableReferences;
+      check(label, mask(actual, refs) === mask(expected, refs), `${actual.length / 2} bytes${refs && Object.keys(refs).length ? " (immutables masked)" : ""}`);
+    };
+    await cmp("WithdrawalVerifier code equals the build of the pinned tag", rec.withdrawalVerifier, "WithdrawalVerifier", "WithdrawalVerifier");
+    await cmp("CommitmentVerifier code equals the build of the pinned tag", rec.ragequitVerifier, "CommitmentVerifier", "CommitmentVerifier");
+    await cmp("Entrypoint implementation code equals the build of the pinned tag", recordedImpl, "Entrypoint", "Entrypoint");
+    await cmp("PrivacyPoolSimple code equals the build of the pinned tag", rec.pool, "PrivacyPoolSimple", "PrivacyPoolSimple");
+  }
 
   const ownerIsDeployer = await entry.hasRole(OWNER_ROLE, rec.deployer);
   const postmanIsDeployer = await entry.hasRole(POSTMAN_ROLE, rec.deployer);
