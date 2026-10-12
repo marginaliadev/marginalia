@@ -322,37 +322,18 @@ async function runNextJsTestSuite() {
     }
 
     // ------------------------------------------------------------------------------------
-    // TEST 12: Compliance Page - Letter of Disclosure (X25519)
+    // TEST 12: Compliance Page - the Letter of Disclosure generator is gone and the page says so
     // ------------------------------------------------------------------------------------
     console.log("\n[TEST 12] Testing Compliance Page (http://127.0.0.1:3002/compliance)...");
     await page.goto("http://127.0.0.1:3002/compliance", { waitUntil: "domcontentloaded" });
     await dismissIntro(page);
-
-    const secComp = await M.newSecret();
-    const compVal = 1000000000000000000n;
-    const compLabel = 777n;
-    const compCm = await M.commitmentOf(compVal, compLabel, secComp.precommitment);
-    const compNoteStr = M.serializeNote({
-      sk: secComp.sk,
-      rho: secComp.rho,
-      value: compVal,
-      label: compLabel,
-      commitment: compCm,
-    });
-
-    await page.type("#disclosureNote", compNoteStr);
-    await page.click("#generateDisclosureBtn");
-    await page.waitForSelector("#disclosureResult", { visible: true, timeout: 6000 });
-
-    const disclosureJson = await page.$eval("#disclosureJsonText", (el) => el.textContent.trim());
-    const parsedPkg = JSON.parse(disclosureJson);
-    console.log(`Disclosure Standard: ${parsedPkg.standard}, Timestamp: ${parsedPkg.timestamp}`);
+    const generatorPresent = await page.$("#generateDisclosureBtn");
+    const noticePresent = await page.$("#disclosure-notice");
     await page.screenshot({ path: path.join(ARTIFACTS_DIR, "13_nextjs_compliance_disclosure.png") });
-
-    if (parsedPkg.standard === "LETTER_OF_DISCLOSURE_V1" && parsedPkg.viewingKeyProof && parsedPkg.viewingKeyProof.ciphertext) {
-      results.push({ test: "12. Letter of Disclosure (X25519)", status: "PASS", detail: `Ciphertext: ${parsedPkg.viewingKeyProof.ciphertext.slice(0, 16)}...` });
+    if (!generatorPresent && noticePresent) {
+      results.push({ test: "12. Disclosure generator removed, notice shown", status: "PASS", detail: "no generator control; #disclosure-notice present" });
     } else {
-      results.push({ test: "12. Letter of Disclosure (X25519)", status: "FAIL", detail: "Disclosure package missing expected fields" });
+      results.push({ test: "12. Disclosure generator removed, notice shown", status: "FAIL", detail: `generator present: ${!!generatorPresent}, notice present: ${!!noticePresent}` });
     }
 
     // ------------------------------------------------------------------------------------

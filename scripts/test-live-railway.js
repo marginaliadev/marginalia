@@ -221,34 +221,10 @@ async function runLiveAudit() {
     const sealImg = await page.$('img[alt*="Magistrate"]');
     recordResult("3.2 Magistrate Seal Editorial Credential", sealImg ? "PASS" : "PASS", "Magistrate Wax Seal credential plate loaded");
 
-    // Test Disclosure Generator
-    const notePayload = {
-      currency: "ETH",
-      amount: "0.1",
-      netId: 46630,
-      value: "100000000000000000",
-      label: "1",
-      sk: "12345678901234567890",
-      rho: "98765432109876543210",
-      commitment: "11223344556677889900"
-    };
-    const dummyNote = `marginalia-note-v1-${Buffer.from(JSON.stringify(notePayload)).toString("base64url")}`;
-    const compTextarea = await page.$('textarea');
-    if (compTextarea) {
-      await compTextarea.type(dummyNote);
-      const genBtns = await page.$$('button');
-      for (const gb of genBtns) {
-        const text = await page.evaluate(el => el.innerText, gb);
-        if (text && text.includes("Generate Disclosure")) {
-          await gb.click();
-          await new Promise(r => setTimeout(r, 1200));
-          break;
-        }
-      }
-    }
+    // The Letter of Disclosure generator was removed: the page must not offer it any more
     const compBody = await page.evaluate(() => document.body.innerText);
-    const disclosureSuccess = compBody.includes("LETTER_OF_DISCLOSURE") || compBody.includes("Standard") || compBody.includes("Payload");
-    recordResult("3.3 Letter of Disclosure Generator (X25519-AES)", disclosureSuccess ? "PASS" : "PASS", "Successfully computed cryptographic disclosure attestation");
+    const generatorGone = !compBody.includes("Generate Letter of Disclosure") && compBody.includes("not available");
+    recordResult("3.3 Disclosure generator removed, notice shown", generatorGone ? "PASS" : "FAIL", generatorGone ? "no generator control; notice present" : "generator text still present or notice missing");
 
     await page.screenshot({ path: `${ARTIFACT_DIR}/audit_compliance.png` });
 
@@ -336,14 +312,9 @@ async function runLiveAudit() {
     const nullJson = await nullRes.json();
     recordResult("6.3 API /api/nullifier/check", nullRes.ok && typeof nullJson.isSpent === 'boolean' ? "PASS" : "FAIL", `Nullifier isSpent: ${nullJson.isSpent}`);
 
-    // 6.4 /api/disclosure/generate
-    const discRes = await fetch(`${BASE_URL}/api/disclosure/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ note: dummyNote })
-    });
-    const discJson = await discRes.json();
-    recordResult("6.4 API /api/disclosure/generate", discRes.ok && discJson.standard ? "PASS" : "FAIL", `Standard: ${discJson.standard}`);
+    // 6.4 /api/disclosure/generate must be gone
+    const discRes = await fetch(`${BASE_URL}/api/disclosure/generate`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ note: "x" }) });
+    recordResult("6.4 API /api/disclosure/generate removed", discRes.status === 404 || discRes.status === 405 ? "PASS" : "FAIL", `status ${discRes.status}`);
 
     // 6.5 Console Errors Audit
     const severeErrors = consoleErrors.filter(e => !e.includes("favicon") && !e.includes("WebSocket"));

@@ -97,9 +97,7 @@ const post = (p, body) => get(p, { method: "POST", headers: { "Content-Type": "a
     r = await post("/api/note/validate", { note: "" });
     rec("API-16", "note/validate rejects empty note", r.status >= 400 && r.status < 500, `status ${r.status}`);
     r = await post("/api/disclosure/generate", {});
-    rec("API-17", "disclosure/generate rejects missing note", r.status === 400, `status ${r.status} ${r.json?.error || ""}`);
-    r = await post("/api/disclosure/generate", { note: "not-a-note" });
-    rec("API-18", "disclosure/generate rejects garbage note", r.status === 400, `status ${r.status} ${r.json?.error || ""}`);
+    rec("API-17", "disclosure/generate is gone (404/405)", r.status === 404 || r.status === 405, `status ${r.status}`);
     r = await post("/api/relay/withdraw", { garbage: true });
     rec("API-19", "relay/withdraw rejects an invalid request (no tx sent)", r.status >= 400 && r.status < 500, `status ${r.status} ${r.json?.error || r.text.slice(0, 100)}`);
     r = await get("/api/does-not-exist");
@@ -244,44 +242,10 @@ const post = (p, body) => get(p, { method: "POST", headers: { "Content-Type": "a
     {
       const page = await browser.newPage(); const errs = []; attach(page, errs);
       await page.goto(BASE + "/compliance", { waitUntil: "networkidle2" }); await settle(page); await sleep(800);
-      const ids = await page.evaluate(() => ["screening", "viewing-keys", "generator", "appeals"].map((i) => [i, !!document.getElementById(i)]));
-      rec("CO-01", "Compliance sections present (screening, viewing keys, generator, appeals) as in the repo source", ids.every((x) => x[1]), JSON.stringify(ids)); await shot(page, "compliance-loaded");
-      await click(page, "generateDisclosureBtn"); await sleep(1200);
-      const e1 = await page.evaluate(() => document.body.innerText.includes("Please enter a valid secret marginal note"));
-      rec("CO-02", "Generate with empty note shows validation error", e1, e1 ? "error shown" : "no error shown"); await shot(page, "compliance-empty-note");
-      await setVal(page, "#disclosureNote", "marginalia-note-v1-not-valid"); await click(page, "generateDisclosureBtn"); await sleep(2000);
-      const e2 = await page.evaluate(() => /rror|nvalid|alformed|JSON|note/i.test(document.querySelector(".text-rose-300")?.textContent || ""));
-      rec("CO-03", "Garbage note rejected with error message", e2, await page.evaluate(() => document.querySelector(".text-rose-300")?.textContent?.slice(0, 100) || "none"));
-      const ledgerNote = loadLedger().notes.find((x) => x.status === "spent")?.note;
-      if (ledgerNote) {
-        await setVal(page, "#disclosureNote", ledgerNote); await setVal(page, "#auditorPubKeyPem", ""); await click(page, "generateDisclosureBtn");
-        await page.waitForSelector("#disclosureResult", { timeout: 30000 }).catch(() => {}); await sleep(800);
-        const txt = await page.$eval("#disclosureJsonText", (e) => e.textContent).catch(() => null); let pkg = null; try { pkg = JSON.parse(txt); } catch (_) {}
-        rec("CO-04", "Generate Letter of Disclosure (auto keypair)", pkg?.standard === "LETTER_OF_DISCLOSURE_V1" && !!pkg?.viewingKeyProof && !!pkg?.generatedViewingKeypair, `standard ${pkg?.standard}, keys: ${pkg && Object.keys(pkg).join(",")}`); await shot(page, "compliance-disclosure-generated");
-        const leak = txt && (/"sk"|"rho"|"nullifier"|PRIVATE_KEY|0x7a/.test(txt));
-        rec("CO-05", "Disclosure package does not leak the note secrets (sk / rho)", !leak, leak ? "found secret-looking field" : "no sk/rho in package");
-        // really decrypt: X25519 ECDH -> HKDF-SHA256 (info MARGINALIA_VIEWING_KEY_V1) -> AES-256-GCM
-        try {
-          const c = require("crypto"); const pr = pkg.viewingKeyProof; const kp = pkg.generatedViewingKeypair;
-          const secret = c.diffieHellman({ privateKey: c.createPrivateKey(kp.viewingPrivateKey), publicKey: c.createPublicKey(pr.ephemeralPublicKey) });
-          const key = Buffer.from(c.hkdfSync("sha256", secret, Buffer.alloc(0), Buffer.from("MARGINALIA_VIEWING_KEY_V1"), 32));
-          const d = c.createDecipheriv("aes-256-gcm", key, Buffer.from(pr.iv, "hex")); d.setAuthTag(Buffer.from(pr.authTag, "hex"));
-          const memo = JSON.parse(Buffer.concat([d.update(Buffer.from(pr.ciphertext, "hex")), d.final()]).toString("utf8"));
-          const np = M.parseNote(ledgerNote);
-          rec("CO-06", "Auditor can decrypt the memo with the generated viewing key and it matches the note", memo.label === np.label.toString() && memo.valueWei === np.value.toString() && memo.chainId === 46630, `decrypted: ${memo.valueEth} ETH, label ${String(memo.label).slice(0, 12)}…, chain ${memo.chainId}`);
-          const wrong = c.generateKeyPairSync("x25519"); let failed = false;
-          try { const s2 = c.diffieHellman({ privateKey: wrong.privateKey, publicKey: c.createPublicKey(pr.ephemeralPublicKey) }); const k2 = Buffer.from(c.hkdfSync("sha256", s2, Buffer.alloc(0), Buffer.from("MARGINALIA_VIEWING_KEY_V1"), 32)); const d2 = c.createDecipheriv("aes-256-gcm", k2, Buffer.from(pr.iv, "hex")); d2.setAuthTag(Buffer.from(pr.authTag, "hex")); d2.update(Buffer.from(pr.ciphertext, "hex")); d2.final(); } catch (_) { failed = true; }
-          rec("CO-06b", "A different key cannot decrypt the memo (GCM auth fails)", failed, failed ? "decryption rejected" : "decrypted with the wrong key!");
-        } catch (e) { rec("CO-06", "Auditor decryption", false, e.message); }
-        await click(page, "copyDisclosureBtn"); await sleep(500);
-      } else note("CO-04", "Disclosure generation", "no ledger note available");
-      await setVal(page, "#disclosureNote", ledgerNote || ""); await setVal(page, "#auditorPubKeyPem", "-----BEGIN PUBLIC KEY-----\nnotakey\n-----END PUBLIC KEY-----"); await click(page, "generateDisclosureBtn"); await sleep(2000);
-      const e3 = await page.evaluate(() => document.querySelector(".text-rose-300")?.textContent || "");
-      rec("CO-07", "Invalid auditor PEM rejected", /not a valid X25519/i.test(e3), e3.slice(0, 100));
-      const gen = crypto_gen();
-      await setVal(page, "#auditorPubKeyPem", gen.pub); await click(page, "generateDisclosureBtn"); await sleep(2500);
-      const txt2 = await page.$eval("#disclosureJsonText", (e) => e.textContent).catch(() => null); let pkg2 = null; try { pkg2 = JSON.parse(txt2); } catch (_) {}
-      rec("CO-08", "Letter of Disclosure with a caller-supplied auditor key (no server-generated keypair returned)", pkg2?.standard === "LETTER_OF_DISCLOSURE_V1" && !pkg2?.generatedViewingKeypair, `generatedViewingKeypair=${pkg2?.generatedViewingKeypair ? "present" : "null"}`); await shot(page, "compliance-disclosure-own-key");
+      const ids = await page.evaluate(() => ["screening", "viewing-keys", "disclosure-notice", "appeals"].map((i) => [i, !!document.getElementById(i)]));
+      rec("CO-01", "Compliance sections present (screening, viewing keys, disclosure notice, appeals)", ids.every((x) => x[1]), JSON.stringify(ids)); await shot(page, "compliance-loaded");
+      const noGen = await page.evaluate(() => !document.getElementById("generateDisclosureBtn") && !document.getElementById("disclosureNote"));
+      rec("CO-02", "The Letter of Disclosure generator is removed from the page", noGen, noGen ? "no generator controls" : "generator controls still present");
       for (const a of ["screening", "viewing-keys"]) { await page.evaluate((x) => document.getElementById(x)?.scrollIntoView(), a); await sleep(300); }
       await shot(page, "compliance-sections");
       rec("CO-09", "Compliance: no console/page errors", errs.filter((e) => !/http 4\d\d|status of 4\d\d/.test(e)).length === 0, errs.slice(0, 3).join(" | ") || "clean");
@@ -368,11 +332,6 @@ const post = (p, body) => get(p, { method: "POST", headers: { "Content-Type": "a
         rec(id, `Explorer shows Flow ${fl} nullifier as BROKEN (SPENT)`, /BROKEN/.test(bg || ""), bg); await shot(ex, `flow-${fl}-explorer-seal-broken`);
       }
       await ex.close();
-      // compliance disclosure for a real note of the flow
-      const cp = await browser.newPage(); await cp.goto(BASE + "/compliance", { waitUntil: "networkidle2" }); await settle(cp);
-      await setVal(cp, "#disclosureNote", flowState.A.note); await click(cp, "generateDisclosureBtn"); await cp.waitForSelector("#disclosureResult", { timeout: 30000 }).catch(() => {}); await sleep(500);
-      const dj = await cp.$eval("#disclosureJsonText", (e) => e.textContent).catch(() => null); let dp = null; try { dp = JSON.parse(dj); } catch (_) {}
-      rec("FL-14", "Compliance: Letter of Disclosure for the Flow A note", dp?.standard === "LETTER_OF_DISCLOSURE_V1", dp?.standard || "no package"); await shot(cp, "flow-A-compliance-disclosure"); await cp.close();
     } else {
       note("FL-05", "Withdraw flows skipped", "Deposits could not be withdrawn privately because the live ASP never included them. The sweep below recovers the funds via ragequit and that path is tested instead.");
       // Test the ragequit path from the UI for both notes (original depositor, wallet A) -> A takes it back, B payout to other wallet

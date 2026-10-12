@@ -34,14 +34,14 @@ export const metadata: Metadata = {
     default: "MARGINALIA: Compliant Shielded Pool on Robinhood Chain",
     template: "%s | MARGINALIA",
   },
-  description: "Mathematical privacy on Robinhood Orbit L2. Zero-Knowledge Groth16 proofs, association set providers, and cryptographic disclosure.",
+  description: "Mathematical privacy on Robinhood Orbit L2. Zero-Knowledge Groth16 proofs, association set providers, and association-set screening.",
   applicationName: "Marginalia",
   alternates: {
     canonical: "/",
   },
   openGraph: {
     title: "MARGINALIA: Compliant Shielded Pool on Robinhood Chain",
-    description: "Mathematical privacy on Robinhood Orbit L2. Zero-Knowledge Groth16 proofs, association set providers, and cryptographic disclosure.",
+    description: "Mathematical privacy on Robinhood Orbit L2. Zero-Knowledge Groth16 proofs, association set providers, and association-set screening.",
     url: "/",
     siteName: "MARGINALIA Protocol",
     locale: "en_US",
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "MARGINALIA: Compliant Shielded Pool on Robinhood Chain",
-    description: "Mathematical privacy on Robinhood Orbit L2. Zero-Knowledge Groth16 proofs, association set providers, and cryptographic disclosure.",
+    description: "Mathematical privacy on Robinhood Orbit L2. Zero-Knowledge Groth16 proofs, association set providers, and association-set screening.",
     site: "@MarginaliaZK",
     creator: "@MarginaliaZK",
   },

@@ -1,59 +1,9 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Lock, Copy, Check, ShieldCheck, ArrowRight, Eye, Shield, FileText, CheckCircle2, XCircle } from "lucide-react";
 
 import { CHAIN } from "@/lib/chain";
 export default function CompliancePage() {
-  const [noteInput, setNoteInput] = useState("");
-  const [auditorPem, setAuditorPem] = useState("");
-  const [disclosureResult, setDisclosureResult] = useState<any | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const handleGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!noteInput.trim()) {
-      setErrorMessage("Please enter a valid secret marginal note.");
-      return;
-    }
-
-    setErrorMessage(null);
-    setIsGenerating(true);
-
-    try {
-      const res = await fetch("/api/disclosure/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          note: noteInput.trim(),
-          auditorPublicKeyPem: auditorPem.trim() || undefined,
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        setDisclosureResult(data);
-      } else {
-        setErrorMessage(data.error || "Failed to generate disclosure package.");
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  const handleCopy = () => {
-    if (!disclosureResult) return;
-    navigator.clipboard.writeText(JSON.stringify(disclosureResult, null, 2));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <div className="min-h-screen bg-[#0B0907] text-white">
       {/* HERO SECTION */}
@@ -208,10 +158,10 @@ export default function CompliancePage() {
       <section id="viewing-keys" className="relative py-16 md:py-24 border-t border-dusk/50 bg-[#0B0907]">
         <div className="max-w-[80rem] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-[42rem] mb-12">
-            <div className="text-mono-s uppercase tracking-wider text-sun mb-2">Selective disclosure</div>
+            <div className="text-mono-s uppercase tracking-wider text-sun mb-2">Selective disclosure · planned, not available yet</div>
             <h2 className="text-heading-40 text-dust">Show exactly what’s needed. Never more.</h2>
             <p className="text-body-18-light mt-3 text-dust/70">
-              When an auditor, tax agency, or lender requests transaction provenance, provide an authenticated cryptographic letter of disclosure encrypted directly to their public key.
+              Planned design: when an auditor, tax agency, or lender requests transaction provenance, you would be able to provide a letter of disclosure encrypted to their public key. This is not offered today.
             </p>
           </div>
 
@@ -249,105 +199,17 @@ export default function CompliancePage() {
             </div>
           </div>
 
-          {/* INTERACTIVE GENERATOR TOOL */}
-          <div id="generator" className="relative border border-dusk bg-night p-6 sm:p-10 rounded-xs shadow-2xl">
-            <div className="bracket-x h-3 md:h-4 text-stroke-3 border-t -mt-6 sm:-mt-10 mb-6"></div>
-            
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 mb-8 border-b border-dusk/60">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-sun" />
-                  <h3 className="text-heading-28 text-dust">Cryptographic Letter of Disclosure Generator</h3>
-                </div>
-                <p className="text-xs text-dust/60 font-mono mt-1">
-                  X25519-HKDF-AES-256-GCM · Standard LETTER_OF_DISCLOSURE_V1
-                </p>
-              </div>
-              <div className="shrink-0 flex items-center gap-2">
-                <span className="size-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span className="text-mono-s text-emerald-400 uppercase">Magistrate Ready</span>
-              </div>
+          {/* The Letter of Disclosure generator was removed: it attested facts the server could not verify. */}
+          <div id="disclosure-notice" className="relative border border-dusk bg-night p-6 sm:p-10 rounded-xs">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-sun" />
+              <h3 className="text-heading-28 text-dust">Letter of Disclosure: not available</h3>
             </div>
-
-            <form onSubmit={handleGenerate} className="space-y-6">
-              <div>
-                <label className="block text-mono-s text-dust/80 uppercase mb-2">
-                  Secret Marginal Note (Required)
-                </label>
-                <textarea
-                  id="disclosureNote"
-                  rows={3}
-                  placeholder="marginalia-note-v1-..."
-                  value={noteInput}
-                  onChange={(e) => setNoteInput(e.target.value)}
-                  className="w-full bg-[#14100e] border border-dusk rounded-xs p-4 text-xs font-mono text-dust focus:outline-none focus:border-sun transition-colors resize-none placeholder:text-dust/30"
-                />
-              </div>
-
-              <div>
-                <label className="block text-mono-s text-dust/80 uppercase mb-2">
-                  Auditor Public Key (Optional PEM, leave blank to auto-generate fresh keypair)
-                </label>
-                <textarea
-                  id="auditorPubKeyPem"
-                  rows={3}
-                  placeholder="-----BEGIN PUBLIC KEY----- ... (or leave blank to create a fresh viewing keypair)"
-                  value={auditorPem}
-                  onChange={(e) => setAuditorPem(e.target.value)}
-                  className="w-full bg-[#14100e] border border-dusk rounded-xs p-4 text-xs font-mono text-dust focus:outline-none focus:border-sun transition-colors resize-none placeholder:text-dust/30"
-                />
-              </div>
-
-              {errorMessage && (
-                <div className="p-4 bg-rose-950/60 border border-rose-500/40 rounded-xs text-rose-300 text-xs font-mono">
-                  {errorMessage}
-                </div>
-              )}
-
-              <button
-                id="generateDisclosureBtn"
-                type="submit"
-                disabled={isGenerating}
-                className="w-full cursor-pointer rounded-xs border px-4 py-3.5 text-center font-medium transition-colors select-none bg-dust border-dust text-night hover:bg-sand flex items-center justify-center gap-2 text-sm disabled:opacity-50"
-              >
-                <Lock className="w-4 h-4" />
-                <span>{isGenerating ? "Computing X25519 Ephemeral Cipher..." : "Generate Letter of Disclosure"}</span>
-              </button>
-            </form>
-
-            {/* Results Container */}
-            {disclosureResult && (
-              <div id="disclosureResult" className="mt-8 pt-8 border-t border-dusk/60">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                  <div>
-                    <h4 className="font-heading text-xl text-dust font-semibold">
-                      Encrypted Disclosure Package
-                    </h4>
-                    <p className="text-mono-s text-dust/60 mt-0.5">
-                      Standard: {disclosureResult.standard} · X25519 Authenticated Ciphertext
-                    </p>
-                  </div>
-
-                  <button
-                    id="copyDisclosureBtn"
-                    onClick={handleCopy}
-                    className="inline-flex cursor-pointer items-center justify-center rounded-xs border px-3.5 py-2 text-xs font-mono transition-colors select-none bg-midnight border-dusk text-white hover:bg-night gap-2"
-                  >
-                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copied ? "Copied" : "Copy JSON"}</span>
-                  </button>
-                </div>
-
-                <pre
-                  id="disclosureJsonText"
-                  className="bg-[#0c0908] border border-dusk rounded-xs p-4 text-xs font-mono text-dust/90 overflow-x-auto max-h-96"
-                >
-                  {JSON.stringify(disclosureResult, null, 2)}
-                </pre>
-              </div>
-            )}
-            
-            <div className="bracket-x h-3 md:h-4 text-stroke-3 border-b -mb-6 sm:-mb-10 mt-8"></div>
+            <p className="text-sm text-dust/70 leading-relaxed mt-3 max-w-[42rem]">
+              The previous generator is switched off. It produced a package that stated compliance results (tax basis, screening outcome) that no
+              server-side check had verified, so it must not be relied on. A disclosure tool will return only when every statement in it is
+              derived from on-chain data or from a signed Magistrate decision, and it will be announced here.
+            </p>
           </div>
         </div>
       </section>
@@ -377,7 +239,7 @@ export default function CompliancePage() {
                   <td className="py-4 px-6 font-medium text-dust">Accountant</td>
                   <td className="py-4 px-6 text-dust/60">Full history disclosed forever; leaks all balances</td>
                   <td className="py-4 px-6 text-dust font-mono text-xs">
-                    <span className="text-emerald-400">Scoped viewing key</span> for specific tax year only
+                    <span className="text-emerald-400">Scoped viewing key</span> for a specific tax year (planned)
                   </td>
                 </tr>
                 <tr className="hover:bg-midnight/30 transition-colors">

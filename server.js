@@ -9,7 +9,6 @@ const { ethers } = require("ethers");
 const M = require("./lib/marginalia");
 const { supabaseService } = require("./lib/supabase");
 const { MersenneRelayer } = require("./lib/relayer");
-const { createEncryptedMemo, generateViewingKeypair } = require("./lib/disclosure");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -573,62 +572,6 @@ app.post("/api/relay/quote", async (req, res) => {
   }
 });
 
-/**
- * POST /api/disclosure/generate - Generates cryptographic X25519 ECDH encrypted Letter of Disclosure memo.
- */
-app.post("/api/disclosure/generate", async (req, res) => {
-  const { note, auditorPublicKeyPem } = req.body;
-  if (!note) return res.status(400).json({ error: "Missing marginal note parameter" });
-
-  try {
-    const parsed = M.parseNote(note.trim());
-    let pubKeyPem = auditorPublicKeyPem;
-    let generatedKeypair = null;
-
-    if (!pubKeyPem || pubKeyPem.trim() === "" || pubKeyPem.startsWith("0x")) {
-      generatedKeypair = generateViewingKeypair();
-      pubKeyPem = generatedKeypair.viewingPublicKey;
-    }
-
-    try {
-      require("crypto").createPublicKey(pubKeyPem);
-    } catch (_) {
-      return res.status(400).json({ error: "auditorPublicKeyPem is not a valid X25519 public key (PEM)." });
-    }
-
-    const memoDetails = {
-      noteReference: parsed.commitment ? parsed.commitment.toString().slice(0, 20) + "..." : "UNCOMMITTED",
-      valueWei: parsed.value ? parsed.value.toString() : "0",
-      valueEth: parsed.value ? ethers.formatEther(parsed.value.toString()) : "0",
-      label: parsed.label ? parsed.label.toString() : "0",
-      poolAddress: process.env.MARGINALIA_POOL_ADDRESS || "0x340E20C7CBe7eA83d463432ac8FA1e891bdca948",
-      timestamp: new Date().toISOString(),
-      chainId: 46630,
-    };
-
-    const encryptedMemo = createEncryptedMemo(memoDetails, pubKeyPem);
-
-    const disclosurePkg = {
-      protocol: "MARGINALIA_ZK_SHIELDED_POOL",
-      standard: "LETTER_OF_DISCLOSURE_V1",
-      chain: "Robinhood Chain L2 (46630)",
-      timestamp: memoDetails.timestamp,
-      auditorPublicKey: pubKeyPem,
-      memoDetails: {
-        noteReference: memoDetails.noteReference,
-        taxBasisConfirmed: true,
-        associationSetStatus: "MAGISTRATE_SANCTION_SCREENED",
-        antiMoneyLaunderingCheck: "PASSED_UNLINKABLE_WHITELIST",
-      },
-      viewingKeyProof: encryptedMemo,
-      generatedViewingKeypair: generatedKeypair,
-    };
-
-    res.json(disclosurePkg);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 /**
  * POST /api/relay/withdraw - Dispatches gasless withdrawal via Mersenne Relayer.

@@ -305,39 +305,7 @@ async function runFeTestSuite() {
       results.push({ test: "11. Wax Seal Verifier (Unspent Detection)", status: "FAIL", detail: `Status was: ${sealBadgeUnspent}` });
     }
 
-    // ------------------------------------------------------------------------------------
-    // TEST 12: Compliance Page - Letter of Disclosure Generation (X25519)
-    // ------------------------------------------------------------------------------------
-    console.log("\n[TEST 12] Testing Compliance Page (http://localhost:3001/compliance.html)...");
-    await page.goto("http://localhost:3001/compliance.html", { waitUntil: "networkidle0" });
-
-    // Generate genuine note for compliance test
-    const secComp = await M.newSecret();
-    const compVal = 1000000000000000000n;
-    const compLabel = 777n;
-    const compCm = await M.commitmentOf(compVal, compLabel, secComp.precommitment);
-    const compNoteStr = M.serializeNote({
-      sk: secComp.sk,
-      rho: secComp.rho,
-      value: compVal,
-      label: compLabel,
-      commitment: compCm,
-    });
-
-    await page.type("#disclosureNote", compNoteStr);
-    await page.click("#generateDisclosureBtn");
-    await page.waitForSelector("#disclosureResult:not(.hidden)", { visible: true, timeout: 5000 });
-
-    const disclosureJson = await page.$eval("#disclosureJsonText", (el) => el.textContent.trim());
-    const parsedPkg = JSON.parse(disclosureJson);
-    console.log(`Disclosure Standard: ${parsedPkg.standard}, Timestamp: ${parsedPkg.timestamp}`);
-    await page.screenshot({ path: path.join(ARTIFACTS_DIR, "12_compliance_disclosure_generated.png") });
-
-    if (parsedPkg.standard === "LETTER_OF_DISCLOSURE_V1" && parsedPkg.viewingKeyProof && parsedPkg.viewingKeyProof.ciphertext) {
-      results.push({ test: "12. Cryptographic Letter of Disclosure (X25519)", status: "PASS", detail: `Ciphertext: ${parsedPkg.viewingKeyProof.ciphertext.slice(0, 16)}...` });
-    } else {
-      results.push({ test: "12. Cryptographic Letter of Disclosure (X25519)", status: "FAIL", detail: "Disclosure package missing expected fields" });
-    }
+    // TEST 12 (Letter of Disclosure generator) was removed together with the generator.
 
   } catch (err) {
     console.error("Test execution error:", err);
