@@ -1,0 +1,59 @@
+name: 0xbow core gate
+
+# Gate for the unmodified 0xbow core (docs: vendor/0xbow, scripts/vendor/0xbow.js). Runs on Linux, where the upstream SDK and
+# Foundry remappings work; the Windows development machine cannot produce evidence for the "upstream suite green" sign-off.
+on:
+  push:
+    branches: [ "feat/0xbow-core" ]
+    paths: [ "vendor/**", "scripts/vendor/**", "scripts/bow/**", ".github/workflows/bow.yml" ]
+  pull_request:
+    paths: [ "vendor/**", "scripts/vendor/**", "scripts/bow/**", ".github/workflows/bow.yml" ]
+  workflow_dispatch:
+
+env:
+  UPSTREAM_TAG: v1.2.1
+  UPSTREAM_COMMIT: a80836a47451e662f127af17e11430ffa976c234
+
+jobs:
+  vendor-integrity:
+    name: Vendored tree equals upstream, verifiers equal the ceremony keys
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - name: Manifest, EMPTY diff against the upstream tag, verifier constants, proving-asset hashes
+        run: |
+          node scripts/vendor/0xbow.js verify --upstream
+          node scripts/vendor/0xbow.js vkey
+          node scripts/vendor/0xbow.js artifacts
+      - name: Install dependencies and run the guard tests
+        run: |
+          npm ci || npm install
+          npx hardhat test test/vendor_0xbow.test.js test/bow_preflight.test.js
+
+  upstream-suite:
+    name: Upstream test suite, unmodified (Foundry, Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - uses: foundry-rs/foundry-toolchain@v1
+      - name: Check out the pinned upstream tag
+        run: |
+          git clone --depth 1 --branch "$UPSTREAM_TAG" https://github.com/0xbow-io/privacy-pools-core.git upstream
+          test "$(git -C upstream rev-parse HEAD)" = "$UPSTREAM_COMMIT"
+      - name: Install upstream dependencies (no lifecycle scripts)
+        working-directory: upstream
+        run: yarn install --frozen-lockfile --ignore-scripts
+      - name: Unit tests
+        working-directory: upstream/packages/contracts
+        run: forge test --match-path 'test/unit/*' --gas-report
+      - name: Integration tests (real proofs through the SDK, mainnet fork)
+        working-directory: upstream/packages/contracts
+        env:
+          ETHEREUM_MAINNET_RPC: https://ethereum-rpc.publicnode.com
+        run: forge test --ffi --match-path 'test/integration/*' --no-match-contract IntegrationDeploy
