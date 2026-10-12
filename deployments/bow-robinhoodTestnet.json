@@ -1,0 +1,70 @@
+{
+  "chainId": 46630,
+  "vendor": "0xbow privacy-pools-core v1.2.1 (a80836a), unmodified",
+  "deployer": "0x673eF77ccb27e106769d2d56C536a4A0523B260E",
+  "owner": "0x673eF77ccb27e106769d2d56C536a4A0523B260E",
+  "postman": "0x673eF77ccb27e106769d2d56C536a4A0523B260E",
+  "config": {
+    "asset": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+    "minimumDepositAmount": "100000000000000",
+    "vettingFeeBPS": "0",
+    "maxRelayFeeBPS": "100"
+  },
+  "entrypoint": "0xf2CE4EF0cB98786faEd7978a8120BeEa0E275980",
+  "pool": "0xF54A4fad2AA50E63700973DFC7639B20f2E42dD8",
+  "scope": "1851504552664954453802338989762796550967204361518220772971645162551052044779",
+  "withdrawalVerifier": "0xE250C96973bc35Dab343bff771D3D0dED7f07E38",
+  "ragequitVerifier": "0x04D2E255D0c604e54FE1bd07EEEc4a5DFf8Af1B8",
+  "contracts": [
+    {
+      "name": "WithdrawalVerifier",
+      "address": "0xE250C96973bc35Dab343bff771D3D0dED7f07E38",
+      "block": 133595873,
+      "tx": "0x875facf8eed994dfa56d54986bde8c7fff7b85fc3a792e8f5c4fbab9988e1479",
+      "gasUsed": "474090"
+    },
+    {
+      "name": "CommitmentVerifier",
+      "address": "0x04D2E255D0c604e54FE1bd07EEEc4a5DFf8Af1B8",
+      "block": 133595883,
+      "tx": "0xe456e09ac9a8eea92672089e06d18d1e60077049be0e348c3f7f7977cd8ca53e",
+      "gasUsed": "395267"
+    },
+    {
+      "name": "Entrypoint_Implementation",
+      "address": "0x9044bE68Cd2170E08494bf42cE3F50772285f52f",
+      "block": 133595893,
+      "tx": "0xc105d99f612e4b3dc2f61c5587c4c36c658154188f4c90e4ecc152e2e305f5f6",
+      "gasUsed": "2976375"
+    },
+    {
+      "name": "Entrypoint_Proxy",
+      "address": "0xf2CE4EF0cB98786faEd7978a8120BeEa0E275980",
+      "block": 133595900,
+      "tx": "0xb14392a014d83500dad9edf83eb561bc55997ae500d1a1d48a4840ed6058b9fb",
+      "gasUsed": "290277"
+    },
+    {
+      "name": "library_PoseidonT3",
+      "address": "0x396e9e633A22f21ADaB0Bd5be194B1e97440A3A1",
+      "block": 133595914,
+      "tx": "0xcd7a5bbe095c7b563b43adb6a6f8fa783cd3e9d5a0215a286a4451fe22494315",
+      "gasUsed": "5140670"
+    },
+    {
+      "name": "library_PoseidonT4",
+      "address": "0xbAd78A55561b125af6FD539bCEcd7ba22A2288fA",
+      "block": 133595931,
+      "tx": "0x2c22cc308f1350550d63c571ce6aba7f80b8aff8e3c7527505aeab96404b152e",
+      "gasUsed": "2773683"
+    },
+    {
+      "name": "PrivacyPoolSimple_ETH",
+      "address": "0xF54A4fad2AA50E63700973DFC7639B20f2E42dD8",
+      "block": 133595940,
+      "tx": "0x6c7f396f53b041c38f715a7a7f219355b1ff7ab5237338b8f98023b213af987f",
+      "gasUsed": "1646305"
+    }
+  ],
+  "registerPoolTx": "0x0c7bff93621591ac05fe9239133656e3d0dc8634e48a4cbd372c16e81ecf4ae2"
+}
