@@ -90,6 +90,16 @@
       "path": "packages/circuits/trusted-setup/final-keys/commitment.zkey",
       "bytes": 901233,
       "sha256": "494ae92d64098fda2a5649690ddc5821fcd7449ca5fe8ef99ee7447544d7e1f3"
+    },
+    "withdraw.wasm": {
+      "path": "packages/circuits/build/withdraw/withdraw_js/withdraw.wasm",
+      "bytes": 2607967,
+      "sha256": "36cda22791def3d520a55c0fc808369cd5849532a75fab65686e666ed3d55c10"
+    },
+    "commitment.wasm": {
+      "path": "packages/circuits/build/commitment/commitment_js/commitment.wasm",
+      "bytes": 2380442,
+      "sha256": "254d2130607182fd6fd1aee67971526b13cfe178c88e360da96dce92663828d8"
     }
   }
 }
